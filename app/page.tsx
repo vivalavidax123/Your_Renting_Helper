@@ -1,3 +1,7 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+
 const scoreCategories = [
   {
     name: "Shopping",
@@ -38,7 +42,69 @@ const nearbyPlaces = [
   "Market Lane Cafe",
 ];
 
+type GeocodeLocation = {
+  query: string;
+  formattedAddress: string;
+  placeId: string;
+  latitude: number;
+  longitude: number;
+  locationType: string;
+  types: string[];
+};
+
+type GeocodeSuccess = {
+  ok: true;
+  location: GeocodeLocation;
+};
+
+type GeocodeFailure = {
+  ok: false;
+  error: string;
+  status?: string;
+};
+
+type SearchState = "idle" | "loading" | "success" | "error";
+
 export default function Home() {
+  const [query, setQuery] = useState("");
+  const [searchState, setSearchState] = useState<SearchState>("idle");
+  const [location, setLocation] = useState<GeocodeLocation | null>(null);
+  const [error, setError] = useState("");
+
+  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 3) {
+      setError("Enter at least 3 characters to search.");
+      setSearchState("error");
+      return;
+    }
+
+    setSearchState("loading");
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/geocode?query=${encodeURIComponent(trimmedQuery)}`,
+      );
+      const data = (await response.json()) as GeocodeSuccess | GeocodeFailure;
+
+      if (!response.ok || !data.ok) {
+        setError(data.ok ? "Could not geocode this location." : data.error);
+        setSearchState("error");
+        return;
+      }
+
+      setLocation(data.location);
+      setSearchState("success");
+    } catch {
+      setError("Search failed. Check your connection and try again.");
+      setSearchState("error");
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#f3f6f4] px-5 py-8 text-slate-950 sm:px-8 lg:px-10">
       <section className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
@@ -64,7 +130,10 @@ export default function Home() {
             </div>
           </div>
 
-          <form className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-inner">
+          <form
+            className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-inner"
+            onSubmit={handleSearch}
+          >
             <label
               htmlFor="location"
               className="mb-2 block text-sm font-semibold text-slate-800"
@@ -75,16 +144,34 @@ export default function Home() {
               <input
                 id="location"
                 type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
                 placeholder="Try: Parramatta NSW"
+                autoComplete="street-address"
                 className="min-h-12 flex-1 rounded-md border border-slate-300 bg-white px-4 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
               />
               <button
                 type="submit"
-                className="min-h-12 rounded-md bg-slate-950 px-6 text-base font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300"
+                disabled={searchState === "loading"}
+                className="min-h-12 rounded-md bg-slate-950 px-6 text-base font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
-                Search
+                {searchState === "loading" ? "Searching..." : "Search"}
               </button>
             </div>
+            {searchState === "error" ? (
+              <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                {error}
+              </p>
+            ) : null}
+            {searchState === "success" && location ? (
+              <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                <p className="font-semibold">{location.formattedAddress}</p>
+                <p className="mt-1 text-emerald-800">
+                  {location.latitude.toFixed(5)},{" "}
+                  {location.longitude.toFixed(5)}
+                </p>
+              </div>
+            ) : null}
           </form>
 
           <div className="mt-8">
@@ -145,8 +232,9 @@ export default function Home() {
               </div>
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-600">
-              A live map can show nearby amenities once the search and places API
-              are connected.
+              {location
+                ? `Matched as ${location.locationType.toLowerCase().replaceAll("_", " ")}. Nearby amenities are still using prototype data.`
+                : "A live map can show nearby amenities once the search and places API are connected."}
             </p>
           </div>
 
