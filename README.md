@@ -1,36 +1,241 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rent Score Prototype
 
-## Getting Started
+A web-based prototype that helps renters evaluate the convenience and livability of a location based on nearby amenities and services.
 
-First, run the development server:
+The system allows users to search for an address, suburb, street, or approximate location, then generates convenience scores using nearby facilities such as shopping centres, cafes, gyms, fuel stations, pharmacies, post offices, and public transport.
+
+This project is intended as a functional prototype rather than a production-ready platform.
+
+---
+
+# Project Goals
+
+The purpose of this prototype is to:
+
+* Help renters quickly evaluate the convenience of a location
+* Demonstrate location-based scoring using real-world map/place APIs
+* Visualise nearby amenities on an interactive map
+* Provide a simple and understandable scoring breakdown
+* Explore how geographic data can improve rental decision-making
+
+---
+
+# Core Features
+
+## MVP Features
+
+* Search for an address or suburb
+* Convert search input into geographic coordinates
+* Retrieve nearby amenities from map/place APIs
+* Calculate category-based convenience scores
+* Display an overall location score
+* Show nearby places on an interactive map
+* Provide explanations for score calculations
+
+---
+
+# Example Categories
+
+The scoring system evaluates convenience using categories such as:
+
+| Category          | Example Amenities                     |
+| ----------------- | ------------------------------------- |
+| Shopping          | Supermarkets, shopping centres        |
+| Food & Cafes      | Cafes, restaurants, bakeries          |
+| Fitness           | Gyms, fitness centres                 |
+| Transport         | Train stations, tram stops, bus stops |
+| Health            | Pharmacies, clinics, hospitals        |
+| Services          | Post offices, banks                   |
+| Fuel & Automotive | Fuel stations                         |
+
+---
+
+# Example Output
+
+```text
+Shopping: 82/100
+Food & Cafes: 76/100
+Transport: 65/100
+Fitness: 45/100
+Health: 70/100
+
+Overall Rent Convenience Score: 72/100
+```
+
+---
+
+# Proposed Scoring Logic
+
+Each category score is based on:
+
+* Number of nearby amenities
+* Distance to the closest amenities
+* Weighted importance of the category
+
+Example factors:
+
+* More supermarkets nearby → higher shopping score
+* Closer train stations → higher transport score
+* Fewer gyms nearby → lower fitness score
+
+The overall score is calculated using weighted averages across all categories.
+
+---
+
+# Tech Stack
+
+## Frontend
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+
+## APIs & Services
+
+* Google Places API
+* Google Geocoding API
+* Google Maps or Mapbox
+
+## Deployment
+
+* Vercel
+
+---
+
+# Project Structure
+
+```text
+rent-score-prototype/
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   │
+│   ├── components/
+│   │   ├── SearchBox.tsx
+│   │   ├── ScorePanel.tsx
+│   │   ├── CategoryBreakdown.tsx
+│   │   └── MapView.tsx
+│   │
+│   ├── lib/
+│   │   ├── scoring.ts
+│   │   ├── places.ts
+│   │   ├── geocoding.ts
+│   │   └── categories.ts
+│   │
+│   └── types/
+│       └── place.ts
+│
+├── public/
+├── README.md
+├── package.json
+└── .env.local
+```
+
+---
+
+# Development Roadmap
+
+## Phase 1 — Initial Setup
+
+* Create Next.js project
+* Configure Tailwind CSS
+* Set up GitHub repository
+* Create initial homepage UI
+
+## Phase 2 — Search & Geocoding
+
+* Add address search input
+* Convert addresses into latitude/longitude
+* Handle invalid search results
+
+## Phase 3 — Nearby Place Retrieval
+
+* Query nearby amenities using APIs
+* Organise results by category
+* Display nearby places on map
+
+## Phase 4 — Scoring System
+
+* Implement category scoring logic
+* Implement weighted overall score
+* Add score explanations
+
+## Phase 5 — UI Improvements
+
+* Improve responsiveness
+* Add loading states
+* Improve map interactions
+* Add category filters
+
+## Phase 6 — Deployment
+
+* Deploy prototype to Vercel
+* Configure environment variables
+* Test production deployment
+
+---
+
+# Environment Variables
+
+Create a `.env.local` file:
+
+```env
+GOOGLE_MAPS_API_KEY=YOUR_API_KEY
+NEXT_PUBLIC_MAPS_API_KEY=YOUR_PUBLIC_KEY
+```
+
+---
+
+# Installation
+
+## Clone Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/rent-score-prototype.git
+cd rent-score-prototype
+```
+
+## Install Dependencies
+
+```bash
+npm install
+```
+
+## Start Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+# Future Improvements
 
-To learn more about Next.js, take a look at the following resources:
+Potential future features include:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* Crime and safety scoring
+* School quality integration
+* Rental price analysis
+* Public transport accessibility metrics
+* Walkability scoring
+* User accounts and saved locations
+* Historical suburb trend analysis
+* AI-generated suburb summaries
+* Mobile-friendly optimisation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+# Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is a prototype intended for experimentation and demonstration purposes.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The scoring system is not intended to represent official property valuations or guarantee rental quality.
