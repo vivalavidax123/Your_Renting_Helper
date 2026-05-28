@@ -35,13 +35,6 @@ const scoreCategories = [
   },
 ];
 
-const nearbyPlaces = [
-  "Woolworths Metro",
-  "Central Station",
-  "Neighbourhood Pharmacy",
-  "Market Lane Cafe",
-];
-
 type GeocodeLocation = {
   query: string;
   formattedAddress: string;
@@ -65,11 +58,65 @@ type GeocodeFailure = {
 
 type SearchState = "idle" | "loading" | "success" | "error";
 
+type NearbyPlace = {
+  id: string;
+  name: string;
+  address: string;
+  primaryType: string;
+  distanceMeters: number;
+};
+
+type PlaceGroup = {
+  id: string;
+  label: string;
+  places: NearbyPlace[];
+};
+
+type PlacesSuccess = {
+  ok: true;
+  groups: PlaceGroup[];
+};
+
+type PlacesFailure = {
+  ok: false;
+  error: string;
+};
+
+type PlacesState = "idle" | "loading" | "success" | "error";
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [searchState, setSearchState] = useState<SearchState>("idle");
   const [location, setLocation] = useState<GeocodeLocation | null>(null);
   const [error, setError] = useState("");
+  const [placesState, setPlacesState] = useState<PlacesState>("idle");
+  const [placeGroups, setPlaceGroups] = useState<PlaceGroup[]>([]);
+  const [placesError, setPlacesError] = useState("");
+
+  async function loadNearbyPlaces(nextLocation: GeocodeLocation) {
+    setPlacesState("loading");
+    setPlacesError("");
+    setPlaceGroups([]);
+
+    try {
+      const response = await fetch(
+        `/api/places?lat=${nextLocation.latitude}&lng=${nextLocation.longitude}`,
+      );
+      const data = (await response.json()) as PlacesSuccess | PlacesFailure;
+
+      if (!response.ok || !data.ok) {
+        setPlacesError(data.ok ? "Could not load nearby places." : data.error);
+        setPlacesState("error");
+        return;
+      }
+
+      setPlaceGroups(data.groups);
+      setPlacesState("success");
+    } catch {
+      setPlacesError("Nearby places failed to load. Try searching again.");
+      setPlacesState("error");
+    }
+  }
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -84,6 +131,9 @@ export default function Home() {
 
     setSearchState("loading");
     setError("");
+    setPlacesState("idle");
+    setPlacesError("");
+    setPlaceGroups([]);
 
     try {
       const response = await fetch(
@@ -99,6 +149,7 @@ export default function Home() {
 
       setLocation(data.location);
       setSearchState("success");
+      await loadNearbyPlaces(data.location);
     } catch {
       setError("Search failed. Check your connection and try again.");
       setSearchState("error");
@@ -233,24 +284,79 @@ export default function Home() {
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-600">
               {location
-                ? `Matched as ${location.locationType.toLowerCase().replaceAll("_", " ")}. Nearby amenities are still using prototype data.`
+                ? `Matched as ${location.locationType.toLowerCase().replaceAll("_", " ")}. Nearby amenities are loaded within 1.6 km.`
                 : "A live map can show nearby amenities once the search and places API are connected."}
             </p>
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-950">Nearby signals</h2>
-            <ul className="mt-4 space-y-3">
-              {nearbyPlaces.map((place) => (
-                <li
-                  key={place}
-                  className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700"
-                >
-                  <span>{place}</span>
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                </li>
-              ))}
-            </ul>
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-xl font-bold text-slate-950">
+                Nearby signals
+              </h2>
+              {placesState === "loading" ? (
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
+                  Loading
+                </span>
+              ) : null}
+            </div>
+
+            {placesState === "idle" ? (
+              <p className="mt-4 text-sm leading-6 text-slate-600">
+                Search for a location to load nearby amenities.
+              </p>
+            ) : null}
+
+            {placesState === "error" ? (
+              <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                {placesError}
+              </p>
+            ) : null}
+
+            {placesState === "success" ? (
+              <div className="mt-4 space-y-4">
+                {placeGroups.map((group) => (
+                  <section key={group.id}>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-slate-950">
+                        {group.label}
+                      </h3>
+                      <span className="text-xs font-medium text-slate-500">
+                        {group.places.length} found
+                      </span>
+                    </div>
+                    {group.places.length > 0 ? (
+                      <ul className="space-y-2">
+                        {group.places.slice(0, 3).map((place) => (
+                          <li
+                            key={place.id}
+                            className="rounded-md bg-slate-50 px-4 py-3 text-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="font-medium text-slate-800">
+                                {place.name}
+                              </span>
+                              <span className="shrink-0 text-xs font-semibold text-emerald-700">
+                                {place.distanceMeters < 1000
+                                  ? `${place.distanceMeters} m`
+                                  : `${(place.distanceMeters / 1000).toFixed(1)} km`}
+                              </span>
+                            </div>
+                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                              {place.address}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                        No nearby matches found.
+                      </p>
+                    )}
+                  </section>
+                ))}
+              </div>
+            ) : null}
           </div>
         </aside>
       </section>
