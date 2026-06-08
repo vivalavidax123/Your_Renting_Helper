@@ -79,3 +79,12 @@ Nearby place latitude and longitude are included in the `/api/places` response s
 ## Deferred Work
 
 Deployment, authentication, saved locations, AI summaries, crime data, school quality, and rental price analysis are deferred. Map/list interactions, such as clicking a list item to focus the matching marker, are also deferred.
+
+## Architecture Refactoring
+
+To improve maintainability, the bloated monolithic files (`app/page.tsx` and `app/api/places/route.ts`) have been refactored using component-based and service-layer patterns:
+- **Shared code:** Extracted TypeScript interfaces to `app/lib/types.ts` and generic formatters to `app/lib/utils.ts`.
+- **Frontend Components:** Split `app/page.tsx` into a layout orchestrator coordinating `SearchForm`, `ScoreBreakdown`, and `NearbyPlacesList`. Complex React state and search side-effects were extracted into `app/hooks/useLocationSearch.ts`.
+- **Backend Services:** Separated API integration logic into dedicated services (`app/lib/services/googlePlaces.ts` and `app/lib/services/transitland.ts`), leaving `app/api/places/route.ts` responsible only for request coordination and score computation.
+
+*Note on Transitland API Refactor Issue:* During the initial service extraction, an issue occurred where Transitland bus stops were returned without fetching their distinct route departures. This was quickly identified and patched by ensuring `fetchTransitlandBusDepartures` iterates over the sorted stops and attaches `transportServices` prior to returning to the places route.
