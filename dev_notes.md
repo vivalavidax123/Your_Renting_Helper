@@ -48,16 +48,20 @@ Transport is the exception to the general category retrieval. It shows up to fou
 
 When `TRANSITLAND_API_KEY` is configured, the transport lookup prefers Transitland bus stop data and enriches each returned bus stop with upcoming distinct route numbers, destinations, and departure times. Google Places remains the fallback for bus stops if Transitland is not configured or does not return nearby matches. V/Line classification is based on the local station list in `app/lib/vline-stations.txt`, which avoids relying on Google Places to label regional rail stations consistently. Transport rows do not show review counts because popularity is less useful for stops and stations.
 
-## Scoring V1
+## Search Criteria Refinements
 
-The first scoring model intentionally stays simple and explainable:
+To guarantee high-quality results, the API applies strict filtering:
+* **Review Thresholds:** Any non-transport place returned from Google Places with fewer than 30 reviews is globally excluded from scoring and the UI.
+* **Narrow Categories:** The Fuel & Automotive category strictly searches for `gas_station` and specific auto parts brands, intentionally filtering out minor local mechanics (`car_repair`). The Services category strictly searches for `post_office` and `bank`, dropping standalone ATMs.
 
-* more nearby matches increase a category score
-* closer matches increase a category score
-* each category score is capped at 100
-* overall score is a weighted average of category scores
+## Scoring V2
 
-This model is useful for a prototype but is not a final rental quality or property valuation model. Future scoring can add better walking-distance estimates, public transport frequency, school data, safety signals, and rental price context.
+The scoring algorithm assigns each category a score out of 100, which is split across three pillars:
+1. **Proximity Score (Max 50 points):** Uses a stepped decay based on typical Australian travel norms. Walkable distances (<500m) score a perfect 50, short drives (<2000m) score 40, and longer normal drives linearly scale down to a baseline of 15 points (accommodating Australian driving norms where having a car is common).
+2. **Variety Score (Max 30 points):** Rewards the quantity of amenities found, but caps differently based on the category type. High-variety categories (Food & Cafes, Fitness) require 5+ places to maximize points, whereas low-variety categories (Groceries, Transport, Services, Shopping) hit max points with just 2 places.
+3. **Quality Score (Max 20 points):** Evaluates the average user rating of the top 3 best-rated businesses in that category. An average of 4.5+ awards 20 points, 4.0+ awards 15 points, and below 4.0 awards 5 points. Locations without ratings (like Transit stops) default to full points to avoid penalization.
+
+Overall score remains a weighted average of these individual category scores. Future scoring can add better walking-distance estimates, public transport frequency, school data, safety signals, and rental price context.
 
 ## Provider Choice
 

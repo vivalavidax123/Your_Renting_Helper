@@ -1,18 +1,68 @@
 import { rentScoreCategories } from "./categories";
+import type { PlaceGroup, NearbyPlace } from "./types";
 
-import type { PlaceGroup } from "./types";
-
-function getDistanceScore(distanceMeters: number | null, radiusMeters: number) {
-  if (distanceMeters === null) {
+function getProximityScore(
+  closestDistanceMeters: number | null,
+  radiusMeters: number,
+) {
+  if (closestDistanceMeters === null) {
     return 0;
   }
 
-  const normalizedDistance = Math.min(distanceMeters, radiusMeters);
-  return Math.round(((radiusMeters - normalizedDistance) / radiusMeters) * 45);
+  if (closestDistanceMeters <= 500) {
+    return 50; // Walkable
+  }
+
+  if (closestDistanceMeters <= 2000) {
+    return 40; // Short drive
+  }
+
+  // Normal drive in Australia (scales from 35 down to 15, never hits 0 just for driving)
+  const distancePast2k = closestDistanceMeters - 2000;
+  const drivableRange = Math.max(1, radiusMeters - 2000);
+  const ratio = Math.min(1, distancePast2k / drivableRange);
+  
+  return Math.round(35 - 20 * ratio);
 }
 
-function getCountScore(count: number) {
-  return Math.min(count * 11, 55);
+function getVarietyScore(count: number, categoryId: string) {
+  if (count === 0) return 0;
+
+  const highVarietyCategories = ["food", "fitness"];
+  const isHighVariety = highVarietyCategories.includes(categoryId);
+
+  if (isHighVariety) {
+    // Max 30 points at 5 places (6 points per place)
+    return Math.min(30, count * 6);
+  } else {
+    // Max 30 points at 2 places (15 points per place)
+    return Math.min(30, count * 15);
+  }
+}
+
+function getQualityScore(places: NearbyPlace[]) {
+  if (places.length === 0) return 0;
+
+  // Filter places with valid ratings
+  const placesWithRatings = places.filter(
+    (p) => typeof p.rating === "number" && p.rating !== null,
+  );
+
+  // If no places have ratings (e.g., bus stops), default to full quality points
+  if (placesWithRatings.length === 0) {
+    return 20;
+  }
+
+  // Calculate average rating of top 3 places
+  const topPlaces = placesWithRatings
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    .slice(0, 3);
+  const avgRating =
+    topPlaces.reduce((sum, p) => sum + (p.rating ?? 0), 0) / topPlaces.length;
+
+  if (avgRating >= 4.5) return 20;
+  if (avgRating >= 4.0) return 15;
+  return 5;
 }
 
 function getExplanation(count: number, closestDistanceMeters: number | null) {
@@ -36,11 +86,15 @@ export function scorePlaceGroups(groups: PlaceGroup[]) {
       places.length > 0
         ? Math.min(...places.map((place) => place.distanceMeters))
         : null;
-    const score = Math.min(
-      100,
-      getCountScore(places.length) +
-        getDistanceScore(closestDistanceMeters, category.radiusMeters),
+
+    const proximityScore = getProximityScore(
+      closestDistanceMeters,
+      category.radiusMeters,
     );
+    const varietyScore = getVarietyScore(places.length, category.id);
+    const qualityScore = getQualityScore(places);
+
+    const score = Math.min(100, proximityScore + varietyScore + qualityScore);
 
     return {
       id: category.id,
@@ -56,12 +110,16 @@ export function scorePlaceGroups(groups: PlaceGroup[]) {
     };
   });
 
-  const totalWeight = scores.reduce((sum, category) => sum + category.weight, 0);
+  const totalWeight = scores.reduce(
+    (sum, category) => sum + category.weight,
+    0,
+  );
   const weightedScore = scores.reduce(
     (sum, category) => sum + category.score * category.weight,
     0,
   );
-  const overallScore = totalWeight === 0 ? 0 : Math.round(weightedScore / totalWeight);
+  const overallScore =
+    totalWeight === 0 ? 0 : Math.round(weightedScore / totalWeight);
 
   return { overallScore, scores };
 }

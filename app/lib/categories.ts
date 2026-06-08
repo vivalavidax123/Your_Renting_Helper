@@ -97,9 +97,9 @@ export const rentScoreCategories: RentScoreCategory[] = [
     weight: 10,
     radiusMeters: defaultSearchRadiusMeters,
     colorClass: "bg-orange-500",
-    detail: "Fuel stations and car-related services nearby",
-    brandTerms: ["Ampol", "BP", "Shell", "7-Eleven"],
-    placeTypes: ["gas_station", "car_repair"],
+    detail: "Fuel stations and major automotive parts stores nearby",
+    brandTerms: ["Ampol", "BP", "Shell", "7-Eleven", "Repco", "Supercheap Auto", "Autobarn", "Burson Auto Parts"],
+    placeTypes: ["gas_station"],
   },
   {
     id: "services",
@@ -109,6 +109,6 @@ export const rentScoreCategories: RentScoreCategory[] = [
     colorClass: "bg-indigo-500",
     detail: "Banks, post offices, and practical services nearby",
     brandTerms: ["Australia Post", "Commonwealth Bank", "ANZ", "NAB", "Westpac"],
-    placeTypes: ["post_office", "bank", "atm"],
+    placeTypes: ["post_office", "bank"],
   },
 ];

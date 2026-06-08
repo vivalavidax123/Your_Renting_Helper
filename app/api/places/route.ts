@@ -79,6 +79,13 @@ function addPlaceToMap({
     return;
   }
 
+  if (
+    category.id !== "transport" &&
+    (typeof place.userRatingCount !== "number" || place.userRatingCount < 30)
+  ) {
+    return;
+  }
+
   const distanceMeters = getDistanceMeters(origin, {
     latitude: placeLatitude,
     longitude: placeLongitude,
