@@ -30,7 +30,9 @@ The purpose of this prototype is to:
 * Calculate category-based convenience scores
 * Display an overall location score
 * Show nearby places on an interactive map
-* Provide explanations for score calculations
+* Highlight nearby amenities as the primary result detail
+* Provide compact explanations for score calculations
+* Show additional derived indicators such as walkability, transit access, amenity density, daily convenience, and car reliance
 
 ---
 
@@ -63,6 +65,8 @@ Health: 70/100
 
 Overall Rent Convenience Score: 72/100
 ```
+
+The current UI uses a compact dashboard layout: overall and category scores are intentionally small, while nearby amenities and map context receive more space. Additional indicators appear beside the map and distinguish between values derived from the current amenity data and planned future datasets.
 
 ---
 
@@ -112,11 +116,21 @@ The overall score is calculated using weighted averages across all categories.
 rent-score-prototype/
 ├── app/
 │   ├── api/
+│   │   ├── autocomplete/
 │   │   ├── geocode/
 │   │   └── places/
+│   ├── components/
+│   │   ├── AdditionalIndicators.tsx
+│   │   ├── LocationMap.tsx
+│   │   ├── NearbyPlacesList.tsx
+│   │   ├── ScoreBreakdown.tsx
+│   │   └── SearchForm.tsx
+│   ├── hooks/
+│   │   └── useLocationSearch.ts
 │   ├── lib/
 │   │   ├── categories.ts
-│   │   └── scoring.ts
+│   │   ├── scoring.ts
+│   │   └── services/
 │   ├── layout.tsx
 │   └── page.tsx
 ├── public/
@@ -161,6 +175,8 @@ rent-score-prototype/
 * Add loading states
 * Improve map interactions
 * Add category filters
+* Refine amenities-first result layout
+* Add derived and planned location indicators
 
 ## Phase 6 — Deployment
 
@@ -220,8 +236,9 @@ Potential future features include:
 * Crime and safety scoring
 * School quality integration
 * Rental price analysis
-* Public transport accessibility metrics
-* Walkability scoring
+* More detailed public transport accessibility metrics
+* Walkability based on real walking routes instead of straight-line distance estimates
+* Population density, suburb rent trends, schools, childcare, safety, and planned development datasets
 * User accounts and saved locations
 * Historical suburb trend analysis
 * AI-generated suburb summaries

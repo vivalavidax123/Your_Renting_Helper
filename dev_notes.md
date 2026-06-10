@@ -4,6 +4,8 @@
 
 The application is a functional prototype for evaluating rental locations by nearby everyday amenities. The near-term priority is a working MVP over production infrastructure, accounts, saved searches, or advanced scoring inputs.
 
+The UI direction is now amenities-first. Overall score and category scores are intentionally compact summary elements, while nearby amenities, the map, and additional location indicators carry the main result detail. This keeps the interface closer to a decision dashboard than a score report.
+
 ## Category Configuration
 
 Category metadata lives in `app/lib/categories.ts` instead of inside the Places API route. This keeps one source of truth for:
@@ -79,6 +81,46 @@ The first map version shows:
 * marker popups with name, category, distance, and address
 
 Nearby place latitude and longitude are included in the `/api/places` response so the map can render amenity markers without making extra client-side Places requests.
+
+## Amenities-First UI
+
+The main page layout is split into a wider left column and narrower right column:
+
+* Left column: search, compact overall score, compact category scores, and nearby amenities.
+* Right column: map preview and additional indicators.
+
+`NearbyPlacesList` is now part of the primary result area rather than a side panel. It summarizes total places found and the nearest amenity, then displays each category as a dense card with the closest visible place rows. This is intended to make the actual nearby services easier to inspect than the score math.
+
+`ScoreBreakdown` remains compact and uses category score, count, closest distance, and a short progress bar. Longer category explanations are deliberately omitted from the main UI for now so they do not compete with amenities.
+
+## Additional Indicators
+
+`AdditionalIndicators` renders below the map in the right column. It separates currently derived indicators from future dataset placeholders.
+
+Currently derived indicators:
+
+* **Walkability:** Uses straight-line distance estimates from current nearby place results. Walking time is estimated at 80 metres per minute. It shows the nearest bus stop/route, nearest major grocery, and nearest shopping centre as separate rows so long names can wrap.
+* **Transit access:** Uses the transport category score, closest transport distance, and available Transitland departure counts when configured.
+* **Amenity density:** Uses total nearby places across all current categories.
+* **Daily convenience:** Averages groceries, food, health, services, and shopping category scores.
+* **Car reliance:** Estimates whether core categories are beyond short walking range, with fuel/automotive availability providing a small offset.
+
+Walkability grocery selection is intentionally restricted to major supermarket brands: Coles, Woolworths, Aldi, and IGA. Nearby grocery-like places such as specialty food stores are still useful in the amenities list and category scoring, but they are not used as the headline walkability grocery target.
+
+The walkability badge color is based on average estimated walking time to the nearest bus, major grocery, and shopping centre:
+
+* 10 minutes or less: green
+* 15 minutes or less: blue
+* 25 minutes or less: amber
+* above 25 minutes: slate
+
+Planned indicators are shown as placeholders and must not be treated as live data until dedicated sources are added:
+
+* population density
+* median rent / rent trend
+* schools / childcare
+* safety
+* planned development
 
 ## Deferred Work
 
