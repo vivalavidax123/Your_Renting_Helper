@@ -31,31 +31,35 @@ export default function Home() {
   } = useLocationSearch();
 
   return (
-    <main className="min-h-screen bg-[#f3f6f4] px-5 py-8 text-slate-950 sm:px-8 lg:px-10">
-      <section className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <main className="min-h-screen bg-[#f3f6f4] px-4 py-5 text-slate-950 sm:px-6 lg:px-8">
+      <section className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-emerald-700">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
                 Rental location insight
               </p>
-              <h1 className="max-w-2xl text-4xl font-bold leading-tight text-slate-950 sm:text-5xl">
+              <h1 className="mt-1 text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
                 Rent Convenience Score
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                Compare how practical a rental location is for everyday errands,
-                transport, food, health, and fitness.
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                Compare everyday convenience, transport access, food, health,
+                fitness, and practical services around a rental.
               </p>
             </div>
 
-            <div className="w-full rounded-lg border border-emerald-100 bg-emerald-50 p-4 text-left sm:w-44">
-              <p className="text-sm font-medium text-emerald-800">
-                {placesState === "success" ? "Overall score" : "Ready to score"}
-              </p>
-              <p className="mt-1 text-4xl font-bold text-emerald-950">
-                {placesState === "loading" ? "..." : overallScore ?? "--"}
-              </p>
-              <p className="text-sm text-emerald-800">out of 100</p>
+            <div className="grid w-full grid-cols-[auto_1fr] items-center gap-3 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-left sm:w-52">
+              <div className="flex size-16 items-center justify-center rounded-full border-[6px] border-emerald-500 bg-white">
+                <span className="text-2xl font-bold text-emerald-900">
+                  {placesState === "loading" ? "..." : overallScore ?? "--"}
+                </span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-emerald-950">
+                  {placesState === "success" ? "Overall score" : "Ready to score"}
+                </p>
+                <p className="text-xs font-medium text-emerald-800">out of 100</p>
+              </div>
             </div>
           </div>
 
