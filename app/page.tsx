@@ -5,6 +5,7 @@ import { LocationMap } from "./components/LocationMap";
 import { SearchForm } from "./components/SearchForm";
 import { ScoreBreakdown } from "./components/ScoreBreakdown";
 import { NearbyPlacesList } from "./components/NearbyPlacesList";
+import { AdditionalIndicators } from "./components/AdditionalIndicators";
 
 export default function Home() {
   const {
@@ -32,7 +33,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#f3f6f4] px-4 py-5 text-slate-950 sm:px-6 lg:px-8">
-      <section className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -87,6 +88,12 @@ export default function Home() {
             categoryScores={categoryScores}
             placesError={placesError}
           />
+
+          <NearbyPlacesList
+            placesState={placesState}
+            placesError={placesError}
+            placeGroups={placeGroups}
+          />
         </div>
 
         <aside className="space-y-6">
@@ -100,9 +107,9 @@ export default function Home() {
             </p>
           </div>
 
-          <NearbyPlacesList
+          <AdditionalIndicators
             placesState={placesState}
-            placesError={placesError}
+            categoryScores={categoryScores}
             placeGroups={placeGroups}
           />
         </aside>

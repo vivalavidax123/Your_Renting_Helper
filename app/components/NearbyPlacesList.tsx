@@ -18,19 +18,39 @@ export function NearbyPlacesList({
   placesError,
   placeGroups,
 }: NearbyPlacesListProps) {
+  const allPlaces = placeGroups.flatMap((group) => group.places);
+  const closestPlace = allPlaces.reduce<(typeof allPlaces)[number] | null>(
+    (closest, place) => {
+      if (!closest || place.distanceMeters < closest.distanceMeters) {
+        return place;
+      }
+
+      return closest;
+    },
+    null,
+  );
+
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <h2 className="text-xl font-bold text-slate-950">Nearby signals</h2>
+    <div className="mt-6 border-t border-slate-200 pt-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-950">Nearby amenities</h2>
+          {placesState === "success" ? (
+            <p className="mt-1 text-sm text-slate-600">
+              {allPlaces.length} found
+              {closestPlace ? ` / nearest ${formatDistance(closestPlace.distanceMeters)}` : ""}
+            </p>
+          ) : null}
+        </div>
         {placesState === "loading" ? (
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
+          <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
             Loading
           </span>
         ) : null}
       </div>
 
       {placesState === "idle" ? (
-        <p className="mt-4 text-sm leading-6 text-slate-600">
+        <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-600">
           Search for a location to load nearby amenities.
         </p>
       ) : null}
@@ -42,10 +62,13 @@ export function NearbyPlacesList({
       ) : null}
 
       {placesState === "success" ? (
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 grid gap-3 xl:grid-cols-2">
           {placeGroups.map((group) => (
-            <section key={group.id}>
-              <div className="mb-2 flex items-center justify-between gap-3">
+            <section
+              key={group.id}
+              className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="text-sm font-semibold text-slate-950">
                   {group.label}
                 </h3>
@@ -54,11 +77,11 @@ export function NearbyPlacesList({
                 </span>
               </div>
               {group.places.length > 0 ? (
-                <ul className="space-y-2">
-                  {group.places.slice(0, 6).map((place) => (
+                <ul className="space-y-1.5">
+                  {group.places.slice(0, 5).map((place) => (
                     <li
                       key={place.id}
-                      className="rounded-md bg-slate-50 px-3 py-2 text-sm"
+                      className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <span className="line-clamp-1 font-medium text-slate-800">
@@ -115,7 +138,7 @@ export function NearbyPlacesList({
                   ))}
                 </ul>
               ) : (
-                <p className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                <p className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
                   No nearby matches found.
                 </p>
               )}
