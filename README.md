@@ -98,6 +98,11 @@ The overall score is calculated using weighted averages across all categories.
 * TypeScript
 * Tailwind CSS
 
+## Data & Persistence
+
+* Prisma 6 (ORM + migrations)
+* SQLite (local file database for searched locations and cached score results)
+
 ## APIs & Services
 
 * Google Places API
@@ -112,15 +117,20 @@ The overall score is calculated using weighted averages across all categories.
 
 # Full-Stack Status
 
-This is a full-stack Next.js prototype: the frontend UI, API routes, scoring/business logic, and third-party data integrations live in one application.
+This is a full-stack Next.js prototype: the frontend UI, API routes, scoring/business logic, database persistence, and third-party data integrations live in one application.
+
+Persistence now included:
+
+* SQLite database managed with Prisma migrations
+* Searched locations and score snapshots stored on every search
+* Repeat searches of the same location within 24 hours are served from the database instead of calling Google again
+* Recent searches shown in the UI and re-runnable with one click
 
 It is not yet a production full-stack platform. The main missing pieces are:
 
-* Database persistence for saved searches, cached location results, historical scores, and user preferences
 * Authentication and user sessions
-* ORM or data access layer with migrations
 * Admin tooling for managing scoring weights and category configuration outside code
-* Production backend safeguards such as rate limiting, request caching, observability, background jobs, and error tracking
+* Production backend safeguards such as rate limiting, observability, background jobs, and error tracking
 * First-party or ingested datasets for rent trends, safety, schools, population density, and planning data
 
 ---
@@ -133,26 +143,34 @@ rent-score-prototype/
 │   ├── api/
 │   │   ├── autocomplete/
 │   │   ├── geocode/
+│   │   ├── history/
 │   │   └── places/
 │   ├── components/
 │   │   ├── AdditionalIndicators.tsx
 │   │   ├── LocationMap.tsx
 │   │   ├── NearbyPlacesList.tsx
+│   │   ├── RecentSearches.tsx
 │   │   ├── ScoreBreakdown.tsx
 │   │   └── SearchForm.tsx
 │   ├── hooks/
 │   │   └── useLocationSearch.ts
 │   ├── lib/
 │   │   ├── categories.ts
+│   │   ├── db.ts
 │   │   ├── scoring.ts
 │   │   └── services/
 │   ├── layout.tsx
 │   └── page.tsx
+├── prisma/
+│   ├── migrations/
+│   ├── schema.prisma
+│   └── dev.db (local, not committed)
 ├── public/
 ├── dev_notes.md
 ├── README.md
 ├── package.json
-└── .env.local
+├── .env (DATABASE_URL, not committed)
+└── .env.local (API keys, not committed)
 ```
 
 ---
@@ -213,6 +231,12 @@ TRANSITLAND_API_KEY=YOUR_TRANSITLAND_KEY
 
 `TRANSITLAND_API_KEY` is optional and is used to show bus route numbers and destinations for nearby bus stops.
 
+Also create a `.env` file for the database (the Prisma CLI reads `.env`, not `.env.local`):
+
+```env
+DATABASE_URL="file:./dev.db"
+```
+
 ---
 
 # Installation
@@ -229,6 +253,14 @@ cd rent-score-prototype
 ```bash
 npm install
 ```
+
+## Create the Database
+
+```bash
+npx prisma migrate dev
+```
+
+This creates the local SQLite file at `prisma/dev.db` and applies all migrations. To browse the data visually, run `npm run db:studio`.
 
 ## Start Development Server
 

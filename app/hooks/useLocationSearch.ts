@@ -12,6 +12,7 @@ import type {
   GeocodeFailure,
   PlacesSuccess,
   PlacesFailure,
+  RecentSearch,
 } from "../lib/types";
 
 export function useLocationSearch() {
@@ -30,6 +31,7 @@ export function useLocationSearch() {
   const [categoryScores, setCategoryScores] = useState<CategoryScore[]>([]);
   const [overallScore, setOverallScore] = useState<number | null>(null);
   const [placesError, setPlacesError] = useState("");
+  const [resultFromCache, setResultFromCache] = useState(false);
   
   const autocompleteRequestId = useRef(0);
 
@@ -95,11 +97,18 @@ export function useLocationSearch() {
     setPlaceGroups([]);
     setCategoryScores([]);
     setOverallScore(null);
+    setResultFromCache(false);
 
     try {
-      const response = await fetch(
-        `/api/places?lat=${nextLocation.latitude}&lng=${nextLocation.longitude}`,
-      );
+      const placesUrl = new URLSearchParams({
+        lat: String(nextLocation.latitude),
+        lng: String(nextLocation.longitude),
+        query: nextLocation.query,
+        address: nextLocation.formattedAddress,
+        placeId: nextLocation.placeId,
+        locationType: nextLocation.locationType,
+      });
+      const response = await fetch(`/api/places?${placesUrl.toString()}`);
       const data = (await response.json()) as PlacesSuccess | PlacesFailure;
 
       if (!response.ok || !data.ok) {
@@ -111,6 +120,7 @@ export function useLocationSearch() {
       setPlaceGroups(data.groups);
       setCategoryScores(data.scores);
       setOverallScore(data.overallScore);
+      setResultFromCache(data.cached);
       setPlacesState("success");
     } catch {
       setPlacesError("Nearby places failed to load. Try searching again.");
@@ -157,6 +167,30 @@ export function useLocationSearch() {
       setError("Search failed. Check your connection and try again.");
       setSearchState("error");
     }
+  }
+
+  function searchFromHistory(search: RecentSearch) {
+    const nextLocation: GeocodeLocation = {
+      query: search.query,
+      formattedAddress: search.formattedAddress,
+      placeId: search.placeId,
+      latitude: search.latitude,
+      longitude: search.longitude,
+      locationType: search.locationType,
+      types: [],
+    };
+
+    // The saved coordinates make geocoding unnecessary; setting the query as
+    // the selected suggestion also keeps autocomplete from reopening.
+    setQuery(search.query);
+    setSelectedSuggestionText(search.query);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setActiveSuggestionIndex(-1);
+    setError("");
+    setLocation(nextLocation);
+    setSearchState("success");
+    void loadNearbyPlaces(nextLocation);
   }
 
   function handleSuggestionSelect(suggestion: AddressSuggestion) {
@@ -217,8 +251,10 @@ export function useLocationSearch() {
     categoryScores,
     overallScore,
     placesError,
+    resultFromCache,
     handleSearch,
     handleSuggestionSelect,
     handleLocationKeyDown,
+    searchFromHistory,
   };
 }

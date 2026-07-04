@@ -85,6 +85,30 @@ export type PlacesSuccess = {
   groups: PlaceGroup[];
   scores: CategoryScore[];
   overallScore: number;
+  cached: boolean;
+  fetchedAt: string;
+};
+
+export type RecentSearch = {
+  id: string;
+  query: string;
+  formattedAddress: string;
+  placeId: string;
+  locationType: string;
+  latitude: number;
+  longitude: number;
+  lastSearchedAt: string;
+  overallScore: number;
+};
+
+export type HistorySuccess = {
+  ok: true;
+  searches: RecentSearch[];
+};
+
+export type HistoryFailure = {
+  ok: false;
+  error: string;
 };
 
 export type PlacesFailure = {

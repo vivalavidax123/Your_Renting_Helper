@@ -11,7 +11,12 @@ import path from "node:path";
 import { parseCoordinate, normalizeStationName, normalizeText } from "@/app/lib/utils";
 import { fetchPlacesForBrand, fetchPlacesForTypes } from "@/app/lib/services/googlePlaces";
 import { fetchTransitlandBusStops } from "@/app/lib/services/transitland";
-import type { GooglePlace, NearbyPlace, PlaceSource, TransportService } from "@/app/lib/types";
+import {
+  buildCacheKey,
+  findFreshSnapshot,
+  saveSnapshot,
+} from "@/app/lib/services/searchStore";
+import type { GooglePlace, NearbyPlace, PlaceSource } from "@/app/lib/types";
 
 const transportBusRadiusMeters = 1000;
 const transportBusFallbackRadiusMeters = 5000;
@@ -446,6 +451,27 @@ export async function GET(request: Request) {
     );
   }
 
+  const cacheKey = buildCacheKey(latitude, longitude);
+
+  // A database problem should degrade to a normal Google lookup, not break
+  // the search, so cache reads and writes never throw past this point.
+  try {
+    const cachedResult = await findFreshSnapshot(cacheKey);
+
+    if (cachedResult) {
+      return Response.json({
+        ok: true,
+        groups: cachedResult.groups,
+        scores: cachedResult.scores,
+        overallScore: cachedResult.overallScore,
+        cached: true,
+        fetchedAt: cachedResult.fetchedAt,
+      });
+    }
+  } catch (error) {
+    console.error("Search cache lookup failed:", error);
+  }
+
   try {
     const fetchedGroups = await Promise.all(
       rentScoreCategories.map((category) =>
@@ -460,7 +486,35 @@ export async function GET(request: Request) {
     const groups = assignPlacesToPrimaryCategories(fetchedGroups);
     const { overallScore, scores } = scorePlaceGroups(groups);
 
-    return Response.json({ ok: true, groups, scores, overallScore });
+    const fallbackLabel = `${latitude}, ${longitude}`;
+
+    try {
+      await saveSnapshot({
+        cacheKey,
+        locationInput: {
+          query: searchParams.get("query") ?? fallbackLabel,
+          formattedAddress: searchParams.get("address") ?? fallbackLabel,
+          placeId: searchParams.get("placeId") ?? "",
+          locationType: searchParams.get("locationType") ?? "UNKNOWN",
+          latitude,
+          longitude,
+        },
+        groups,
+        scores,
+        overallScore,
+      });
+    } catch (error) {
+      console.error("Saving search result failed:", error);
+    }
+
+    return Response.json({
+      ok: true,
+      groups,
+      scores,
+      overallScore,
+      cached: false,
+      fetchedAt: new Date().toISOString(),
+    });
   } catch (error) {
     return Response.json(
       {

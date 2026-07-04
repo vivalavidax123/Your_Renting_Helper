@@ -6,6 +6,7 @@ import { SearchForm } from "./components/SearchForm";
 import { ScoreBreakdown } from "./components/ScoreBreakdown";
 import { NearbyPlacesList } from "./components/NearbyPlacesList";
 import { AdditionalIndicators } from "./components/AdditionalIndicators";
+import { RecentSearches } from "./components/RecentSearches";
 
 export default function Home() {
   const {
@@ -26,9 +27,11 @@ export default function Home() {
     categoryScores,
     overallScore,
     placesError,
+    resultFromCache,
     handleSearch,
     handleSuggestionSelect,
     handleLocationKeyDown,
+    searchFromHistory,
   } = useLocationSearch();
 
   return (
@@ -82,6 +85,15 @@ export default function Home() {
             handleSuggestionSelect={handleSuggestionSelect}
             handleLocationKeyDown={handleLocationKeyDown}
           />
+
+          <RecentSearches placesState={placesState} onSelect={searchFromHistory} />
+
+          {placesState === "success" && resultFromCache && (
+            <p className="mt-3 text-xs text-slate-500">
+              Loaded from saved results — this location was scored within the
+              last 24 hours, so no new map lookups were needed.
+            </p>
+          )}
 
           <ScoreBreakdown
             placesState={placesState}

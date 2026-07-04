@@ -20,14 +20,33 @@ It should not yet be described as a production full-stack platform. The backend 
 
 Missing production-grade full-stack pieces:
 
-* **Database:** needed for saved locations, cached API results, historical scores, user preferences, and imported external datasets.
-* **Authentication:** needed for accounts, saved searches, personal comparisons, and user-specific settings.
-* **Persistence layer:** no ORM, migrations, schema management, or repository/data-access boundary exists yet.
-* **Backend operations:** no rate limiting, request caching strategy, background jobs, observability, structured logging, or error tracking.
+* **Authentication:** needed for accounts, saved searches, personal comparisons, and user-specific settings. Deliberately deferred; the schema can later add a user ID column to `SearchLocation`.
+* **Backend operations:** no rate limiting, background jobs, observability, structured logging, or error tracking. Request caching now exists via the database snapshot cache.
 * **Admin/data management:** category weights and brand lists are code-managed; there is no admin UI or config storage.
 * **First-party datasets:** rent trends, crime/safety, schools, childcare, population density, and planning/development signals are placeholders until dedicated sources are integrated.
 
-Recommended next full-stack milestone: add database persistence for searched locations and cached score results. That would create the foundation for saved locations, comparison history, rate-limit protection, and later dataset ingestion.
+## Persistence and Caching
+
+Database persistence was added with Prisma 6 and SQLite (`prisma/dev.db`, ignored by git). Prisma 7 was intentionally avoided for now because it requires a driver-adapter setup; upgrade later with the official guide if needed.
+
+Two tables in `prisma/schema.prisma`:
+
+* **SearchLocation:** one row per searched location. `cacheKey` is the lat/lng rounded to 4 decimal places (~11 m), so repeat searches of the same spot reuse the row even if geocoding jitters.
+* **ScoreSnapshot:** one row per computed result, holding `overallScore` plus the full category scores and place groups as JSON strings (SQLite has no native JSON column in Prisma). Multiple snapshots per location preserve history.
+
+Flow in `/api/places`: look up the newest snapshot for the cache key; if it is younger than 24 hours, return it with `cached: true` and skip all Google calls. Otherwise fetch from Google, score, save a new snapshot, and return `cached: false`. Database errors are caught and logged so a broken database degrades to a normal Google lookup instead of failing the search.
+
+Supporting pieces:
+
+* `app/lib/db.ts` — PrismaClient singleton guarded against dev hot-reload connection leaks.
+* `app/lib/services/searchStore.ts` — cache key builder, snapshot lookup/save, and recent-search listing.
+* `/api/history` — returns recent searches ordered by `lastSearchedAt`.
+* `RecentSearches` component — chips under the search form; clicking one re-runs the search from stored coordinates without geocoding.
+* The UI shows a small "loaded from saved results" note when a response came from cache.
+
+`DATABASE_URL` lives in `.env` (Prisma CLI reads `.env`, not `.env.local`). An older unfinished persistence attempt had left a PostgreSQL `DATABASE_URL` in `.env.local` and an empty migration folder; both were cleaned up because `.env.local` overrides `.env` in Next.js and was breaking the SQLite connection.
+
+Recommended next full-stack milestone: saved/favourite locations and side-by-side comparison built on the existing tables, or authentication if multi-user support becomes a goal.
 
 ## Category Configuration
 

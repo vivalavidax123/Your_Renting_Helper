@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// One row per searched location. cacheKey is the rounded "lat,lng" pair so
+// repeat searches of the same spot reuse the same row.
+model SearchLocation {
+  id               String          @id @default(cuid())
+  cacheKey         String          @unique
+  query            String
+  formattedAddress String
+  placeId          String
+  locationType     String
+  latitude         Float
+  longitude        Float
+  createdAt        DateTime        @default(now())
+  lastSearchedAt   DateTime        @default(now())
+  snapshots        ScoreSnapshot[]
+}
+
+// One row per computed score result. Groups and scores are stored as JSON
+// strings because SQLite has no native JSON column type in Prisma.
+model ScoreSnapshot {
+  id           String         @id @default(cuid())
+  locationId   String
+  location     SearchLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  overallScore Float
+  scoresJson   String
+  groupsJson   String
+  createdAt    DateTime       @default(now())
+
+  @@index([locationId, createdAt])
+}
