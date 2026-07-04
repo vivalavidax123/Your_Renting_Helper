@@ -27,7 +27,9 @@ Missing production-grade full-stack pieces:
 
 ## Persistence and Caching
 
-Database persistence was added with Prisma 6 and SQLite (`prisma/dev.db`, ignored by git). Prisma 7 was intentionally avoided for now because it requires a driver-adapter setup; upgrade later with the official guide if needed.
+Database persistence was added with Prisma 6, initially on SQLite and later switched to hosted Postgres (Neon, Sydney region) for deployment — Vercel's serverless platform has no persistent filesystem for an SQLite file. The provider switch changed only `schema.prisma` and `DATABASE_URL`; no query code changed. The SQLite-dialect migration history was regenerated as a single Postgres init migration, since the cloud database started empty. Local dev now talks to the same Neon database. Prisma 7 was intentionally avoided for now because it requires a driver-adapter setup; upgrade later with the official guide if needed.
+
+Deployment pipeline: `postinstall` runs `prisma generate` (Vercel builds start from a clean machine) and the build script runs `prisma migrate deploy` before `next build`, so schema changes pushed to GitHub are applied to the production database automatically on deploy.
 
 Two tables in `prisma/schema.prisma`:
 

@@ -95,7 +95,7 @@ The overall score is a weighted average across all categories. The exact formula
 ## Data & Persistence
 
 * Prisma 6 (ORM + migrations)
-* SQLite (local file database for searched locations and cached score results)
+* PostgreSQL on Neon (searched locations, cached score results, saved favourites)
 
 ## APIs & Services
 
@@ -153,8 +153,7 @@ rent-score-prototype/
 │   └── page.tsx
 ├── prisma/
 │   ├── migrations/
-│   ├── schema.prisma
-│   └── dev.db (local, not committed)
+│   └── schema.prisma
 ├── public/
 ├── dev_notes.md
 ├── README.md
@@ -221,10 +220,10 @@ TRANSITLAND_API_KEY=YOUR_TRANSITLAND_KEY
 
 `TRANSITLAND_API_KEY` is optional and is used to show bus route numbers and destinations for nearby bus stops.
 
-Also create a `.env` file for the database (the Prisma CLI reads `.env`, not `.env.local`):
+Also create a `.env` file for the database (the Prisma CLI reads `.env`, not `.env.local`). Use your Neon (or any Postgres) connection string:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
 ```
 
 ---
@@ -250,7 +249,7 @@ npm install
 npx prisma migrate dev
 ```
 
-This creates the local SQLite file at `prisma/dev.db` and applies all migrations. To browse the data visually, run `npm run db:studio`.
+This applies all migrations to the database in `DATABASE_URL`. To browse the data visually, run `npm run db:studio`.
 
 ## Start Development Server
 

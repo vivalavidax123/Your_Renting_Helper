@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -26,7 +26,8 @@ model SearchLocation {
 }
 
 // One row per computed score result. Groups and scores are stored as JSON
-// strings because SQLite has no native JSON column type in Prisma.
+// strings (kept from the SQLite days for simplicity; Postgres has a native
+// Json type we could migrate to later).
 model ScoreSnapshot {
   id           String         @id @default(cuid())
   locationId   String
