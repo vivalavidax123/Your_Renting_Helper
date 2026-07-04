@@ -14,7 +14,6 @@ type Indicator = {
     label: string;
     value: string;
   }[];
-  tone: "emerald" | "sky" | "amber" | "slate";
 };
 
 const majorGroceryBrands = ["Coles", "Woolworths", "Aldi", "IGA"];
@@ -29,13 +28,6 @@ const plannedIndicators = [
 
 function getCategoryScore(categoryScores: CategoryScore[], id: string) {
   return categoryScores.find((category) => category.id === id);
-}
-
-function getScoreTone(score: number): Indicator["tone"] {
-  if (score >= 80) return "emerald";
-  if (score >= 65) return "sky";
-  if (score >= 45) return "amber";
-  return "slate";
 }
 
 function getScoreLabel(score: number) {
@@ -67,13 +59,6 @@ function getMajorGroceryBrand(placeName: string) {
     const normalizedBrand = brand.toLowerCase();
     return new RegExp(`\\b${normalizedBrand}\\b`, "i").test(normalizedName);
   });
-}
-
-function getWalkTone(minutes: number): Indicator["tone"] {
-  if (minutes <= 10) return "emerald";
-  if (minutes <= 15) return "sky";
-  if (minutes <= 25) return "amber";
-  return "slate";
 }
 
 function averageScores(scores: (CategoryScore | undefined)[]) {
@@ -185,10 +170,6 @@ function buildDerivedIndicators(
           value: formatWalkTime(nearestShoppingCentre?.distanceMeters ?? null),
         },
       ],
-      tone:
-        availableWalkDistances.length > 0
-          ? getWalkTone(Math.max(1, averageWalkMinutes))
-          : "slate",
     },
     {
       label: "Transit access",
@@ -196,19 +177,16 @@ function buildDerivedIndicators(
       detail: transport
         ? `${formatDistance(transport.closestDistanceMeters)} to closest transport / ${transportDepartures} departures`
         : "Search result needed",
-      tone: transport ? getScoreTone(transport.score) : "slate",
     },
     {
       label: "Amenity density",
       value: allPlaces.length >= 60 ? "High" : allPlaces.length >= 30 ? "Medium" : "Light",
       detail: `${allPlaces.length} amenities found across ${placeGroups.length} categories`,
-      tone: allPlaces.length >= 60 ? "emerald" : allPlaces.length >= 30 ? "sky" : "amber",
     },
     {
       label: "Daily convenience",
       value: getScoreLabel(convenienceScore),
       detail: "Groceries, food, health, services, and shopping coverage",
-      tone: getScoreTone(convenienceScore),
     },
     {
       label: "Car reliance",
@@ -219,17 +197,9 @@ function buildDerivedIndicators(
             ? "Moderate"
             : "Higher",
       detail: `${driveOutsideWalk} core categories likely need a longer walk or drive`,
-      tone: getScoreTone(carRelianceScore),
     },
   ];
 }
-
-const toneClasses: Record<Indicator["tone"], string> = {
-  emerald: "bg-emerald-50 text-emerald-800 ring-emerald-200",
-  sky: "bg-sky-50 text-sky-800 ring-sky-200",
-  amber: "bg-amber-50 text-amber-800 ring-amber-200",
-  slate: "bg-slate-100 text-slate-700 ring-slate-200",
-};
 
 export function AdditionalIndicators({
   placesState,
@@ -243,19 +213,12 @@ export function AdditionalIndicators({
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-950">
-            Additional indicators
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Derived context now, with planned datasets separated below.
-          </p>
-        </div>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-          Mixed
-        </span>
-      </div>
+      <h2 className="text-base font-semibold text-slate-950">
+        Additional indicators
+      </h2>
+      <p className="mt-1 text-xs text-slate-500">
+        Derived from the current search results.
+      </p>
 
       {placesState === "idle" ? (
         <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-600">
@@ -271,67 +234,43 @@ export function AdditionalIndicators({
       ) : null}
 
       {placesState === "success" ? (
-        <div className="mt-4 space-y-2">
+        <div className="mt-2 divide-y divide-slate-100">
           {derivedIndicators.map((indicator) => (
-            <article
-              key={indicator.label}
-              className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-950">
-                    {indicator.label}
-                  </h3>
-                  {indicator.detailItems ? (
-                    <div className="mt-2 space-y-1.5">
-                      {indicator.detailItems.map((item) => (
-                        <div
-                          key={item.label}
-                          className="flex items-start justify-between gap-3 text-xs leading-5 text-slate-600"
-                        >
-                          <span className="min-w-0 break-words">
-                            {item.label}
-                          </span>
-                          <span className="shrink-0 font-semibold text-slate-700">
-                            {item.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-xs leading-5 text-slate-600">
-                      {indicator.detail}
-                    </p>
-                  )}
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${toneClasses[indicator.tone]}`}
-                >
+            <div key={indicator.label} className="py-2.5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="text-sm font-medium text-slate-900">
+                  {indicator.label}
+                </h3>
+                <span className="shrink-0 text-sm text-slate-600">
                   {indicator.value}
                 </span>
               </div>
-            </article>
+              {indicator.detailItems ? (
+                <div className="mt-1 space-y-1">
+                  {indicator.detailItems.map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-baseline justify-between gap-3 text-xs leading-5 text-slate-500"
+                    >
+                      <span className="min-w-0 break-words">{item.label}</span>
+                      <span className="shrink-0">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                  {indicator.detail}
+                </p>
+              )}
+            </div>
           ))}
         </div>
       ) : null}
 
-      <div className="mt-4 border-t border-slate-200 pt-4">
-        <h3 className="text-sm font-semibold text-slate-950">Planned data</h3>
-        <div className="mt-2 grid gap-2">
-          {plannedIndicators.map((indicator) => (
-            <div
-              key={indicator}
-              className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2"
-            >
-              <span className="text-sm font-medium text-slate-700">
-                {indicator}
-              </span>
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
-                Planned
-              </span>
-            </div>
-          ))}
-        </div>
+      <div className="mt-3 border-t border-slate-200 pt-3">
+        <p className="text-xs leading-5 text-slate-400">
+          Planned: {plannedIndicators.join(" · ").toLowerCase()}
+        </p>
       </div>
     </div>
   );

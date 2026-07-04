@@ -33,7 +33,7 @@ export function ScoreBreakdown({
   return (
     <div className="mt-5">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-base font-bold text-slate-950">Category scores</h2>
+        <h2 className="text-base font-semibold text-slate-950">Category scores</h2>
         <span
           className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
           title={
@@ -67,31 +67,22 @@ export function ScoreBreakdown({
       ) : null}
 
       {placesState === "success" ? (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {categoryScores.map((category) => (
-            <article
-              key={category.id}
-              className="rounded-md border border-slate-200 bg-white px-3 py-2.5"
-            >
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="truncate text-sm font-semibold text-slate-950">
-                    {category.label}
-                  </h3>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {category.count} nearby / closest {formatDistance(category.closestDistanceMeters)}
-                  </p>
-                </div>
-                <p className="shrink-0 text-base font-bold text-slate-950">
-                  {category.score}
-                </p>
-              </div>
-              <div className="h-1.5 rounded-full bg-slate-100">
-                <div
-                  className={`h-1.5 rounded-full ${category.colorClass}`}
-                  style={{ width: `${category.score}%` }}
+            <article key={category.id} className="rounded-md bg-slate-50 px-3 py-2.5">
+              <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                {/* The dot keeps the colour link to the matching map markers. */}
+                <span
+                  className={`size-1.5 shrink-0 rounded-full ${category.colorClass}`}
                 />
-              </div>
+                <span className="truncate">{category.label}</span>
+              </h3>
+              <p className="mt-1 text-xl font-semibold text-slate-950">
+                {category.score}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-slate-500">
+                {category.count} nearby · {formatDistance(category.closestDistanceMeters)}
+              </p>
             </article>
           ))}
         </div>

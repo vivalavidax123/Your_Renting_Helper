@@ -11,6 +11,9 @@ export type RentScoreCategory = {
   typicalRating: number;
   brandTerms: string[];
   placeTypes: string[];
+  // Google returns places whose secondary types match the search (e.g.
+  // hotels for "gym" because they contain one); reject these primary types.
+  excludedPrimaryTypes?: string[];
 };
 
 export const defaultSearchRadiusMeters = 3000;
@@ -100,6 +103,18 @@ export const rentScoreCategories: RentScoreCategory[] = [
       "Zip Fitness",
     ],
     placeTypes: ["gym"],
+    excludedPrimaryTypes: [
+      "hotel",
+      "motel",
+      "resort_hotel",
+      "extended_stay_hotel",
+      "inn",
+      "bed_and_breakfast",
+      "hostel",
+      "apartment_building",
+      "apartment_complex",
+      "association_or_organization",
+    ],
   },
   {
     id: "fuel",

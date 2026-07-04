@@ -84,6 +84,10 @@ function addPlaceToMap({
     return;
   }
 
+  if (category.excludedPrimaryTypes?.includes(place.primaryType ?? "")) {
+    return;
+  }
+
   if (
     category.id !== "transport" &&
     (typeof place.userRatingCount !== "number" || place.userRatingCount < 30)

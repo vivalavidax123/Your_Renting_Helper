@@ -135,6 +135,7 @@ When `TRANSITLAND_API_KEY` is configured, the transport lookup prefers Transitla
 To guarantee high-quality results, the API applies strict filtering:
 * **Review Thresholds:** Any non-transport place returned from Google Places with fewer than 30 reviews is globally excluded from scoring and the UI.
 * **Narrow Categories:** The Fuel & Automotive category strictly searches for `gas_station` and specific auto parts brands, intentionally filtering out minor local mechanics (`car_repair`). The Services category strictly searches for `post_office` and `bank`, dropping standalone ATMs.
+* **Excluded primary types:** Google returns places whose *secondary* types match a search — hotels appeared in Fitness because they contain gyms. Categories can list `excludedPrimaryTypes` (Fitness rejects hotel/lodging/club types); the filter runs on each place's `primaryType` during retrieval.
 
 ## Scoring V3
 
@@ -178,7 +179,17 @@ The main page layout is split into a wider left column and narrower right column
 
 `NearbyPlacesList` is now part of the primary result area rather than a side panel. It summarizes total places found and the nearest amenity, then displays each category as a dense card. Place rows are compact single lines (name, review summary, distance); the address and place type moved into a hover tooltip so low-priority detail stays available without costing rows. Each category shows three places by default with a "Show all N" toggle (progressive disclosure — expansion state is local per-category `useState`, since nothing else reads it). Bus-stop rows keep their route/departure sublines because that is core transport detail.
 
-`ScoreBreakdown` remains compact and uses category score, count, closest distance, and a short progress bar. Longer category explanations are deliberately omitted from the main UI for now so they do not compete with amenities.
+`ScoreBreakdown` remains compact and uses category score, count, and closest distance. Longer category explanations are deliberately omitted from the main UI for now so they do not compete with amenities.
+
+## Minimal UI Pass
+
+A restyle applied one test to every visual element: it must carry information or function, or it goes. Changes:
+
+* Rainbow progress bars removed from category scores — with V3 scores clustering in a healthy range the bars all looked alike, so the number carries the message. A small colour dot next to each category name keeps the link to the matching map markers (the informational part of the colour survived; the decoration didn't).
+* Amenity rows and indicator rows lost their per-row borders/backgrounds in favour of hairline dividers — one card level instead of three nested ones.
+* Solid colour badges (indicator tones, "Planned" pills, bus route chips) became right-aligned muted text or grey chips; the five planned-data rows collapsed into one muted line. The tone-mapping helpers were deleted along with them — decoration usually drags supporting code with it.
+* Headings unified to one size/weight across section cards; the uppercase eyebrow line above the H1 was dropped; the search button softened from black.
+* Kept deliberately: map marker colours (functional), compare-table winner highlighting (information), the star toggle (function), and the single emerald overall-score accent.
 
 ## Additional Indicators
 

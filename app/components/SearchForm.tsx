@@ -123,7 +123,7 @@ export function SearchForm({
         <button
           type="submit"
           disabled={searchState === "loading" || placesState === "loading"}
-          className="min-h-12 rounded-md bg-slate-950 px-6 text-base font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-not-allowed disabled:bg-slate-400"
+          className="min-h-12 rounded-md bg-slate-800 px-6 text-base font-medium text-white transition hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {searchState === "loading" ? "Searching..." : "Search"}
         </button>

@@ -45,13 +45,10 @@ export default function Home() {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                Rental location insight
-              </p>
-              <h1 className="mt-1 text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
+              <h1 className="text-2xl font-bold leading-tight text-slate-950">
                 Rent Convenience Score
               </h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
                 Compare everyday convenience, transport access, food, health,
                 fitness, and practical services around a rental.
               </p>
@@ -114,7 +111,7 @@ export default function Home() {
 
         <aside className="space-y-6">
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-950">Location preview</h2>
+            <h2 className="text-base font-semibold text-slate-950">Location preview</h2>
             <LocationMap location={location} placeGroups={placeGroups} />
             <p className="mt-4 text-sm leading-6 text-slate-600">
               {location
