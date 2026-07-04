@@ -119,13 +119,7 @@ The overall score is calculated using weighted averages across all categories.
 
 This is a full-stack Next.js prototype: the frontend UI, API routes, scoring/business logic, database persistence, and third-party data integrations live in one application.
 
-Persistence now included:
-
-* SQLite database managed with Prisma migrations
-* Searched locations and score snapshots stored on every search
-* Repeat searches of the same location within 24 hours are served from the database instead of calling Google again
-* Recent searches shown in the UI and re-runnable with one click
-* Locations can be starred as saved favourites and managed from the UI
+Persistence is now included: searches, cached score results, recent-search history, and starred favourite locations are stored in a local SQLite database managed with Prisma. Implementation details and design rationale live in `dev_notes.md`.
 
 It is not yet a production full-stack platform. The main missing pieces are:
 

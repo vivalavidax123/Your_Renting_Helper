@@ -54,6 +54,14 @@ Users can star any recent search to keep it permanently. Implementation:
 
 This completes CRUD coverage over the persistence layer (create/read via search caching, update via save toggling; snapshot deletion is still only via cascade).
 
+### Why these choices
+
+* **Nullable timestamp instead of a boolean `isSaved`.** One column carries two facts — whether it is saved and when — so the saved list can sort by save date without another column and another migration. Timestamps-as-state is a widely used pattern (`deletedAt`, `verifiedAt`, `publishedAt`).
+* **Validation lives at the API boundary, not in the service layer.** The route is the front door: everything past it can assume clean input, so `searchStore` stays free of defensive checks and is easier to read and test. Error codes are deliberately split — 400 means "your request is malformed", 404 means "well-formed but no such row", 500 means "our bug" — because callers debug very different problems depending on which one they get.
+* **Refetch after every mutation instead of hand-editing component state.** The database is the single source of truth; the UI is a mirror of it (`UI = f(data)`). Hand-edited local state can drift — e.g. a star lights up even though the request failed, or two open tabs disagree. The cost is one extra GET per toggle, which is trivial for a prototype and removes a whole class of sync bugs.
+* **Route handlers only translate HTTP; `searchStore` owns all Prisma calls.** Swapping SQLite for Postgres, adding caching, or writing tests touches one file instead of every route. This is the same layering as Controller → Service → Repository in Spring-style backends.
+* **One component owns both chip rows.** Saved and Recent refresh at exactly the same moments (page load, search completion, star toggle); a single fetch effect guarantees they can never fall out of sync with each other.
+
 `DATABASE_URL` lives in `.env` (Prisma CLI reads `.env`, not `.env.local`). An older unfinished persistence attempt had left a PostgreSQL `DATABASE_URL` in `.env.local` and an empty migration folder; both were cleaned up because `.env.local` overrides `.env` in Next.js and was breaking the SQLite connection.
 
 Recommended next full-stack milestone: side-by-side comparison of two saved locations, or authentication if multi-user support becomes a goal.
