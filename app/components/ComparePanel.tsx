@@ -65,31 +65,30 @@ export function ComparePanel({ saved }: ComparePanelProps) {
   const [aId, setAId] = useState("");
   const [bId, setBId] = useState("");
   const [result, setResult] = useState<{ a: ComparisonSide; b: ComparisonSide } | null>(null);
-  const [error, setError] = useState("");
+  // Errors are stored with the selection pair they belong to, so an error
+  // for an old pair is simply not shown rather than needing a reset.
+  const [error, setError] = useState<{ pair: string; message: string } | null>(null);
 
-  // A selection can go stale when its location is unstarred; clear it so
-  // the select and the state never disagree.
+  // A selection goes stale when its location is unstarred. Instead of
+  // fixing the state in an effect (which causes a second render pass),
+  // derive the effective value on every render: a stale id counts as
+  // "nothing selected" until the user picks again.
+  const effectiveAId = saved.some((search) => search.id === aId) ? aId : "";
+  const effectiveBId = saved.some((search) => search.id === bId) ? bId : "";
+
+  // Fetch automatically once both sides are chosen. State is only set in
+  // the async callbacks — never synchronously in the effect body — and
+  // stale results/errors are filtered out at render time instead of being
+  // reset here.
   useEffect(() => {
-    if (aId && !saved.some((search) => search.id === aId)) {
-      setAId("");
-    }
-
-    if (bId && !saved.some((search) => search.id === bId)) {
-      setBId("");
-    }
-  }, [saved, aId, bId]);
-
-  // Fetch automatically once both sides are chosen.
-  useEffect(() => {
-    if (!aId || !bId || aId === bId) {
-      setResult(null);
-      setError("");
+    if (!effectiveAId || !effectiveBId || effectiveAId === effectiveBId) {
       return;
     }
 
+    const pair = `${effectiveAId}|${effectiveBId}`;
     let cancelled = false;
 
-    fetch(`/api/compare?a=${aId}&b=${bId}`)
+    fetch(`/api/compare?a=${effectiveAId}&b=${effectiveBId}`)
       .then(
         (response) => response.json() as Promise<CompareSuccess | CompareFailure>,
       )
@@ -100,23 +99,32 @@ export function ComparePanel({ saved }: ComparePanelProps) {
 
         if (data.ok) {
           setResult({ a: data.a, b: data.b });
-          setError("");
+          setError(null);
         } else {
-          setResult(null);
-          setError(data.error);
+          setError({ pair, message: data.error });
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setResult(null);
-          setError("Comparison failed to load. Try again.");
+          setError({ pair, message: "Comparison failed to load. Try again." });
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [aId, bId]);
+  }, [effectiveAId, effectiveBId]);
+
+  // Derived at render: only show a result or error that matches what is
+  // currently selected.
+  const activeResult =
+    result && result.a.id === effectiveAId && result.b.id === effectiveBId
+      ? result
+      : null;
+  const activeError =
+    error && error.pair === `${effectiveAId}|${effectiveBId}`
+      ? error.message
+      : "";
 
   if (saved.length < 2) {
     return null;
@@ -133,43 +141,43 @@ export function ComparePanel({ saved }: ComparePanelProps) {
       <div className="mt-3 flex flex-col gap-3 sm:flex-row">
         <LocationSelect
           label="Location A"
-          value={aId}
-          otherValue={bId}
+          value={effectiveAId}
+          otherValue={effectiveBId}
           saved={saved}
           onChange={setAId}
         />
         <LocationSelect
           label="Location B"
-          value={bId}
-          otherValue={aId}
+          value={effectiveBId}
+          otherValue={effectiveAId}
           saved={saved}
           onChange={setBId}
         />
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {activeError && <p className="mt-3 text-sm text-red-600">{activeError}</p>}
 
-      {result && (
+      {activeResult && (
         <table className="mt-4 w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-300 text-xs uppercase tracking-wide text-slate-500">
               <th className="px-3 py-2 text-left font-semibold">Category</th>
               <th className="max-w-40 truncate px-3 py-2 text-right font-semibold">
-                {result.a.formattedAddress}
+                {activeResult.a.formattedAddress}
               </th>
               <th className="max-w-40 truncate px-3 py-2 text-right font-semibold">
-                {result.b.formattedAddress}
+                {activeResult.b.formattedAddress}
               </th>
             </tr>
           </thead>
           <tbody>
             <tr className="border-b border-slate-200 bg-white font-semibold">
               <td className="px-3 py-2">Overall</td>
-              {scoreCell(result.a.overallScore, result.b.overallScore)}
-              {scoreCell(result.b.overallScore, result.a.overallScore)}
+              {scoreCell(activeResult.a.overallScore, activeResult.b.overallScore)}
+              {scoreCell(activeResult.b.overallScore, activeResult.a.overallScore)}
             </tr>
-            {result.a.scores.map((scoreA) => {
-              const scoreB = result.b.scores.find(
+            {activeResult.a.scores.map((scoreA) => {
+              const scoreB = activeResult.b.scores.find(
                 (candidate) => candidate.id === scoreA.id,
               );
 

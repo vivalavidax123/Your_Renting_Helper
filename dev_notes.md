@@ -76,7 +76,7 @@ Two saved locations can be compared side by side. Implementation:
 
 * **State lifted into `useSavedSearches`.** The chips and the comparison panel both need the saved list; if each fetched its own copy they would drift apart after a star toggle. The hook owns one copy in `page.tsx` and both components receive it as props — `RecentSearches` became purely presentational in the process.
 * **No new database columns or Google calls.** Comparison is a pure read over existing snapshots — the payoff of persisting results in week one.
-* **Stale-selection guard.** If a location is unstarred while selected in a dropdown, an effect clears that selection so the UI and the saved list never disagree.
+* **Stale selections are derived away, not synced away.** If a location is unstarred while selected in a dropdown, the component does not fix the state in an effect (the `react-hooks/set-state-in-effect` lint rule forbids it because it causes a cascading second render). Instead the effective selection is derived on every render: an id no longer present in the saved list simply counts as "nothing selected". Rule of thumb: if a value can be computed from existing state/props, compute it during render instead of storing and synchronising it.
 
 Recommended next full-stack milestone: deploy to Vercel with a hosted Postgres (swap the Prisma datasource provider), since the core loop — search, score, save, compare — is now complete. Authentication remains the follow-up after that if multi-user support becomes a goal.
 
