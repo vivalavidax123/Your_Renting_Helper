@@ -1,6 +1,7 @@
 import {
   rentScoreCategories,
   weightProfiles,
+  proximityHalfLifeFactor,
   type WeightProfile,
 } from "./categories";
 import type { PlaceGroup, NearbyPlace } from "./types";
@@ -20,6 +21,7 @@ const highVarietyCategories = ["food", "fitness"];
 function getProximityScore(
   closestDistanceMeters: number | null,
   radiusMeters: number,
+  halfLifeFactor: number,
 ) {
   if (closestDistanceMeters === null) {
     return 0;
@@ -30,8 +32,9 @@ function getProximityScore(
   }
 
   // Exponential decay: the score halves every halfLifeMeters past the
-  // walkable ring. Wider-radius categories (shopping centres) decay slower.
-  const halfLifeMeters = 0.4 * radiusMeters;
+  // walkable ring. Wider-radius categories (shopping centres) decay slower,
+  // and the profile's half-life factor sets the distance tolerance.
+  const halfLifeMeters = halfLifeFactor * radiusMeters;
   const metersPastWalkable = closestDistanceMeters - walkableRadiusMeters;
 
   return 50 * 2 ** (-metersPastWalkable / halfLifeMeters);
@@ -89,9 +92,10 @@ function getExplanation(count: number, closestDistanceMeters: number | null) {
 
 export function scorePlaceGroups(
   groups: PlaceGroup[],
-  profile: WeightProfile = "balanced",
+  profile: WeightProfile = "carFree",
 ) {
   const weights = weightProfiles[profile];
+  const halfLifeFactor = proximityHalfLifeFactor[profile];
   const scores = rentScoreCategories.map((category) => {
     const group = groups.find((candidate) => candidate.id === category.id);
     const places = group?.places ?? [];
@@ -103,6 +107,7 @@ export function scorePlaceGroups(
     const proximityScore = getProximityScore(
       closestDistanceMeters,
       category.radiusMeters,
+      halfLifeFactor,
     );
     const varietyScore = getVarietyScore(places.length, category.id);
     const qualityScore = getQualityScore(places, category.typicalRating);

@@ -12,7 +12,6 @@ type ScoreBreakdownProps = {
 
 const profileOptions: { id: WeightProfile; label: string }[] = [
   { id: "carFree", label: "No car" },
-  { id: "balanced", label: "Balanced" },
   { id: "carOwner", label: "Car owner" },
 ];
 
@@ -98,23 +97,39 @@ export function ScoreBreakdown({
 
       {placesState === "success" ? (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {categoryScores.map((category) => (
-            <article key={category.id} className="rounded-md bg-slate-50 px-3 py-2.5">
-              <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                {/* The dot keeps the colour link to the matching map markers. */}
-                <span
-                  className={`size-1.5 shrink-0 rounded-full ${category.colorClass}`}
-                />
-                <span className="truncate">{category.label}</span>
-              </h3>
-              <p className="mt-1 text-xl font-semibold text-slate-950">
-                {category.score}
-              </p>
-              <p className="mt-0.5 truncate text-xs text-slate-500">
-                {category.count} nearby · {formatDistance(category.closestDistanceMeters)}
-              </p>
-            </article>
-          ))}
+          {/* Sorted by weight so switching profiles visibly reorders the
+              cards; zero-weight categories dim out entirely. */}
+          {[...categoryScores]
+            .sort((a, b) => b.weight - a.weight)
+            .map((category) => {
+              const excluded = category.weight === 0;
+
+              return (
+                <article
+                  key={category.id}
+                  className={`rounded-md bg-slate-50 px-3 py-2.5 ${excluded ? "opacity-50" : ""}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-slate-600">
+                      {/* The dot keeps the colour link to the map markers. */}
+                      <span
+                        className={`size-1.5 shrink-0 rounded-full ${category.colorClass}`}
+                      />
+                      <span className="truncate">{category.label}</span>
+                    </h3>
+                    <span className="shrink-0 text-[11px] text-slate-400">
+                      {excluded ? "not counted" : `${category.weight}%`}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xl font-semibold text-slate-950">
+                    {category.score}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">
+                    {category.count} nearby · {formatDistance(category.closestDistanceMeters)}
+                  </p>
+                </article>
+              );
+            })}
         </div>
       ) : null}
     </div>

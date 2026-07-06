@@ -433,7 +433,7 @@ function assignPlacesToPrimaryCategories(
 }
 
 function parseProfile(value: string | null): WeightProfile {
-  return value === "carFree" || value === "carOwner" ? value : "balanced";
+  return value === "carOwner" ? "carOwner" : "carFree";
 }
 
 export async function GET(request: Request) {
@@ -502,12 +502,13 @@ export async function GET(request: Request) {
     const groups = assignPlacesToPrimaryCategories(fetchedGroups);
     const { overallScore, scores } = scorePlaceGroups(groups, profile);
 
-    // Snapshots always store the balanced view so history and comparisons
-    // share one yardstick regardless of which profile triggered the fetch.
-    const balanced =
-      profile === "balanced"
+    // Snapshots always store the carFree view (the product's primary
+    // audience) so history and comparisons share one yardstick regardless
+    // of which profile triggered the fetch.
+    const canonical =
+      profile === "carFree"
         ? { overallScore, scores }
-        : scorePlaceGroups(groups, "balanced");
+        : scorePlaceGroups(groups, "carFree");
 
     const fallbackLabel = `${latitude}, ${longitude}`;
 
@@ -523,8 +524,8 @@ export async function GET(request: Request) {
           longitude,
         },
         groups,
-        scores: balanced.scores,
-        overallScore: balanced.overallScore,
+        scores: canonical.scores,
+        overallScore: canonical.overallScore,
       });
     } catch (error) {
       console.error("Saving search result failed:", error);

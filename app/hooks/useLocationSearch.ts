@@ -33,7 +33,7 @@ export function useLocationSearch() {
   const [overallScore, setOverallScore] = useState<number | null>(null);
   const [placesError, setPlacesError] = useState("");
   const [resultFromCache, setResultFromCache] = useState(false);
-  const [profile, setProfile] = useState<WeightProfile>("balanced");
+  const [profile, setProfile] = useState<WeightProfile>("carFree");
   
   const autocompleteRequestId = useRef(0);
 

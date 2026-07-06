@@ -81,7 +81,7 @@ Each category scores out of 100 from three pillars:
 * **Variety** — how many options are nearby, with diminishing returns
 * **Quality** — how well the best nearby places are rated compared to what is typical for that kind of place
 
-The overall score is a weighted average across all categories. Weights come in three lifestyle profiles — no car, balanced, and car owner — switchable in the UI (a car-free renter weighs transit heavily and fuel at zero; a car owner nearly the reverse). The exact formulas, constants, and calibration notes live in `dev_notes.md`.
+The overall score is a weighted average across all categories, viewed through one of two lifestyle profiles switchable in the UI: **no car** (the default — transit weighs heavily, fuel counts for nothing, and distances beyond walking range hurt sharply) or **car owner** (fuel and malls matter, distance is forgiving). The exact formulas, constants, and calibration notes live in `dev_notes.md`.
 
 ---
 

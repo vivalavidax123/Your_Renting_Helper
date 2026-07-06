@@ -148,13 +148,16 @@ Each category scores out of 100 across three pillars. V3 replaced V2's stepped t
 
 Overall score remains a weighted average of category scores.
 
-### Weight profiles
+### Lifestyle profiles
 
-Category weights are not one-size-fits-all: a car-free renter has no use for fuel stations but depends on transit, while a car owner tolerates distance. Weights therefore live in `weightProfiles` in `categories.ts` as three columns that each sum to 100 (so a weight reads as a percentage): `balanced` (default), `carFree` (transport 28, fuel 0, services 3), and `carOwner` (fuel 14, transport 8, services 10). Fitness & Recreation is 10 in all three — exercise habits do not correlate with car ownership.
+The product is built for renters without a car, so `carFree` is the default profile and the canonical yardstick stored in snapshots (history chips and comparisons use it); `carOwner` is the alternative. A `balanced` middle profile existed briefly and was removed — two honest viewpoints beat three diluted ones. Profiles change two things, both defined in `categories.ts`:
 
-The API takes a `profile` query parameter and the UI exposes a segmented control (No car / Balanced / Car owner) above the category scores. Switching profiles never calls Google: snapshots cache the raw place groups, and scores are recomputed from them per request — cache the expensive, stable part; recompute the cheap, variable part. Snapshots store balanced scores as the single yardstick for history chips and comparisons.
+* **Weights** (`weightProfiles`, each column sums to 100 so a weight reads as a percentage): carFree runs transport 28 / fuel 0 / services 3; carOwner runs fuel 14 / transport 8 / services 10. Fitness & Recreation is 10 in both — exercise habits do not correlate with car ownership.
+* **Distance tolerance** (`proximityHalfLifeFactor`): the proximity pillar halves every factor × category-radius past the 400 m walkable ring — 0.25 car-free (distance hurts when you carry groceries onto a bus), 0.7 with a car. This makes *category scores themselves* shift with the profile, not just the weighted total; variety and quality stay profile-independent because how many places exist and how good they are does not depend on the viewer. Within the walkable ring the profiles agree by construction.
 
-Profile spreads are honest rather than stereotyped: Williams Landing scores *higher* car-free (75) than car-owning (72) because a bus stop sits 95 m away while its banks and malls are weak — the system reports who a location suits, not what the suburb looks like.
+Calibration on Williams Landing (a drive-everywhere estate): groceries 58 car-free vs 76 car-owning, services 29 vs 47, food identical at 88 (73 m — walkable is walkable), overall 71 vs 77. Weights-only profiles had produced an inverted 75 vs 72 there; modelling distance tolerance flipped it to match intuition.
+
+The API takes a `profile` query parameter and the UI exposes a segmented control (No car / Car owner) above the category scores. Switching profiles never calls Google: snapshots cache the raw place groups and scores are recomputed per request — cache the expensive, stable part; recompute the cheap, variable part. The category cards show each weight (zero-weight categories dim to "not counted") and sort by weight, so switching visibly reorders and relabels the grid.
 
 Calibration was done by simulating the formulas against stored snapshots before implementation: Melbourne CBD 95→92, Hoppers Crossing 91→88, Williams Landing 86→72, widening the spread from 9 to 20 points and surfacing the new estate's real weaknesses (groceries/health at ~1.7 km, low-rated services). All constants (400 m ring, 0.4 half-life factor, k values, 12.5 slope, typical ratings) are first-pass values kept in one place for easy retuning; `typicalRating` is currently judgement-based and could later be derived from accumulated snapshot data.
 
