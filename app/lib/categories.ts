@@ -1,7 +1,6 @@
 export type RentScoreCategory = {
   id: string;
   label: string;
-  weight: number;
   radiusMeters: number;
   colorClass: string;
   detail: string;
@@ -22,7 +21,6 @@ export const rentScoreCategories: RentScoreCategory[] = [
   {
     id: "shopping_centres",
     label: "Shopping Centres",
-    weight: 12,
     radiusMeters: 10000,
     colorClass: "bg-teal-500",
     typicalRating: 4.2,
@@ -33,7 +31,6 @@ export const rentScoreCategories: RentScoreCategory[] = [
   {
     id: "groceries",
     label: "Groceries",
-    weight: 20,
     colorClass: "bg-emerald-500",
     typicalRating: 4.2,
     radiusMeters: defaultSearchRadiusMeters,
@@ -44,7 +41,6 @@ export const rentScoreCategories: RentScoreCategory[] = [
   {
     id: "food",
     label: "Food & Cafes",
-    weight: 15,
     radiusMeters: defaultSearchRadiusMeters,
     colorClass: "bg-amber-500",
     typicalRating: 4.3,
@@ -62,7 +58,6 @@ export const rentScoreCategories: RentScoreCategory[] = [
   {
     id: "transport",
     label: "Transport",
-    weight: 20,
     radiusMeters: defaultSearchRadiusMeters,
     colorClass: "bg-sky-500",
     typicalRating: 3.8,
@@ -74,7 +69,6 @@ export const rentScoreCategories: RentScoreCategory[] = [
   {
     id: "health",
     label: "Health",
-    weight: 15,
     radiusMeters: defaultSearchRadiusMeters,
     colorClass: "bg-rose-500",
     typicalRating: 4.2,
@@ -89,20 +83,34 @@ export const rentScoreCategories: RentScoreCategory[] = [
   },
   {
     id: "fitness",
-    label: "Fitness",
-    weight: 10,
+    label: "Fitness & Recreation",
     radiusMeters: defaultSearchRadiusMeters,
     colorClass: "bg-violet-500",
-    typicalRating: 4.7,
-    detail: "Gyms and fitness facilities in the surrounding area",
+    // Blended baseline: boutique gyms trend ~4.7 but public pools and
+    // recreation centres trend ~4.2-4.4, so the mixed category sits lower.
+    typicalRating: 4.5,
+    detail:
+      "Gyms, pools, and recreation facilities in the surrounding area",
     brandTerms: [
       "Anytime Fitness",
       "Fitness First",
       "Snap Fitness",
       "Plus Fitness",
       "Zip Fitness",
+      "YMCA",
+      "Aquatic Centre",
+      "Recreation Centre",
+      "Leisure Centre",
     ],
-    placeTypes: ["gym"],
+    placeTypes: [
+      "gym",
+      "fitness_center",
+      "swimming_pool",
+      "sports_complex",
+      "sports_club",
+    ],
+    // Spectator venues are not places to exercise; participatory venues
+    // (pools, rinks, fields) stay in.
     excludedPrimaryTypes: [
       "hotel",
       "motel",
@@ -114,12 +122,14 @@ export const rentScoreCategories: RentScoreCategory[] = [
       "apartment_building",
       "apartment_complex",
       "association_or_organization",
+      "stadium",
+      "arena",
+      "event_venue",
     ],
   },
   {
     id: "fuel",
     label: "Fuel & Automotive",
-    weight: 10,
     radiusMeters: defaultSearchRadiusMeters,
     colorClass: "bg-orange-500",
     typicalRating: 4.0,
@@ -130,7 +140,6 @@ export const rentScoreCategories: RentScoreCategory[] = [
   {
     id: "services",
     label: "Services",
-    weight: 10,
     radiusMeters: defaultSearchRadiusMeters,
     colorClass: "bg-indigo-500",
     typicalRating: 3.3,
@@ -139,3 +148,42 @@ export const rentScoreCategories: RentScoreCategory[] = [
     placeTypes: ["post_office", "bank"],
   },
 ];
+
+export type WeightProfile = "balanced" | "carFree" | "carOwner";
+
+// Category weights depend on lifestyle: a renter without a car has no use
+// for fuel stations but depends on transit; a car owner tolerates distance
+// and cares about parking-friendly destinations. Each column sums to 100 so
+// a weight reads directly as a percentage of the overall score.
+export const weightProfiles: Record<WeightProfile, Record<string, number>> = {
+  balanced: {
+    shopping_centres: 10,
+    groceries: 20,
+    food: 13,
+    transport: 20,
+    health: 15,
+    fitness: 10,
+    fuel: 6,
+    services: 6,
+  },
+  carFree: {
+    shopping_centres: 8,
+    groceries: 22,
+    food: 14,
+    transport: 28,
+    health: 15,
+    fitness: 10,
+    fuel: 0,
+    services: 3,
+  },
+  carOwner: {
+    shopping_centres: 13,
+    groceries: 18,
+    food: 12,
+    transport: 8,
+    health: 15,
+    fitness: 10,
+    fuel: 14,
+    services: 10,
+  },
+};

@@ -1,4 +1,8 @@
-import { rentScoreCategories } from "./categories";
+import {
+  rentScoreCategories,
+  weightProfiles,
+  type WeightProfile,
+} from "./categories";
 import type { PlaceGroup, NearbyPlace } from "./types";
 
 // V3 scoring: every pillar is a continuous curve so that no 1-metre or
@@ -83,7 +87,11 @@ function getExplanation(count: number, closestDistanceMeters: number | null) {
   return `${count} nearby match${count === 1 ? "" : "es"} found; closest is ${distance} away.`;
 }
 
-export function scorePlaceGroups(groups: PlaceGroup[]) {
+export function scorePlaceGroups(
+  groups: PlaceGroup[],
+  profile: WeightProfile = "balanced",
+) {
+  const weights = weightProfiles[profile];
   const scores = rentScoreCategories.map((category) => {
     const group = groups.find((candidate) => candidate.id === category.id);
     const places = group?.places ?? [];
@@ -109,7 +117,7 @@ export function scorePlaceGroups(groups: PlaceGroup[]) {
       id: category.id,
       label: category.label,
       score,
-      weight: category.weight,
+      weight: weights[category.id] ?? 0,
       colorClass: category.colorClass,
       detail: category.detail,
       count: places.length,

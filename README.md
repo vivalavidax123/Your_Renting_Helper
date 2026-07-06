@@ -48,7 +48,7 @@ The scoring system evaluates convenience using categories such as:
 | Shopping Centres | Shopping malls, retail hubs           |
 | Groceries         | Supermarkets, grocery stores          |
 | Food & Cafes      | Cafes, restaurants, bakeries          |
-| Fitness           | Gyms, fitness centres                 |
+| Fitness & Recreation | Gyms, pools, recreation centres    |
 | Transport         | Train stations, tram stops, bus stops |
 | Health            | Pharmacies, clinics, hospitals        |
 | Services          | Post offices, banks                   |
@@ -81,7 +81,7 @@ Each category scores out of 100 from three pillars:
 * **Variety** — how many options are nearby, with diminishing returns
 * **Quality** — how well the best nearby places are rated compared to what is typical for that kind of place
 
-The overall score is a weighted average across all categories. The exact formulas, constants, and calibration notes live in `dev_notes.md`.
+The overall score is a weighted average across all categories. Weights come in three lifestyle profiles — no car, balanced, and car owner — switchable in the UI (a car-free renter weighs transit heavily and fuel at zero; a car owner nearly the reverse). The exact formulas, constants, and calibration notes live in `dev_notes.md`.
 
 ---
 

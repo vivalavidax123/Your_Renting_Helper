@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
+import type { WeightProfile } from "../lib/categories";
 import type {
   GeocodeLocation,
   AddressSuggestion,
@@ -32,6 +33,7 @@ export function useLocationSearch() {
   const [overallScore, setOverallScore] = useState<number | null>(null);
   const [placesError, setPlacesError] = useState("");
   const [resultFromCache, setResultFromCache] = useState(false);
+  const [profile, setProfile] = useState<WeightProfile>("balanced");
   
   const autocompleteRequestId = useRef(0);
 
@@ -91,7 +93,14 @@ export function useLocationSearch() {
     };
   }, [query, searchState, selectedSuggestionText]);
 
-  async function loadNearbyPlaces(nextLocation: GeocodeLocation) {
+  async function loadNearbyPlaces(
+    nextLocation: GeocodeLocation,
+    profileOverride?: WeightProfile,
+  ) {
+    // State updates are asynchronous, so a caller that just changed the
+    // profile passes the new value directly instead of reading stale state.
+    const activeProfile = profileOverride ?? profile;
+
     setPlacesState("loading");
     setPlacesError("");
     setPlaceGroups([]);
@@ -107,6 +116,7 @@ export function useLocationSearch() {
         address: nextLocation.formattedAddress,
         placeId: nextLocation.placeId,
         locationType: nextLocation.locationType,
+        profile: activeProfile,
       });
       const response = await fetch(`/api/places?${placesUrl.toString()}`);
       const data = (await response.json()) as PlacesSuccess | PlacesFailure;
@@ -166,6 +176,16 @@ export function useLocationSearch() {
     } catch {
       setError("Search failed. Check your connection and try again.");
       setSearchState("error");
+    }
+  }
+
+  function changeProfile(nextProfile: WeightProfile) {
+    setProfile(nextProfile);
+
+    // Rescore the current result immediately; the request is a guaranteed
+    // cache hit, so switching profiles never costs a Google lookup.
+    if (location && placesState === "success") {
+      void loadNearbyPlaces(location, nextProfile);
     }
   }
 
@@ -252,6 +272,8 @@ export function useLocationSearch() {
     overallScore,
     placesError,
     resultFromCache,
+    profile,
+    changeProfile,
     handleSearch,
     handleSuggestionSelect,
     handleLocationKeyDown,

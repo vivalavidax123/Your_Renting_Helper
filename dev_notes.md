@@ -135,7 +135,8 @@ When `TRANSITLAND_API_KEY` is configured, the transport lookup prefers Transitla
 To guarantee high-quality results, the API applies strict filtering:
 * **Review Thresholds:** Any non-transport place returned from Google Places with fewer than 30 reviews is globally excluded from scoring and the UI.
 * **Narrow Categories:** The Fuel & Automotive category strictly searches for `gas_station` and specific auto parts brands, intentionally filtering out minor local mechanics (`car_repair`). The Services category strictly searches for `post_office` and `bank`, dropping standalone ATMs.
-* **Excluded primary types:** Google returns places whose *secondary* types match a search — hotels appeared in Fitness because they contain gyms. Categories can list `excludedPrimaryTypes` (Fitness rejects hotel/lodging/club types); the filter runs on each place's `primaryType` during retrieval.
+* **Excluded primary types:** Google returns places whose *secondary* types match a search — hotels appeared in Fitness because they contain gyms, and stadiums appeared once the category expanded to sports types. Categories can list `excludedPrimaryTypes`; Fitness rejects hotel/lodging/club types plus spectator venues (`stadium`, `arena`, `event_venue`). Participatory venues (pools, rinks, fields) stay in.
+* **Fitness & Recreation:** the fitness category covers gyms plus pools, sports complexes, and recreation centres (`fitness_center`, `swimming_pool`, `sports_complex`, `sports_club` types and Aquatic/Recreation/Leisure Centre + YMCA brand terms). Its `typicalRating` dropped from 4.7 to 4.5 because public pools and rec centres rate lower than boutique gyms.
 
 ## Scoring V3
 
@@ -146,6 +147,14 @@ Each category scores out of 100 across three pillars. V3 replaced V2's stepped t
 3. **Quality (max 20):** average rating of the top 3 rated places compared against the category's `typicalRating` baseline in `categories.ts` (banks ~3.3, stations ~3.8, gyms ~4.7): `10 + 12.5 × (avg − typical)`, clamped to 0–20. This cancels per-category review culture — a 4.1-rated bank is excellent for a bank, a 4.5 gym is ordinary. Places without ratings get the neutral midpoint 10, not free full marks.
 
 Overall score remains a weighted average of category scores.
+
+### Weight profiles
+
+Category weights are not one-size-fits-all: a car-free renter has no use for fuel stations but depends on transit, while a car owner tolerates distance. Weights therefore live in `weightProfiles` in `categories.ts` as three columns that each sum to 100 (so a weight reads as a percentage): `balanced` (default), `carFree` (transport 28, fuel 0, services 3), and `carOwner` (fuel 14, transport 8, services 10). Fitness & Recreation is 10 in all three — exercise habits do not correlate with car ownership.
+
+The API takes a `profile` query parameter and the UI exposes a segmented control (No car / Balanced / Car owner) above the category scores. Switching profiles never calls Google: snapshots cache the raw place groups, and scores are recomputed from them per request — cache the expensive, stable part; recompute the cheap, variable part. Snapshots store balanced scores as the single yardstick for history chips and comparisons.
+
+Profile spreads are honest rather than stereotyped: Williams Landing scores *higher* car-free (75) than car-owning (72) because a bus stop sits 95 m away while its banks and malls are weak — the system reports who a location suits, not what the suburb looks like.
 
 Calibration was done by simulating the formulas against stored snapshots before implementation: Melbourne CBD 95→92, Hoppers Crossing 91→88, Williams Landing 86→72, widening the spread from 9 to 20 points and surfacing the new estate's real weaknesses (groceries/health at ~1.7 km, low-rated services). All constants (400 m ring, 0.4 half-life factor, k values, 12.5 slope, typical ratings) are first-pass values kept in one place for easy retuning; `typicalRating` is currently judgement-based and could later be derived from accumulated snapshot data.
 

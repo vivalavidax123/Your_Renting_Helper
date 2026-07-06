@@ -30,6 +30,8 @@ export default function Home() {
     overallScore,
     placesError,
     resultFromCache,
+    profile,
+    changeProfile,
     handleSearch,
     handleSuggestionSelect,
     handleLocationKeyDown,
@@ -100,6 +102,8 @@ export default function Home() {
             categoryScores={categoryScores}
             placesError={placesError}
             resultFromCache={resultFromCache}
+            profile={profile}
+            onProfileChange={changeProfile}
           />
 
           <NearbyPlacesList

@@ -15,10 +15,11 @@ export type SearchLocationInput = {
   longitude: number;
 };
 
+// The cache hands back the raw place data only. Scores are cheap to
+// recompute and depend on the requested weight profile, so the API route
+// rescores on every hit instead of reusing the stored (balanced) scores.
 export type CachedSearchResult = {
   groups: PlaceGroup[];
-  scores: CategoryScore[];
-  overallScore: number;
   fetchedAt: string;
 };
 
@@ -53,8 +54,6 @@ export async function findFreshSnapshot(
 
   return {
     groups: JSON.parse(snapshot.groupsJson) as PlaceGroup[],
-    scores: JSON.parse(snapshot.scoresJson) as CategoryScore[],
-    overallScore: snapshot.overallScore,
     fetchedAt: snapshot.createdAt.toISOString(),
   };
 }

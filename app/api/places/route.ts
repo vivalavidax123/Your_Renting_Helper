@@ -1,6 +1,7 @@
 import {
   rentScoreCategories,
   type RentScoreCategory,
+  type WeightProfile,
 } from "@/app/lib/categories";
 import {
   getDistanceMeters,
@@ -431,10 +432,15 @@ function assignPlacesToPrimaryCategories(
   });
 }
 
+function parseProfile(value: string | null): WeightProfile {
+  return value === "carFree" || value === "carOwner" ? value : "balanced";
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const latitude = parseCoordinate(searchParams.get("lat"));
   const longitude = parseCoordinate(searchParams.get("lng"));
+  const profile = parseProfile(searchParams.get("profile"));
 
   if (latitude === null || longitude === null) {
     return Response.json(
@@ -463,11 +469,17 @@ export async function GET(request: Request) {
     const cachedResult = await findFreshSnapshot(cacheKey);
 
     if (cachedResult) {
+      // Cached raw places, freshly scored with the requested profile.
+      const { overallScore, scores } = scorePlaceGroups(
+        cachedResult.groups,
+        profile,
+      );
+
       return Response.json({
         ok: true,
         groups: cachedResult.groups,
-        scores: cachedResult.scores,
-        overallScore: cachedResult.overallScore,
+        scores,
+        overallScore,
         cached: true,
         fetchedAt: cachedResult.fetchedAt,
       });
@@ -488,7 +500,14 @@ export async function GET(request: Request) {
       ),
     );
     const groups = assignPlacesToPrimaryCategories(fetchedGroups);
-    const { overallScore, scores } = scorePlaceGroups(groups);
+    const { overallScore, scores } = scorePlaceGroups(groups, profile);
+
+    // Snapshots always store the balanced view so history and comparisons
+    // share one yardstick regardless of which profile triggered the fetch.
+    const balanced =
+      profile === "balanced"
+        ? { overallScore, scores }
+        : scorePlaceGroups(groups, "balanced");
 
     const fallbackLabel = `${latitude}, ${longitude}`;
 
@@ -504,8 +523,8 @@ export async function GET(request: Request) {
           longitude,
         },
         groups,
-        scores,
-        overallScore,
+        scores: balanced.scores,
+        overallScore: balanced.overallScore,
       });
     } catch (error) {
       console.error("Saving search result failed:", error);

@@ -1,3 +1,4 @@
+import type { WeightProfile } from "../lib/categories";
 import type { CategoryScore, PlacesState } from "../lib/types";
 
 type ScoreBreakdownProps = {
@@ -5,7 +6,15 @@ type ScoreBreakdownProps = {
   categoryScores: CategoryScore[];
   placesError: string;
   resultFromCache: boolean;
+  profile: WeightProfile;
+  onProfileChange: (profile: WeightProfile) => void;
 };
+
+const profileOptions: { id: WeightProfile; label: string }[] = [
+  { id: "carFree", label: "No car" },
+  { id: "balanced", label: "Balanced" },
+  { id: "carOwner", label: "Car owner" },
+];
 
 function formatDistance(distanceMeters: number | null) {
   if (distanceMeters === null) {
@@ -22,6 +31,8 @@ export function ScoreBreakdown({
   categoryScores,
   placesError,
   resultFromCache,
+  profile,
+  onProfileChange,
 }: ScoreBreakdownProps) {
   const badgeLabel =
     placesState !== "success"
@@ -45,6 +56,25 @@ export function ScoreBreakdown({
           {badgeLabel}
         </span>
       </div>
+
+      {placesState === "success" ? (
+        <div className="mb-3 flex w-fit gap-0.5 rounded-md bg-slate-100 p-0.5">
+          {profileOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onProfileChange(option.id)}
+              className={`rounded px-2.5 py-1 text-xs transition ${
+                option.id === profile
+                  ? "bg-white font-medium text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {placesState === "idle" ? (
         <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-600">
