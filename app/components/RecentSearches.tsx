@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { RecentSearch } from "../lib/types";
 
 // Purely presentational: the lists live in useSavedSearches and arrive as
@@ -76,6 +77,23 @@ export function RecentSearches({
   // Saved locations already appear in their own row; repeating them under
   // "Recent" would show the same chip twice, so recent keeps unsaved only.
   const unsavedRecent = recent.filter((search) => search.savedAt === null);
+
+  // Signed-out visitors see, in the exact spot their chips will occupy,
+  // what an account buys them. Frontend-only: the APIs already gate.
+  if (!canSave) {
+    return (
+      <p className="mt-4 text-sm text-slate-500">
+        <Link
+          href="/login"
+          className="font-medium text-emerald-700 hover:underline"
+        >
+          Sign in
+        </Link>{" "}
+        to save locations, keep your recent searches, and compare rentals side
+        by side.
+      </p>
+    );
+  }
 
   if (unsavedRecent.length === 0 && saved.length === 0) {
     return null;

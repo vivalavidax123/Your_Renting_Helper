@@ -109,6 +109,8 @@ API boundary: all `/api/favourites` verbs resolve the session cookie first and a
 
 UI: `AuthStatus` in the page header shows a sign-in link or email + sign-out; star buttons only render when signed in; `useSavedSearches` takes the viewer's user id as an effect dependency so login/logout refetches both lists, and a 401 from favourites renders as an empty saved list rather than a stale one.
 
+Signed-out visitors get one sign-up prompt: a muted line under the search form — "Sign in to save locations, keep your recent searches, and compare rentals side by side." It renders in the exact spot the chips occupy after login, so the position itself communicates what appears there; that also covers compare without a second prompt in the panel. One prompt, not three, per the minimal-UI rule (it earns its place by carrying function discovery). Frontend-only change — the APIs already gate, this is discoverability.
+
 Migration note: `prisma migrate dev` refuses non-interactive shells, so the migration was generated with `prisma migrate diff --from-schema-datasource --to-schema-datamodel --script` into a hand-named migration folder and applied with `prisma migrate deploy` — the same command the Vercel build runs.
 
 ### Stale-session bug after email login
