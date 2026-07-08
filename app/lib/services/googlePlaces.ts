@@ -76,7 +76,9 @@ export async function fetchPlacesForTypes({
     },
     body: JSON.stringify({
       includedTypes: placeTypes,
-      maxResultCount: 10,
+      // API maximum. Brand chains are tagged by name-matching these results
+      // locally (no per-brand text searches), so recall depends on this cap.
+      maxResultCount: 20,
       locationRestriction: {
         circle: {
           center: {

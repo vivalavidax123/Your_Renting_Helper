@@ -60,7 +60,6 @@ function addPlaceToMap({
   origin,
   category,
   source,
-  brandTerm,
   radiusMeters = category.radiusMeters,
 }: {
   placesById: Map<string, NearbyPlace>;
@@ -68,7 +67,6 @@ function addPlaceToMap({
   origin: { latitude: number; longitude: number };
   category: RentScoreCategory;
   source: PlaceSource;
-  brandTerm?: string;
   radiusMeters?: number | null;
 }) {
   const placeLatitude = place.location?.latitude;
@@ -80,10 +78,6 @@ function addPlaceToMap({
     typeof placeLatitude !== "number" ||
     typeof placeLongitude !== "number"
   ) {
-    return;
-  }
-
-  if (brandTerm && !placeMatchesBrand(place.displayName.text, brandTerm)) {
     return;
   }
 
@@ -155,14 +149,12 @@ function collectPlaces({
   origin,
   category,
   source,
-  brandTerm,
   radiusMeters,
 }: {
   googlePlaces: GooglePlace[];
   origin: { latitude: number; longitude: number };
   category: RentScoreCategory;
   source: PlaceSource;
-  brandTerm?: string;
   radiusMeters?: number | null;
 }) {
   const placesById = new Map<string, NearbyPlace>();
@@ -174,7 +166,6 @@ function collectPlaces({
       origin,
       category,
       source,
-      brandTerm,
       radiusMeters,
     });
   }
@@ -362,49 +353,30 @@ async function fetchPlacesForCategory({
   const origin = { latitude, longitude };
   const placesById = new Map<string, NearbyPlace>();
 
-  const [brandResults, genericPlaces] = await Promise.all([
-    Promise.all(
-      category.brandTerms.map(async (brandTerm) => ({
-        brandTerm,
-        places: await fetchPlacesForBrand({
-          apiKey,
-          category,
-          brandTerm,
-          latitude,
-          longitude,
-        }),
-      })),
-    ),
-    fetchPlacesForTypes({
-      apiKey,
-      category,
-      placeTypes: category.placeTypes,
-      latitude,
-      longitude,
-    }),
-  ]);
+  const genericPlaces = await fetchPlacesForTypes({
+    apiKey,
+    category,
+    placeTypes: category.placeTypes,
+    latitude,
+    longitude,
+  });
 
+  // Brand chains are recognised by name-matching the nearby results, not by
+  // per-brand text searches: those cost one SearchText request per brand
+  // term (42 per search) against a 150/day quota, and scoring never reads
+  // the brand flag — only the map's pin size and dedup preference do.
   for (const place of genericPlaces) {
+    const isBrand = category.brandTerms.some((brandTerm) =>
+      placeMatchesBrand(place.displayName?.text ?? "", brandTerm),
+    );
+
     addPlaceToMap({
       placesById,
       place,
       origin,
       category,
-      source: "generic",
+      source: isBrand ? "brand" : "generic",
     });
-  }
-
-  for (const brandResult of brandResults) {
-    for (const place of brandResult.places) {
-      addPlaceToMap({
-        placesById,
-        place,
-        origin,
-        category,
-        source: "brand",
-        brandTerm: brandResult.brandTerm,
-      });
-    }
   }
 
   return {

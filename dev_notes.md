@@ -41,6 +41,8 @@ Two tables in `prisma/schema.prisma`:
 
 Flow in `/api/places`: look up the newest snapshot for the cache key; if it is younger than 24 hours, return it with `cached: true` and skip all Google calls. Otherwise fetch from Google, score, save a new snapshot, and return `cached: false`. Database errors are caught and logged so a broken database degrades to a normal Google lookup instead of failing the search.
 
+Watch-out from that degradation design: when the local `DATABASE_URL` goes stale (this happened 2026-07-08 — the Neon dev endpoint/password had been reset, old `ep-empty-queen` string kept failing with Prisma P1000), the app keeps working but *every* search and profile switch silently becomes a full live Google lookup, burning Places quota with no visible error in the UI. The tell is the badge always reading "Live nearby data" (profile switches should always be cache hits) plus `Search cache lookup failed` / `Saving search result failed` in the server console. Fix is re-pasting the current connection string from the Neon console. The `channel_binding=require` param Neon now appends is harmless to Prisma 6.19 — it was ruled out as a cause.
+
 Supporting pieces:
 
 * `app/lib/db.ts` — PrismaClient singleton guarded against dev hot-reload connection leaks.
@@ -166,12 +168,11 @@ This keeps mixed-use results such as fast food, fuel stations, convenience store
 
 The search bar uses a server-side autocomplete route backed by Google Places Autocomplete (New). Suggestions are restricted to Australia, keep the Google API key server-side, and feed the selected suggestion text into the existing geocoding flow.
 
-The Places API route combines two kinds of results:
+The Places API route fetches each category with a single Nearby Search over the category's included place types (`maxResultCount: 20`, the API cap). Places whose name contains one of the category's `brandTerms` (Woolworths, Chemist Warehouse, Australia Post, major gyms, …) are tagged `source: "brand"`; brand pins render larger on the map, and a brand match is kept over a generic match when deduping by place ID.
 
-* Brand matches, such as Woolworths, Coles, Chemist Warehouse, Australia Post, or major gyms.
-* Generic nearby places, such as supermarkets, cafes, restaurants, pharmacies, banks, post offices, fuel stations, and transit stations.
+Brand recognition used to be a separate Text Search per brand term. That was the root cause of the daily quota burning out: 42 brand terms across the categories meant one uncached search cost 43 SearchText + 10 SearchNearby = 53 requests, so a 150/day SearchText quota allowed roughly 3 searches per day. The brand results were then filtered by local name matching anyway (`placeMatchesBrand`), and scoring never reads the brand flag — only the map pin size and dedup preference do — so the fan-out bought almost nothing. Tagging the nearby results locally instead cut a search to 11 requests (verified by counting outbound calls: 10 SearchNearby + 1 SearchText for V/Line). The trade-off: a brand store only shows up if it is among the 20 nearest of its type, which raising `maxResultCount` from 10 to 20 largely covers; if a wide-radius category (Shopping Centres) visibly suffers, give that one category a single brand Text Search rather than restoring the per-term loop.
 
-Brand results use Google Places Text Search because brand names are query text. Generic results use Google Places Nearby Search with included place types. Results are deduped by Google place ID, and a brand match is kept over a generic match when the same place appears in both result sets.
+The one remaining Text Search is the transport category's "V/Line station" query, which type-based Nearby Search cannot replace (regional stations are not consistently typed, and the lookup deliberately has no radius cutoff).
 
 Category-level duplicate place IDs are filtered after retrieval using the category priority above. Shopping Centres use a 10 km search radius; the other MVP categories use the default 3 km radius.
 
