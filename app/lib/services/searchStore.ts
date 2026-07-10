@@ -3,8 +3,10 @@ import { prisma } from "@/app/lib/db";
 import type { CategoryScore, PlaceGroup, RecentSearch } from "@/app/lib/types";
 
 // Cached score results are reused for this long before Google is queried
-// again. Nearby amenities change slowly, so a day-old result is still useful.
-const cacheTtlMs = 24 * 60 * 60 * 1000;
+// again. Nearby amenities change on a weeks-to-months timescale, so a
+// week-old result is still accurate — and reusing it keeps repeat searches
+// (e.g. demoing the same suburbs) off the paid Google quota for longer.
+const cacheTtlMs = 7 * 24 * 60 * 60 * 1000;
 
 export type SearchLocationInput = {
   query: string;

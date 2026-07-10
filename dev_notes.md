@@ -41,7 +41,7 @@ Two tables in `prisma/schema.prisma`:
 * **SearchLocation:** one row per searched location. `cacheKey` is the lat/lng rounded to 4 decimal places (~11 m), so repeat searches of the same spot reuse the row even if geocoding jitters.
 * **ScoreSnapshot:** one row per computed result, holding `overallScore` plus the full category scores and place groups as JSON strings (SQLite has no native JSON column in Prisma). Multiple snapshots per location preserve history.
 
-Flow in `/api/places`: look up the newest snapshot for the cache key; if it is younger than 24 hours, return it with `cached: true` and skip all Google calls. Otherwise fetch from Google, score, save a new snapshot, and return `cached: false`. Database errors are caught and logged so a broken database degrades to a normal Google lookup instead of failing the search.
+Flow in `/api/places`: look up the newest snapshot for the cache key; if it is younger than 7 days, return it with `cached: true` and skip all Google calls. Otherwise fetch from Google, score, save a new snapshot, and return `cached: false`. Database errors are caught and logged so a broken database degrades to a normal Google lookup instead of failing the search.
 
 Watch-out from that degradation design: when the local `DATABASE_URL` goes stale (this happened 2026-07-08 — the Neon dev endpoint/password had been reset, old `ep-empty-queen` string kept failing with Prisma P1000), the app keeps working but *every* search and profile switch silently becomes a full live Google lookup, burning Places quota with no visible error in the UI. The tell is the badge always reading "Live nearby data" (profile switches should always be cache hits) plus `Search cache lookup failed` / `Saving search result failed` in the server console. Fix is re-pasting the current connection string from the Neon console. The `channel_binding=require` param Neon now appends is harmless to Prisma 6.19 — it was ruled out as a cause.
 
@@ -64,7 +64,7 @@ Users can star any recent search to keep it permanently. Implementation:
 
 This completes CRUD coverage over the persistence layer (create/read via search caching, update via save toggling; snapshot deletion is still only via cascade).
 
-Saved locations are independent of snapshot state: listings no longer require a snapshot to exist, so clearing `ScoreSnapshot` (done on scoring-algorithm changes) never makes favourites vanish — they show without a score badge until re-searched, and the compare panel offers only the ones that have scores. Stars (`savedAt`) are never deleted by any time-based process; the 24-hour TTL only decides when Google is re-queried.
+Saved locations are independent of snapshot state: listings no longer require a snapshot to exist, so clearing `ScoreSnapshot` (done on scoring-algorithm changes) never makes favourites vanish — they show without a score badge until re-searched, and the compare panel offers only the ones that have scores. Stars (`savedAt`) are never deleted by any time-based process; the 7-day TTL only decides when Google is re-queried.
 
 ### Why these choices
 
@@ -333,3 +333,11 @@ Design decisions and their reasons:
 * **`vitest.config.ts` was required for the `@/` alias.** Tests import the route, which imports application code via the `@/...` alias tsconfig defines. Vitest does not read tsconfig `paths`, so the config maps `@` to the project root; without it those imports fail to resolve (verified by probe). Existing tests use relative imports and are unaffected.
 * **A minimal session stands in for the full better-auth shape.** The route only reads `session.user.id`, so the fake is `{ user: { id } }` cast to the real return type via `as unknown as` (avoids `any`, keeps lint clean) instead of constructing a complete session object.
 * **Validation-before-auth ordering is asserted.** POST parses and validates the body before the session lookup, so the malformed-body and missing-`locationId` tests confirm auth is never called on a bad request.
+
+## Cache TTL: 24h to 7 days (Google free-tier optimisation)
+
+Raised the snapshot cache TTL in `app/lib/services/searchStore.ts` from 24 hours to 7 days (`cacheTtlMs = 7 * 24 * 60 * 60 * 1000`).
+
+Root cause / motivation: the Places API (New) calls request `rating` + `userRatingCount`, which forces every SearchNearby into the **Enterprise** SKU — the smallest free bucket at 1,000 calls/month (Google removed the $200 monthly credit on 2025-03-01, replacing it with per-SKU monthly free tiers: Essentials 10k / Pro 5k / Enterprise 1k). Each uncached search fans out to ~10 SearchNearby calls, so the free ceiling is only ~100 unique searches/month, and SearchNearby (not SearchText, which the earlier brand-tagging refactor already cut to ~1/search) is the binding quota.
+
+Why this helps without costing anything: a longer TTL only changes how long existing snapshot rows are reused before Google is re-queried — it adds no rows and no storage, and strictly *reduces* paid Google calls. The only trade-off is data freshness, and amenities change on a weeks-to-months timescale, so a week-old result is still accurate. 7 days (vs 30) was chosen as a freshness/savings balance. Fetch-layer changes (new categories, field-mask tweaks) still require clearing `ScoreSnapshot`, same as scoring-algorithm changes, since the cache stores raw place data.
