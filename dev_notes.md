@@ -310,3 +310,26 @@ Design decisions and their reasons:
 * **`NEXT_PUBLIC_MAPS_API_KEY` is a build arg**, not a runtime env var — Next.js inlines `NEXT_PUBLIC_*` into the client bundle during `next build`, so setting it at `docker run` time silently does nothing. Changing it requires an image rebuild.
 * **Debian slim base (`node:22-slim`), not Alpine**, so Prisma's engine auto-detection works without adding musl `binaryTargets` to `schema.prisma`; `openssl` is installed in both build and runtime stages because the Prisma engine requires it.
 * **Config comes from `.env.docker`** (gitignored via the existing `.env*` rule, with a `!.env.docker.example` exception for the committed template) passed through compose variable substitution, so secrets never bake into image layers. `BETTER_AUTH_SECRET` and `GOOGLE_MAPS_API_KEY` fail fast with `:?` if unset; Google OAuth keys are optional since email/password login works without them.
+
+## Continuous Integration (GitHub Actions)
+
+A CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. On a fresh `ubuntu-latest` machine it checks out the code, installs Node 20, runs `npm ci`, then enforces three quality gates: `npm run lint` (ESLint), `npx tsc --noEmit` (type-check), and `npm run test` (Vitest, 18 tests). A failure marks the commit/PR red.
+
+Design decisions and their reasons:
+
+* **`npm run build` is intentionally excluded.** The build script is `prisma migrate deploy && next build`, which needs a live database. CI has none, so running the build would fail for infrastructure reasons unrelated to code quality. The three lighter gates cover correctness without provisioning Postgres.
+* **No database needed despite Prisma.** `npm ci` triggers the `postinstall` hook (`prisma generate`), which only reads `schema.prisma` to generate the client — it makes no database connection — so the type-check and tests that import `@prisma/client` compile and run on a clean machine.
+* **`npm ci`, not `npm install`.** `ci` installs exactly the locked versions from `package-lock.json` and fails if the lockfile is out of sync, making runs reproducible.
+
+## API-Route Tests (favourites)
+
+Added `app/api/favourites/route.test.ts` (9 tests) to cover a real feature end-to-end at the route level, plus `vitest.config.ts` to make it runnable. The suite grew from 18 to 27 tests.
+
+What is verified: `GET` returns 401 when signed out and the caller-scoped saved list when signed in; `POST` returns 400 for non-JSON bodies and missing `locationId`, 401 when signed out, 404 when the location does not exist, and 200 on a successful save; `DELETE` returns 400 without an `id` and unsaves on success.
+
+Design decisions and their reasons:
+
+* **Dependencies are mocked, not exercised.** The route depends on the auth layer (session cookie) and the search store (Postgres) — neither exists in CI. `vi.mock` replaces `@/app/lib/auth` and `@/app/lib/services/searchStore` with fakes, so the tests assert the route own decision logic (status codes, validation, per-user scoping) in isolation rather than testing the database.
+* **`vitest.config.ts` was required for the `@/` alias.** Tests import the route, which imports application code via the `@/...` alias tsconfig defines. Vitest does not read tsconfig `paths`, so the config maps `@` to the project root; without it those imports fail to resolve (verified by probe). Existing tests use relative imports and are unaffected.
+* **A minimal session stands in for the full better-auth shape.** The route only reads `session.user.id`, so the fake is `{ user: { id } }` cast to the real return type via `as unknown as` (avoids `any`, keeps lint clean) instead of constructing a complete session object.
+* **Validation-before-auth ordering is asserted.** POST parses and validates the body before the session lookup, so the malformed-body and missing-`locationId` tests confirm auth is never called on a bad request.
