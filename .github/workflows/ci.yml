@@ -1,0 +1,41 @@
+name: CI
+
+# Run on every push and on every pull request targeting main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Lint, type-check, and test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Pull the repository onto the fresh CI machine.
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # Install Node 20 and cache npm downloads between runs for speed.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Clean, reproducible install from package-lock.json. This also runs the
+      # `postinstall` script, which generates the Prisma client (reads
+      # schema.prisma only — no database connection needed).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Type-check without emitting output: fails on any TypeScript error.
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm run test
