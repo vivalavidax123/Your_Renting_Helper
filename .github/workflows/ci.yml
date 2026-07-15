@@ -9,7 +9,7 @@ on:
 
 jobs:
   quality:
-    name: Lint, type-check, and test
+    name: Lint, type-check, test, and build
     runs-on: ubuntu-latest
 
     steps:
@@ -30,6 +30,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Preserve Turbopack's compilation cache between CI runs. setup-node
+      # already caches npm downloads; this covers Next.js build work.
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('app/**/*', 'public/**/*', 'prisma/**/*', 'next.config.*', 'tsconfig.json', 'postcss.config.mjs') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
       - name: Lint
         run: npm run lint
 
@@ -39,3 +49,17 @@ jobs:
 
       - name: Run tests
         run: npm run test
+
+      # These values satisfy configuration validation only. `next build`
+      # compiles the app but does not connect to Postgres or call provider APIs.
+      - name: Build production application
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+          BETTER_AUTH_SECRET: ci-only-secret-not-for-runtime-000000000000
+          BETTER_AUTH_URL: http://localhost:3000
+          GOOGLE_MAPS_API_KEY: ci-placeholder
+          NEXT_PUBLIC_MAPS_API_KEY: ci-placeholder
+          GOOGLE_CLIENT_ID: ci-placeholder
+          GOOGLE_CLIENT_SECRET: ci-placeholder
+          NEXT_TELEMETRY_DISABLED: 1

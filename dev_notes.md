@@ -305,7 +305,7 @@ Alongside the Vercel + Neon deployment, the repo now ships a self-contained Dock
 
 Design decisions and their reasons:
 
-* **Migrations run at container start, not image build.** The npm `build` script is `prisma migrate deploy && next build`, but during `docker build` no database is reachable, so the Dockerfile calls `npx next build` directly and a separate compose service applies migrations once the db is healthy.
+* **Migrations run at container start, not image build.** `npm run build` now performs only `next build`, while the explicit `npm run db:migrate:deploy` script owns production schema deployment. The Dockerfile uses the standard build script and a separate compose service applies migrations once the database is healthy.
 * **`output: "standalone"`** was added to `next.config.ts` so the runtime image only carries `.next/standalone` + static assets instead of full `node_modules` (verified: no effect on the Vercel build path).
 * **`NEXT_PUBLIC_MAPS_API_KEY` is a build arg**, not a runtime env var — Next.js inlines `NEXT_PUBLIC_*` into the client bundle during `next build`, so setting it at `docker run` time silently does nothing. Changing it requires an image rebuild.
 * **Debian slim base (`node:22-slim`), not Alpine**, so Prisma's engine auto-detection works without adding musl `binaryTargets` to `schema.prisma`; `openssl` is installed in both build and runtime stages because the Prisma engine requires it.
@@ -313,11 +313,12 @@ Design decisions and their reasons:
 
 ## Continuous Integration (GitHub Actions)
 
-A CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. On a fresh `ubuntu-latest` machine it checks out the code, installs Node 20, runs `npm ci`, then enforces three quality gates: `npm run lint` (ESLint), `npx tsc --noEmit` (type-check), and `npm run test` (Vitest, currently 27 tests). A failure marks the commit/PR red.
+A CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. On a fresh `ubuntu-latest` machine it checks out the code, installs Node 20, runs `npm ci`, then enforces four quality gates: `npm run lint` (ESLint), `npx tsc --noEmit` (type-check), `npm run test` (Vitest, currently 27 tests), and `npm run build` (optimized production compilation). A failure marks the commit/PR red.
 
 Design decisions and their reasons:
 
-* **`npm run build` is intentionally excluded.** The build script is `prisma migrate deploy && next build`, which needs a live database. CI has none, so running the build would fail for infrastructure reasons unrelated to code quality. The three lighter gates cover correctness without provisioning Postgres.
+* **The production build is side-effect free.** Database deployment was moved into `npm run db:migrate:deploy`, so CI can compile the complete application without provisioning or mutating Postgres. Non-secret placeholder environment values satisfy configuration validation; no database or provider API calls occur during compilation.
+* **Next.js build output is cached.** `actions/cache` persists `.next/cache` using dependency and source hashes, reducing repeat Turbopack work while invalidating the cache when application code changes.
 * **No database needed despite Prisma.** `npm ci` triggers the `postinstall` hook (`prisma generate`), which only reads `schema.prisma` to generate the client — it makes no database connection — so the type-check and tests that import `@prisma/client` compile and run on a clean machine.
 * **`npm ci`, not `npm install`.** `ci` installs exactly the locked versions from `package-lock.json` and fails if the lockfile is out of sync, making runs reproducible.
 

@@ -275,10 +275,18 @@ npm install
 ## Create the Database
 
 ```bash
-npx prisma migrate dev
+npm run db:migrate
 ```
 
 This applies all migrations to the database in `DATABASE_URL`. To browse the data visually, run `npm run db:studio`.
+
+For a deployed environment, apply committed migrations explicitly before releasing the application:
+
+```bash
+npm run db:migrate:deploy
+```
+
+Database deployment is intentionally separate from `npm run build`, so compiling or validating the application never changes production data. The Docker Compose stack runs the deployment command through its dedicated one-shot `migrate` service automatically.
 
 ## Start Development Server
 

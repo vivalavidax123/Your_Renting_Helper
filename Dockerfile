@@ -22,8 +22,9 @@ COPY . .
 # must arrive as a build arg — setting it at runtime has no effect.
 ARG NEXT_PUBLIC_MAPS_API_KEY
 ENV NEXT_PUBLIC_MAPS_API_KEY=$NEXT_PUBLIC_MAPS_API_KEY
-# `npm run build` would also run `prisma migrate deploy`; call next directly.
-RUN npx next build
+# Compilation is side-effect free; the separate `migrate` service above owns
+# database schema deployment when the Compose stack starts.
+RUN npm run build
 
 FROM node:22-slim AS runner
 WORKDIR /app
