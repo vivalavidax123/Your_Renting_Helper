@@ -7,6 +7,10 @@ import { prisma } from "@/app/lib/db";
 // BETTER_AUTH_SECRET and BETTER_AUTH_URL are read from the environment.
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  // Encrypt Google OAuth token material before it is stored in Postgres.
+  // Better Auth still reads existing plaintext tokens and encrypts them the
+  // next time the provider account is created, refreshed, or signed in.
+  account: { encryptOAuthTokens: true },
   emailAndPassword: { enabled: true },
   socialProviders: {
     google: {
