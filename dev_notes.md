@@ -2,7 +2,7 @@
 
 ## Current Product Direction
 
-The application is a functional prototype for evaluating rental locations by nearby everyday amenities. The near-term priority is a working MVP over production infrastructure, accounts, saved searches, or advanced scoring inputs.
+The application is a deployed functional prototype for evaluating rental locations by nearby everyday amenities. The core MVP now includes location search, scoring, authentication, per-user search history and favourites, comparison, PostgreSQL persistence, Vercel deployment, Docker deployment, and CI. Near-term work should focus on reliability, test coverage, account-management gaps, and prototype hardening rather than adding another broad feature surface.
 
 The UI direction is now amenities-first. Overall score and category scores are intentionally compact summary elements, while nearby amenities, the map, and additional location indicators carry the main result detail. This keeps the interface closer to a decision dashboard than a score report.
 
@@ -20,26 +20,29 @@ It should not yet be described as a production full-stack platform. It now has a
 
 Missing production-grade full-stack pieces:
 
-* **Backend operations:** no rate limiting, background jobs, observability, structured logging, or error tracking. Request caching now exists via the database snapshot cache.
+* **Backend operations:** the search/provider routes have no application-level rate limiting, background jobs, observability, structured logging, or error tracking. Better Auth owns its authentication protections; request caching exists via the database snapshot cache.
 * **Admin/data management:** category weights and brand lists are code-managed; there is no admin UI or config storage.
 * **First-party datasets:** rent trends, crime/safety, schools, childcare, population density, and planning/development signals are placeholders until dedicated sources are integrated.
 
 ## Persistence and Caching
 
-Database persistence was added with Prisma 6, initially on SQLite and later switched to hosted Postgres (Neon, Sydney region) for deployment — Vercel's serverless platform has no persistent filesystem for an SQLite file. The provider switch changed only `schema.prisma` and `DATABASE_URL`; no query code changed. The SQLite-dialect migration history was regenerated as a single Postgres init migration, since the cloud database started empty. Local dev now talks to the same Neon database. Prisma 7 was intentionally avoided for now because it requires a driver-adapter setup; upgrade later with the official guide if needed.
+Database persistence was added with Prisma 6, initially on SQLite and later switched to hosted Postgres (Neon, Sydney region) for deployment — Vercel's serverless platform has no persistent filesystem for an SQLite file. The provider switch changed only `schema.prisma` and `DATABASE_URL`; no query code changed. The SQLite-dialect migration history was regenerated as a single Postgres init migration, since the cloud database started empty. Local development now uses a dedicated Neon development branch rather than the production branch. Prisma 7 was intentionally avoided for now because it requires a driver-adapter setup; upgrade later with the official guide if needed.
 
-Deployment pipeline: `postinstall` runs `prisma generate` (Vercel builds start from a clean machine) and the build script runs `prisma migrate deploy` before `next build`, so schema changes pushed to GitHub are applied to the production database automatically on deploy.
+Build and migration pipeline: `postinstall` runs `prisma generate` (Vercel builds start from a clean machine), while `npm run build` runs only `next build`. Production schema deployment is deliberately separate in `npm run db:migrate:deploy`. This keeps local builds, Vercel builds, and CI side-effect free; a schema change must be applied explicitly to the target database before schema-dependent application code is released. Docker Compose automates that explicit step through its one-shot `migrate` service.
 
 The app is deployed at https://rent-score-prototype.vercel.app/ (Vercel, auto-deploys on push to main). Environment variables are configured in the Vercel dashboard — paste bare values there, no quotes (a quoted `DATABASE_URL` failed the first deploy with P1012). The browser Maps key is referrer-restricted to localhost and the vercel.app domains and API-restricted to Maps JavaScript API; the server key has no referrer restriction (server calls send none) and is API-restricted to Places API (New) and Geocoding API.
 
-Environments are separated with Neon branches: local dev uses a `development` branch (its connection string in local `.env`), production uses the default branch, named `production` (its string in Vercel). The branch is forked copy-on-write from production with data and migration history included, so `migrate status` is in sync immediately. Day-to-day flow: schema changes run `prisma migrate dev` locally against the development branch; on push, Vercel's build runs `prisma migrate deploy` against production. Destructive maintenance (clearing snapshots on scoring changes) now only touches the dev branch — production needs its own deliberate pass when a scoring change ships, or stale scores simply age out via re-searches.
+Environments are separated with Neon branches: local dev uses a `development` branch (its connection string in local `.env`), while production uses the default `production` branch (its string in Vercel). A development branch can be forked copy-on-write from production with data and migration history included. Day-to-day flow: generate and test schema changes with `npm run db:migrate` against development, commit the migration, then run `npm run db:migrate:deploy` explicitly against production before releasing dependent code. A push/Vercel build does not perform that database mutation. Destructive maintenance (such as clearing snapshots after scoring changes) must also be run deliberately in each intended environment; otherwise stale scores simply age out through later searches.
 
 Watch-out (hit 2026-07-08): the Neon project only had **one** branch — the separate `development` branch this doc describes did not actually exist, so local `.env` had been quietly pointing at a stale/dead endpoint (and, worse, could as easily have been pointed straight at `production`). Recreated the `development` branch from `production` via the Neon console (New Branch → copies data + schema) and repointed local `.env` at its pooled connection string. If `migrate status` or a user-count query ever needs re-checking after a credential swap, verify the branch name in the Neon console before trusting this doc — branches get deleted or drift silently, and there is no in-app signal that a search is quietly hitting production.
 
-Two tables in `prisma/schema.prisma`:
+Eight models live in `prisma/schema.prisma`:
 
-* **SearchLocation:** one row per searched location. `cacheKey` is the lat/lng rounded to 4 decimal places (~11 m), so repeat searches of the same spot reuse the row even if geocoding jitters.
-* **ScoreSnapshot:** one row per computed result, holding `overallScore` plus the full category scores and place groups as JSON strings (SQLite has no native JSON column in Prisma). Multiple snapshots per location preserve history.
+* **SearchLocation:** one shared row per searched location. `cacheKey` is the lat/lng rounded to 4 decimal places (~11 m), so repeat searches of the same spot reuse the row even if geocoding jitters.
+* **ScoreSnapshot:** cached computed results, holding `overallScore` plus the full category scores and place groups as JSON strings. The strings were retained from the SQLite version for migration simplicity; PostgreSQL's native `Json` type remains a possible later cleanup.
+* **UserSearch:** the per-user recent-search join, keyed by `(userId, locationId)` and updated on repeat searches.
+* **UserSavedLocation:** the per-user favourite join, keyed by `(userId, locationId)`, with `savedAt` as its list sort timestamp.
+* **User, Session, Account, Verification:** Better Auth's user identity, database session, linked credential/provider account, and verification records.
 
 Flow in `/api/places`: look up the newest snapshot for the cache key; if it is younger than 7 days, return it with `cached: true` and skip all Google calls. Otherwise fetch from Google, score, save a new snapshot, and return `cached: false`. Database errors are caught and logged so a broken database degrades to a normal Google lookup instead of failing the search.
 
@@ -58,23 +61,23 @@ Supporting pieces:
 
 Users can star any recent search to keep it permanently. Implementation:
 
-* `SearchLocation.savedAt DateTime?` — null means not saved; a timestamp doubles as the save date and the sort key for the saved list. Same pattern as soft-delete `deletedAt` columns.
+* `UserSavedLocation` stores one row per `(userId, locationId)` star. Its `savedAt` timestamp records when that user saved the location and sorts that user's saved list. `SearchLocation` and its score snapshots remain shared cache data.
 * `/api/favourites` — REST verbs on one route: GET lists saved locations, POST (`{ locationId }`) saves, DELETE (`?id=`) unsaves. Input is validated at the route boundary: missing/invalid ids answer 400, unknown ids answer 404 (Prisma error `P2025` is caught in `setLocationSaved` and mapped to `false`).
 * `RecentSearches` renders both a "Saved locations" and a "Recent searches" chip row. Each chip is a div with two sibling buttons (address re-runs the search, star toggles saving) because HTML forbids nesting buttons. After a toggle the component refetches both lists instead of hand-editing local state, keeping the database the single source of truth.
 
 This completes CRUD coverage over the persistence layer (create/read via search caching, update via save toggling; snapshot deletion is still only via cascade).
 
-Saved locations are independent of snapshot state: listings no longer require a snapshot to exist, so clearing `ScoreSnapshot` (done on scoring-algorithm changes) never makes favourites vanish — they show without a score badge until re-searched, and the compare panel offers only the ones that have scores. Stars (`savedAt`) are never deleted by any time-based process; the 7-day TTL only decides when Google is re-queried.
+Saved locations are independent of snapshot state: listings do not require a snapshot to exist, so clearing `ScoreSnapshot` (done on scoring-algorithm changes) never makes favourites vanish — they show without a score badge until re-searched, and the compare panel offers only the ones that have scores. `UserSavedLocation` rows are never deleted by the cache-expiry process; the 7-day TTL only decides when Google is re-queried.
 
 ### Why these choices
 
-* **Nullable timestamp instead of a boolean `isSaved`.** One column carries two facts — whether it is saved and when — so the saved list can sort by save date without another column and another migration. Timestamps-as-state is a widely used pattern (`deletedAt`, `verifiedAt`, `publishedAt`).
+* **Join row instead of a global flag.** Saving is a relationship between one user and one shared location, so the composite-key `UserSavedLocation` table prevents one account's star from appearing for another. Its timestamp also provides the per-user saved-list order without changing the shared location row.
 * **Validation lives at the API boundary, not in the service layer.** The route is the front door: everything past it can assume clean input, so `searchStore` stays free of defensive checks and is easier to read and test. Error codes are deliberately split — 400 means "your request is malformed", 404 means "well-formed but no such row", 500 means "our bug" — because callers debug very different problems depending on which one they get.
 * **Refetch after every mutation instead of hand-editing component state.** The database is the single source of truth; the UI is a mirror of it (`UI = f(data)`). Hand-edited local state can drift — e.g. a star lights up even though the request failed, or two open tabs disagree. The cost is one extra GET per toggle, which is trivial for a prototype and removes a whole class of sync bugs.
 * **Route handlers only translate HTTP; `searchStore` owns all Prisma calls.** Swapping SQLite for Postgres, adding caching, or writing tests touches one file instead of every route. This is the same layering as Controller → Service → Repository in Spring-style backends.
 * **One component owns both chip rows.** Saved and Recent refresh at exactly the same moments (page load, search completion, star toggle); a single fetch effect guarantees they can never fall out of sync with each other.
 
-`DATABASE_URL` lives in `.env` (Prisma CLI reads `.env`, not `.env.local`). An older unfinished persistence attempt had left a PostgreSQL `DATABASE_URL` in `.env.local` and an empty migration folder; both were cleaned up because `.env.local` overrides `.env` in Next.js and was breaking the SQLite connection.
+`DATABASE_URL` lives in `.env` (Prisma CLI reads `.env`, not `.env.local`). During the earlier SQLite phase, a conflicting `DATABASE_URL` in `.env.local` overrode `.env` for the Next.js runtime; the duplicate and an empty migration folder were removed. Keep one authoritative database URL per local environment to avoid the CLI and application connecting to different databases.
 
 ## Comparison View
 
@@ -91,7 +94,7 @@ Two saved locations can be compared side by side. Implementation:
 * **No new database columns or Google calls.** Comparison is a pure read over existing snapshots — the payoff of persisting results in week one.
 * **Stale selections are derived away, not synced away.** If a location is unstarred while selected in a dropdown, the component does not fix the state in an effect (the `react-hooks/set-state-in-effect` lint rule forbids it because it causes a cascading second render). Instead the effective selection is derived on every render: an id no longer present in the saved list simply counts as "nothing selected". Rule of thumb: if a value can be computed from existing state/props, compute it during render instead of storing and synchronising it.
 
-Recommended next full-stack milestone: deploy to Vercel with a hosted Postgres (swap the Prisma datasource provider), since the core loop — search, score, save, compare — is now complete. Authentication remains the follow-up after that if multi-user support becomes a goal.
+Current next priorities are account-management completeness (email verification, password reset, settings), broader API safeguards and observability, and automated coverage for auth/cache/provider failure paths. Vercel, hosted PostgreSQL, authentication, per-user state, and the core search/score/save/compare loop are already implemented.
 
 ## Authentication
 
@@ -99,13 +102,13 @@ Accounts landed with Better Auth (email/password plus Google OAuth), chosen over
 
 Pieces:
 
-* `app/lib/auth.ts` — the server instance: password hashing (scrypt, stored in `account.password`), database sessions, and the Google token exchange. `BETTER_AUTH_SECRET` signs session cookies; rotating it logs everyone out.
+* `app/lib/auth.ts` — the server instance: password hashing (scrypt, stored in `account.password`), database sessions, and the Google token exchange. `account.encryptOAuthTokens: true` encrypts Google access/refresh token material before database storage. `BETTER_AUTH_SECRET` protects auth state and must stay stable within an environment; rotating it logs everyone out and makes previously encrypted OAuth token material unreadable.
 * `app/api/auth/[...all]/route.ts` — one catch-all handler serves every auth endpoint (sign-up, sign-in, sign-out, the Google callback at `/api/auth/callback/google`).
 * `app/lib/auth-client.ts` — browser client; `useSession()` is reactive, so signing out re-renders every subscriber.
 * `/login` — one page toggling between sign-in and sign-up (they share every field but name), plus "Continue with Google" which is a full-page redirect out and back.
 * The CLI (`npx @better-auth/cli generate`) wrote four models into `schema.prisma`: `user`, `session`, `account` (one row per linked login method — a user can hold both a password and a Google account), `verification`.
 
-Favourites became per-user via a `UserSavedLocation` join table (`userId`, `locationId`, `savedAt`, composite primary key). The old global `SearchLocation.savedAt` column was dropped — locations and snapshots stay a shared cache because a location's score does not depend on who asks; only the star is per-viewer. **Existing stars could not be migrated** — they had no owning user — so dev-branch stars were dropped with the column, and production will lose its stars the same way when this deploys.
+Favourites became per-user via a `UserSavedLocation` join table (`userId`, `locationId`, `savedAt`, composite primary key). The old global `SearchLocation.savedAt` column was dropped — locations and snapshots stay a shared cache because a location's score does not depend on who asks; only the star is per-viewer. Existing global stars could not be assigned to an owner, so that migration deliberately removed them with the old column.
 
 Recent searches are per-account too, via a `UserSearch` join table (`userId`, `locationId`, `lastSearchedAt`, upserted so re-searching bumps instead of duplicating). Recents were briefly global after auth landed, which meant a fresh account saw strangers' searches — a privacy leak and confusing UX. Now `/api/places` records a `UserSearch` row for signed-in searchers (after `saveSnapshot`, so the location row exists; wrapped so a history-write failure never breaks the search), `listRecentSearches` reads only the viewer's rows, and signed-out visitors get an empty list. The chip shows when *this user* last searched a spot, not when anyone did. The shared `SearchLocation` cache is unchanged — an anonymous search still warms the snapshot cache for everyone; it just isn't attributed to anyone.
 
@@ -115,7 +118,9 @@ UI: `AuthStatus` in the page header shows a sign-in link or email + sign-out; st
 
 Signed-out visitors get one sign-up prompt: a muted line under the search form — "Sign in to save locations, keep your recent searches, and compare rentals side by side." It renders in the exact spot the chips occupy after login, so the position itself communicates what appears there; that also covers compare without a second prompt in the panel. One prompt, not three, per the minimal-UI rule (it earns its place by carrying function discovery). Frontend-only change — the APIs already gate, this is discoverability.
 
-Migration note: `prisma migrate dev` refuses non-interactive shells, so the migration was generated with `prisma migrate diff --from-schema-datasource --to-schema-datamodel --script` into a hand-named migration folder and applied with `prisma migrate deploy` — the same command the Vercel build runs.
+OAuth security boundary: Google sign-in redirects the user to Google, so the application never receives or stores the user's Google password. It receives OAuth tokens after consent; those tokens are sensitive application credentials and are encrypted at rest by Better Auth. Existing plaintext tokens remain readable for backward compatibility and are encrypted when the provider account is subsequently created, refreshed, or signed in. Prefer separate Neon branches/databases and separate secrets for development and production. If two deployments intentionally share one database, they must share the same stable `BETTER_AUTH_SECRET` so they can decrypt the same token rows.
+
+Migration note: `prisma migrate dev` refuses non-interactive shells, so the auth migration was generated with `prisma migrate diff --from-schema-datasource --to-schema-datamodel --script` into a hand-named migration folder and applied with `prisma migrate deploy`. The repository now exposes that production operation as `npm run db:migrate:deploy`; it is separate from Vercel and CI builds.
 
 ### Stale-session bug after email login
 
@@ -125,13 +130,19 @@ Cause: the login page navigated with `router.push("/")` — a client-side naviga
 
 Fix: after successful email sign-in/up, navigate with `window.location.assign("/")` instead of `router.push`. A hard load refetches the session from zero, so no stale cache can survive — deliberately matching the redirect behaviour of the Google flow. Rule of thumb: after a whole-session state change (login, logout), prefer a full page load over SPA navigation; the lost smoothness is trivial next to a whole class of stale-state bugs.
 
-Deployment checklist (not yet done): paste the real `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` into local `.env` (placeholders sit there now; email/password works without them), then add `BETTER_AUTH_SECRET` (a fresh one, not the dev value), `BETTER_AUTH_URL=https://rent-score-prototype.vercel.app`, and the Google pair to Vercel. Both redirect URIs (localhost and vercel.app) are already registered in the Google console.
+Deployment configuration: each environment needs a stable `BETTER_AUTH_SECRET` and its own canonical `BETTER_AUTH_URL`. Google login additionally needs `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and an authorised callback URI ending in `/api/auth/callback/google` for each local/deployed origin. Email/password works without the Google pair. Values belong in local ignored env files or the deployment dashboard, never in Git.
+
+## Search Request Race Protection
+
+`useLocationSearch` prevents a slower, older request from overwriting a newer user action. Autocomplete, geocoding, and nearby-place loads each carry a monotonically increasing request id; the active request is also cancelled with `AbortController` when it is superseded. A response updates state only when its id is still current and its signal was not aborted.
+
+Submitting a new search cancels both the previous geocode and any place lookup for the old location. Choosing a history item cancels typed geocoding, and changing lifestyle profile cancels the prior place request before rescoring. Cleanup on unmount invalidates request ids in addition to aborting network work, covering responses that were already queued by the browser. This guarantees that the visible address, score, place groups, cache badge, and selected profile all come from the latest action.
 
 ## Naming and Unit Tests
 
 The app is branded "Your Renting Helper" (layout metadata + the page H1; the tab previously still said "Create Next App" from the template). The repo/deployment name stays `rent-score-prototype`.
 
-First unit tests landed with Vitest (`npm test` / `npm run test:watch`), chosen over Jest because it runs TypeScript with zero config. Coverage starts where it pays most: the pure functions in `scoring.ts` and `utils.ts` — 18 tests, no database or network, sub-second run.
+Tests run with Vitest (`npm test` / `npm run test:watch`). The suite currently has 27 tests: 18 pure-function tests for `scoring.ts` and `utils.ts`, plus 9 isolated route tests for `/api/favourites`. Provider and database dependencies are mocked where appropriate, so CI does not need network access or a live database.
 
 ### Testing principles the suite demonstrates
 

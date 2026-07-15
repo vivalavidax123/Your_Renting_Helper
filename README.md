@@ -97,13 +97,14 @@ The overall score is a weighted average across all categories, viewed through on
 ## Data & Persistence
 
 * Prisma 6 (ORM + migrations)
-* PostgreSQL on Neon (searched locations, cached score results, saved favourites)
+* PostgreSQL on Neon (accounts, per-user history and favourites, cached score results)
 
 ## APIs & Services
 
 * Google Places API
 * Google Geocoding API
-* Google Maps or Mapbox
+* Google Maps JavaScript API
+* Transitland API (optional transport enrichment)
 
 ## Deployment
 
@@ -117,13 +118,13 @@ This is a full-stack Next.js prototype: the frontend UI, API routes, scoring/bus
 
 Persistence is included: searches, cached score results, per-user recent-search history, authentication sessions, and starred favourite locations are stored in PostgreSQL and managed with Prisma. The hosted deployment uses Neon, while the Docker setup includes its own Postgres service. Implementation details and design rationale live in `dev_notes.md`.
 
-Authentication is implemented with Better Auth. Users can create an email/password account or optionally sign in with Google, and saved locations and search history are scoped to the signed-in account.
+Authentication is implemented with Better Auth. Users can create an email/password account or optionally sign in with Google, and saved locations and search history are scoped to the signed-in account. Passwords are hashed by Better Auth. Google sign-in never exposes the user's Google password to this application; the OAuth access and refresh tokens returned by Google are encrypted before they are stored in PostgreSQL.
 
 It is not yet a production full-stack platform. The main missing pieces are:
 
 * Complete account-management flows such as email verification, password reset, and account settings
 * Admin tooling for managing scoring weights and category configuration outside code
-* Production backend safeguards such as rate limiting, observability, background jobs, and error tracking
+* Broader application-level rate limiting for search/provider routes, plus observability, background jobs, and error tracking
 * First-party or ingested datasets for rent trends, safety, schools, population density, and planning data
 
 ---
@@ -134,81 +135,74 @@ It is not yet a production full-stack platform. The main missing pieces are:
 rent-score-prototype/
 ├── app/
 │   ├── api/
+│   │   ├── auth/[...all]/
 │   │   ├── autocomplete/
+│   │   ├── compare/
 │   │   ├── favourites/
 │   │   ├── geocode/
 │   │   ├── history/
 │   │   └── places/
 │   ├── components/
 │   │   ├── AdditionalIndicators.tsx
+│   │   ├── AuthStatus.tsx
+│   │   ├── ComparePanel.tsx
 │   │   ├── LocationMap.tsx
 │   │   ├── NearbyPlacesList.tsx
 │   │   ├── RecentSearches.tsx
 │   │   ├── ScoreBreakdown.tsx
 │   │   └── SearchForm.tsx
 │   ├── hooks/
-│   │   └── useLocationSearch.ts
+│   │   ├── useLocationSearch.ts
+│   │   └── useSavedSearches.ts
 │   ├── lib/
+│   │   ├── auth.ts / auth-client.ts
 │   │   ├── categories.ts
 │   │   ├── db.ts
 │   │   ├── scoring.ts
-│   │   └── services/
+│   │   ├── services/
+│   │   ├── types.ts
+│   │   └── utils.ts
+│   ├── login/
 │   ├── layout.tsx
 │   └── page.tsx
 ├── prisma/
 │   ├── migrations/
 │   └── schema.prisma
-├── public/
+├── .github/workflows/ci.yml
+├── Dockerfile
+├── docker-compose.yml
 ├── dev_notes.md
 ├── README.md
 ├── package.json
-├── .env (DATABASE_URL, not committed)
-└── .env.local (API keys, not committed)
+├── vitest.config.ts
+├── .env (database configuration, not committed)
+└── .env.local (application/API configuration, not committed)
 ```
 
 ---
 
 # Development Roadmap
 
-## Phase 1 — Initial Setup
+## Completed
 
-* Create Next.js project
-* Configure Tailwind CSS
-* Set up GitHub repository
-* Create initial homepage UI
+* Next.js, TypeScript, Tailwind CSS, and responsive dashboard foundation
+* Address autocomplete, geocoding, nearby-place retrieval, and error states
+* Category scoring, lifestyle profiles, explanations, and derived indicators
+* Interactive Google map, amenity-to-map linking, and return-to-row navigation
+* PostgreSQL persistence with a 7-day shared result cache
+* Better Auth email/password and optional Google sign-in
+* Per-user recent searches, saved locations, and two-location comparison
+* Vercel deployment, self-contained Docker deployment, and four-gate GitHub Actions CI
+* Request cancellation/stale-response protection for autocomplete, geocoding, and nearby-place searches
+* Vitest coverage for scoring, utilities, and favourite API behaviour
 
-## Phase 2 — Search & Geocoding
+## Next Priorities
 
-* Add address search input
-* Convert addresses into latitude/longitude
-* Handle invalid search results
-
-## Phase 3 — Nearby Place Retrieval
-
-* Query nearby amenities using APIs
-* Organise results by category
-* Display nearby places on map
-
-## Phase 4 — Scoring System
-
-* Implement category scoring logic
-* Implement weighted overall score
-* Add score explanations
-
-## Phase 5 — UI Improvements
-
-* Improve responsiveness
-* Add loading states
-* Improve map interactions
-* Add category filters
-* Refine amenities-first result layout
-* Add derived and planned location indicators
-
-## Phase 6 — Deployment
-
-* Deploy prototype to Vercel
-* Configure environment variables
-* Test production deployment
+* Email verification, password reset, and account settings
+* Broader API rate limiting, monitoring, structured logging, and error tracking
+* Additional automated coverage for authentication, caching, and provider failure paths
+* First-party datasets for rent, safety, schools, population, and planning signals
+* Continued accessibility, responsive-layout, and mobile interaction refinement
 
 ---
 
@@ -228,9 +222,9 @@ GOOGLE_CLIENT_ID=YOUR_GOOGLE_OAUTH_CLIENT_ID
 GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_OAUTH_CLIENT_SECRET
 ```
 
-`TRANSITLAND_API_KEY` is optional and is used to show bus route numbers and destinations for nearby bus stops. `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are also optional; email/password authentication works without Google OAuth. Generate a long random value for `BETTER_AUTH_SECRET` and do not commit it.
+`TRANSITLAND_API_KEY` is optional and is used to show bus route numbers and destinations for nearby bus stops. `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are also optional; email/password authentication works without Google OAuth. Generate a long random value for `BETTER_AUTH_SECRET`, keep it stable within an environment, and never commit it. Deployments that share one database must use the same secret so encrypted OAuth token material remains readable; separate development and production databases/secrets are preferred.
 
-`NEXT_PUBLIC_MAPS_API_KEY` is exposed to the browser by design, so use a browser-restricted key. Keep `GOOGLE_MAPS_API_KEY` server-restricted. For Google OAuth, configure the local callback URL as `http://localhost:3000/api/auth/callback/google`.
+`NEXT_PUBLIC_MAPS_API_KEY` is exposed to the browser by design, so use a browser-restricted key. Keep `GOOGLE_MAPS_API_KEY` server-restricted. For Google OAuth, configure the local callback URL as `http://localhost:3000/api/auth/callback/google` and add the equivalent callback for every deployed domain. Google sends OAuth access and refresh tokens—not the user's Google password—back to the application, and Better Auth encrypts those tokens before database storage.
 
 Also create a `.env` file for the database (the Prisma CLI reads `.env`, not `.env.local`). Use your Neon (or any Postgres) connection string:
 
@@ -286,7 +280,7 @@ For a deployed environment, apply committed migrations explicitly before releasi
 npm run db:migrate:deploy
 ```
 
-Database deployment is intentionally separate from `npm run build`, so compiling or validating the application never changes production data. The Docker Compose stack runs the deployment command through its dedicated one-shot `migrate` service automatically.
+Database deployment is intentionally separate from `npm run build`, so compiling or validating the application never changes production data. A normal Vercel build does **not** apply migrations automatically; run the deployment command deliberately against the target database before releasing schema-dependent code. The Docker Compose stack runs it through its dedicated one-shot `migrate` service automatically.
 
 ## Start Development Server
 
