@@ -1,26 +1,107 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --page: #f3f6f4;
+  --surface: #ffffff;
+  --surface-subtle: #f8fafc;
+  --surface-raised: #f1f5f9;
+  --control: #ffffff;
+  --hover: #f8fafc;
+  --line-soft: #f1f5f9;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --ink-muted: #64748b;
+  --ink-faint: #94a3b8;
+  --accent: #059669;
+  --accent-hover: #047857;
+  --accent-soft: #ecfdf5;
+  --accent-line: #a7f3d0;
+  --accent-ink: #064e3b;
+  --accent-ring: #d1fae5;
+  --action: #1e293b;
+  --action-hover: #334155;
+  --action-disabled: #94a3b8;
+  --action-ink: #ffffff;
+  --danger-soft: #fef2f2;
+  --danger-line: #fecaca;
+  --danger-ink: #b91c1c;
+  --warning-soft: #fffbeb;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0b1017;
+  --surface: #111821;
+  --surface-subtle: #151e29;
+  --surface-raised: #1a2633;
+  --control: #0d141d;
+  --hover: #1a2633;
+  --line-soft: #1d2835;
+  --line: #263142;
+  --line-strong: #344256;
+  --ink: #f3f6fa;
+  --ink-soft: #a7b2c2;
+  --ink-muted: #7f8b9c;
+  --ink-faint: #667386;
+  --accent: #34d399;
+  --accent-hover: #10b981;
+  --accent-soft: #102a23;
+  --accent-line: #1f5b48;
+  --accent-ink: #a7f3d0;
+  --accent-ring: #164e3d;
+  --action: #10b981;
+  --action-hover: #059669;
+  --action-disabled: #3f4b5c;
+  --action-ink: #ffffff;
+  --danger-soft: #301719;
+  --danger-line: #6b2a30;
+  --danger-ink: #fca5a5;
+  --warning-soft: #2b2111;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-raised: var(--surface-raised);
+  --color-control: var(--control);
+  --color-hover: var(--hover);
+  --color-line-soft: var(--line-soft);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-ring: var(--accent-ring);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-action-disabled: var(--action-disabled);
+  --color-action-ink: var(--action-ink);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-danger-ink: var(--danger-ink);
+  --color-warning-soft: var(--warning-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--page);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }

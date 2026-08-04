@@ -36,6 +36,7 @@ The purpose of this prototype is to:
 * Provide compact explanations for score calculations
 * Save favourite locations and compare two of them side by side
 * Show additional derived indicators such as walkability, transit access, amenity density, daily convenience, and car reliance
+* Switch between persistent light and dark themes, including the authentication and map views
 
 ---
 
@@ -69,7 +70,7 @@ Health: 70/100
 Overall Rent Convenience Score: 72/100
 ```
 
-The current UI uses a compact dashboard layout: overall and category scores are intentionally small, while nearby amenities and map context receive more space. Additional indicators appear beside the map and distinguish between values derived from the current amenity data and planned future datasets.
+The current UI uses a compact dashboard layout: overall and category scores are intentionally small, while nearby amenities and map context receive more space. Additional indicators appear beside the map and distinguish between values derived from the current amenity data and planned future datasets. A header control switches between light and dark themes; the saved preference is applied before hydration so repeat visits do not flash the wrong theme.
 
 ---
 

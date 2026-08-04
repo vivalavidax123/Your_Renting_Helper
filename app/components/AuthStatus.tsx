@@ -17,7 +17,7 @@ export function AuthStatus() {
     return (
       <Link
         href="/login"
-        className="text-sm font-medium text-slate-500 hover:text-emerald-700"
+        className="text-sm font-medium text-ink-muted hover:text-accent"
       >
         Sign in
       </Link>
@@ -26,11 +26,11 @@ export function AuthStatus() {
 
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="text-slate-500">{session.user.email}</span>
+      <span className="text-ink-muted">{session.user.email}</span>
       <button
         type="button"
         onClick={() => authClient.signOut()}
-        className="font-medium text-slate-500 hover:text-emerald-700"
+        className="font-medium text-ink-muted hover:text-accent"
       >
         Sign out
       </button>

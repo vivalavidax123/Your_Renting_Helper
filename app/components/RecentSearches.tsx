@@ -35,16 +35,16 @@ function SearchChip({
   const isSaved = search.savedAt !== null;
 
   return (
-    <div className="flex items-center rounded-full border border-slate-200 bg-white text-xs font-medium text-slate-700 transition hover:border-emerald-300">
+    <div className="flex items-center rounded-full border border-line bg-surface text-xs font-medium text-ink-soft transition hover:border-accent-line">
       <button
         type="button"
         onClick={() => onSelect(search)}
         disabled={disabled}
-        className={`flex items-center gap-2 rounded-l-full py-1.5 pl-3 hover:bg-emerald-50 disabled:opacity-50 ${canSave ? "pr-1" : "rounded-r-full pr-3"}`}
+        className={`flex items-center gap-2 rounded-l-full py-1.5 pl-3 hover:bg-accent-soft disabled:opacity-50 ${canSave ? "pr-1" : "rounded-r-full pr-3"}`}
       >
         <span className="max-w-52 truncate">{search.formattedAddress}</span>
         {search.overallScore !== null ? (
-          <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-800">
+          <span className="rounded-full bg-accent-soft px-1.5 py-0.5 font-semibold text-accent-ink">
             {Math.round(search.overallScore)}
           </span>
         ) : null}
@@ -55,9 +55,9 @@ function SearchChip({
           onClick={() => onToggleSaved(search)}
           disabled={disabled}
           aria-label={isSaved ? "Remove from saved locations" : "Save this location"}
-          className="rounded-r-full py-1.5 pl-1 pr-2.5 text-sm leading-none hover:bg-amber-50 disabled:opacity-50"
+          className="rounded-r-full py-1.5 pl-1 pr-2.5 text-sm leading-none hover:bg-warning-soft disabled:opacity-50"
         >
-          <span className={isSaved ? "text-amber-500" : "text-slate-300"}>
+          <span className={isSaved ? "text-amber-500" : "text-ink-faint"}>
             {isSaved ? "★" : "☆"}
           </span>
         </button>
@@ -82,10 +82,10 @@ export function RecentSearches({
   // what an account buys them. Frontend-only: the APIs already gate.
   if (!canSave) {
     return (
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-ink-muted">
         <Link
           href="/login"
-          className="font-medium text-emerald-700 hover:underline"
+          className="font-medium text-accent hover:underline"
         >
           Sign in
         </Link>{" "}
@@ -103,7 +103,7 @@ export function RecentSearches({
     <div className="mt-4 space-y-3">
       {saved.length > 0 && (
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Saved locations
           </h2>
           <ul className="mt-2 flex flex-wrap gap-2">
@@ -124,7 +124,7 @@ export function RecentSearches({
 
       {unsavedRecent.length > 0 && (
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Recent searches
           </h2>
           <ul className="mt-2 flex flex-wrap gap-2">
