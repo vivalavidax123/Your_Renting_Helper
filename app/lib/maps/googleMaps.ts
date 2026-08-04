@@ -85,8 +85,6 @@ export function createPlaceMarker(
   onMarkerClick: (entry: MarkerEntry) => void,
 ): MarkerEntry {
   const color = categoryColors[group.id] ?? "#334155";
-  const primaryText = theme === "dark" ? "#f3f6fa" : "#0f172a";
-  const secondaryText = theme === "dark" ? "#a7b2c2" : "#475569";
   const position = { lat: place.latitude, lng: place.longitude };
   const marker = new mapsApi.maps.Marker({
     position,
@@ -103,10 +101,10 @@ export function createPlaceMarker(
   });
   const infoWindow = new mapsApi.maps.InfoWindow({
     content: `
-      <div style="max-width:220px;color:${primaryText}">
+      <div class="map-info-window">
         <strong>${escapeHtml(place.name)}</strong>
         <div>${escapeHtml(group.label)} · ${formatDistance(place.distanceMeters)}</div>
-        <div style="margin-top:4px;color:${secondaryText}">${escapeHtml(place.address)}</div>
+        <div class="map-info-window-address">${escapeHtml(place.address)}</div>
       </div>
     `,
   });

@@ -105,3 +105,24 @@ body {
   color: var(--ink);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+.map-info-window {
+  max-width: 220px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.map-info-window-address {
+  margin-top: 4px;
+  color: var(--ink-soft);
+}
+
+.gm-style .gm-style-iw-c,
+.gm-style .gm-style-iw-d,
+.gm-style .gm-style-iw-tc::after {
+  background: var(--surface) !important;
+}
+
+:root[data-theme="dark"] .gm-style .gm-style-iw-chr button {
+  filter: invert(1) brightness(1.5);
+}
