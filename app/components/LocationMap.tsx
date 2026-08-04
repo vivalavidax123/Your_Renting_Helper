@@ -69,7 +69,7 @@ export function LocationMap({
           zoom: 14,
           mapTypeControl: false,
           streetViewControl: false,
-          fullscreenControl: false,
+          fullscreenControl: true,
           colorScheme:
             theme === "dark"
               ? mapsApi.maps.ColorScheme.DARK
