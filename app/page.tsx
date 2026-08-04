@@ -12,6 +12,7 @@ import { ScoreBreakdown } from "./components/ScoreBreakdown";
 import { NearbyPlacesList } from "./components/NearbyPlacesList";
 import { AdditionalIndicators } from "./components/AdditionalIndicators";
 import { RecentSearches } from "./components/RecentSearches";
+import { ThemeToggle } from "./components/ThemeToggle";
 
 export default function Home() {
   const {
@@ -74,34 +75,35 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f3f6f4] px-4 py-5 text-slate-950 sm:px-6 lg:px-8">
-      <div className="mx-auto mb-3 flex max-w-7xl justify-end">
+    <main className="min-h-screen bg-page px-4 py-5 text-ink sm:px-6 lg:px-8">
+      <div className="mx-auto mb-3 flex max-w-7xl items-center justify-end gap-3">
+        <ThemeToggle />
         <AuthStatus />
       </div>
       <section className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="rounded-lg border border-line bg-surface p-4 shadow-sm sm:p-5">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold leading-tight text-slate-950">
+              <h1 className="text-2xl font-bold leading-tight text-ink">
                 Your Renting Helper
               </h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+              <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
                 Compare everyday convenience, transport access, food, health,
                 fitness, and practical services around a rental.
               </p>
             </div>
 
-            <div className="grid w-full grid-cols-[auto_1fr] items-center gap-3 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-left sm:w-52">
-              <div className="flex size-16 items-center justify-center rounded-full border-[6px] border-emerald-500 bg-white">
-                <span className="text-2xl font-bold text-emerald-900">
+            <div className="grid w-full grid-cols-[auto_1fr] items-center gap-3 rounded-lg border border-accent-line bg-accent-soft px-4 py-3 text-left sm:w-52">
+              <div className="flex size-16 items-center justify-center rounded-full border-[6px] border-accent bg-surface">
+                <span className="text-2xl font-bold text-accent-ink">
                   {placesState === "loading" ? "..." : overallScore ?? "--"}
                 </span>
               </div>
               <div>
-                <p className="text-sm font-semibold text-emerald-950">
+                <p className="text-sm font-semibold text-accent-ink">
                   {placesState === "success" ? "Overall score" : "Ready to score"}
                 </p>
-                <p className="text-xs font-medium text-emerald-800">out of 100</p>
+                <p className="text-xs font-medium text-accent-ink">out of 100</p>
               </div>
             </div>
           </div>
@@ -142,15 +144,15 @@ export default function Home() {
         </div>
 
         <aside className="space-y-6">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-950">Location preview</h2>
+          <div className="rounded-lg border border-line bg-surface p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-ink">Location preview</h2>
             <LocationMap
               location={location}
               placeGroups={placeGroups}
               selectedPlace={selectedPlace}
               onAutoScroll={handleAutoScroll}
             />
-            <p className="mt-4 text-sm leading-6 text-slate-600">
+            <p className="mt-4 text-sm leading-6 text-ink-soft">
               {location
                 ? `Matched as ${location.locationType.toLowerCase().replaceAll("_", " ")}. Map markers show the searched location and nearby amenities using each category radius.`
                 : "Search for a location to show nearby amenities on the map."}
@@ -173,7 +175,7 @@ export default function Home() {
           onClick={returnToSelectedRow}
           aria-label="Back to the amenity you were viewing"
           title="Back to the amenity you were viewing"
-          className="fixed bottom-6 right-6 z-50 flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:bg-slate-50 hover:text-slate-950"
+          className="fixed bottom-6 right-6 z-50 flex size-11 items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-lg transition hover:bg-surface-raised hover:text-ink"
         >
           <svg
             viewBox="0 0 24 24"

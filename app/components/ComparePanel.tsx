@@ -25,12 +25,12 @@ type LocationSelectProps = {
 
 function LocationSelect({ label, value, otherValue, saved, onChange }: LocationSelectProps) {
   return (
-    <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-semibold text-slate-500">
+    <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-semibold text-ink-muted">
       {label}
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm font-normal text-slate-900"
+        className="w-full rounded-md border border-line bg-control px-2 py-1.5 text-sm font-normal text-ink"
       >
         <option value="">Choose a saved location…</option>
         {saved.map((search) => (
@@ -53,7 +53,7 @@ function scoreCell(score: number, otherScore: number) {
   return (
     <td
       className={`px-3 py-2 text-right tabular-nums ${
-        isWinner ? "font-bold text-emerald-700" : "text-slate-700"
+        isWinner ? "font-bold text-accent" : "text-ink-soft"
       }`}
     >
       {Math.round(score)}
@@ -127,9 +127,9 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-base font-semibold text-slate-950">Compare saved locations</h2>
-      <p className="mt-1 text-xs text-slate-600">
+    <div className="rounded-lg border border-line bg-surface p-6 shadow-sm">
+      <h2 className="text-base font-semibold text-ink">Compare saved locations</h2>
+      <p className="mt-1 text-xs text-ink-soft">
         Pick two saved locations to see their category scores side by side.
         The higher score in each row is highlighted.
       </p>
@@ -151,12 +151,12 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
         />
       </div>
 
-      {activeError && <p className="mt-3 text-sm text-red-600">{activeError}</p>}
+      {activeError && <p className="mt-3 text-sm text-danger-ink">{activeError}</p>}
 
       {activeResult && (
         <table className="mt-4 w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-slate-300 text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-line-strong text-xs uppercase tracking-wide text-ink-muted">
               <th className="px-3 py-2 text-left font-semibold">Category</th>
               <th className="max-w-40 truncate px-3 py-2 text-right font-semibold">
                 {activeResult.a.formattedAddress}
@@ -167,7 +167,7 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-slate-200 bg-white font-semibold">
+            <tr className="border-b border-line bg-surface font-semibold">
               <td className="px-3 py-2">Overall</td>
               {scoreCell(activeResult.a.overallScore, activeResult.b.overallScore)}
               {scoreCell(activeResult.b.overallScore, activeResult.a.overallScore)}
@@ -182,8 +182,8 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
               }
 
               return (
-                <tr key={scoreA.id} className="border-b border-slate-200">
-                  <td className="px-3 py-2 text-slate-700">{scoreA.label}</td>
+                <tr key={scoreA.id} className="border-b border-line">
+                  <td className="px-3 py-2 text-ink-soft">{scoreA.label}</td>
                   {scoreCell(scoreA.score, scoreB.score)}
                   {scoreCell(scoreB.score, scoreA.score)}
                 </tr>

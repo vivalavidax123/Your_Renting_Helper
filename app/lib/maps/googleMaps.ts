@@ -1,4 +1,5 @@
 import "client-only";
+import type { Theme } from "../theme";
 import type { NearbyPlace, PlaceGroup } from "../types";
 import { formatDistance } from "../utils";
 
@@ -80,9 +81,12 @@ export function createPlaceMarker(
   map: google.maps.Map,
   place: NearbyPlace,
   group: PlaceGroup,
+  theme: Theme,
   onMarkerClick: (entry: MarkerEntry) => void,
 ): MarkerEntry {
   const color = categoryColors[group.id] ?? "#334155";
+  const primaryText = theme === "dark" ? "#f3f6fa" : "#0f172a";
+  const secondaryText = theme === "dark" ? "#a7b2c2" : "#475569";
   const position = { lat: place.latitude, lng: place.longitude };
   const marker = new mapsApi.maps.Marker({
     position,
@@ -93,16 +97,16 @@ export function createPlaceMarker(
       scale: place.source === "brand" ? 7 : 5,
       fillColor: color,
       fillOpacity: 0.9,
-      strokeColor: "#ffffff",
+      strokeColor: theme === "dark" ? "#111821" : "#ffffff",
       strokeWeight: 2,
     },
   });
   const infoWindow = new mapsApi.maps.InfoWindow({
     content: `
-      <div style="max-width:220px">
+      <div style="max-width:220px;color:${primaryText}">
         <strong>${escapeHtml(place.name)}</strong>
         <div>${escapeHtml(group.label)} · ${formatDistance(place.distanceMeters)}</div>
-        <div style="margin-top:4px;color:#475569">${escapeHtml(place.address)}</div>
+        <div style="margin-top:4px;color:${secondaryText}">${escapeHtml(place.address)}</div>
       </div>
     `,
   });

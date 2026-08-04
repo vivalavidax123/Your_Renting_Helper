@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/app/lib/auth-client";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
 
 type Mode = "signIn" | "signUp";
 
@@ -57,12 +58,13 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f3f6f4] px-4 text-slate-950">
-      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <main className="relative flex min-h-screen items-center justify-center bg-page px-4 text-ink">
+      <ThemeToggle className="absolute right-5 top-5" />
+      <div className="w-full max-w-sm rounded-lg border border-line bg-surface p-6 shadow-sm">
         <h1 className="text-xl font-bold">
           {mode === "signIn" ? "Sign in" : "Create account"}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-ink-muted">
           Save locations and compare them across visits.
         </p>
 
@@ -75,7 +77,7 @@ export default function LoginPage() {
               onChange={(event) => setName(event.target.value)}
               placeholder="Name"
               autoComplete="name"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+              className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
             />
           )}
           <input
@@ -85,7 +87,7 @@ export default function LoginPage() {
             onChange={(event) => setEmail(event.target.value)}
             placeholder="Email"
             autoComplete="email"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+            className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
           />
           <input
             type="password"
@@ -95,35 +97,35 @@ export default function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Password (min. 8 characters)"
             autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+            className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
           />
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger-ink">{error}</p>}
 
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-md bg-emerald-600 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+            className="w-full rounded-md bg-action py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover disabled:bg-action-disabled"
           >
             {mode === "signIn" ? "Sign in" : "Sign up"}
           </button>
         </form>
 
-        <div className="my-4 flex items-center gap-3 text-xs text-slate-400">
-          <span className="h-px flex-1 bg-slate-200" />
+        <div className="my-4 flex items-center gap-3 text-xs text-ink-faint">
+          <span className="h-px flex-1 bg-line" />
           or
-          <span className="h-px flex-1 bg-slate-200" />
+          <span className="h-px flex-1 bg-line" />
         </div>
 
         <button
           type="button"
           onClick={handleGoogle}
-          className="w-full rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="w-full rounded-md border border-line-strong bg-control py-2 text-sm font-medium text-ink-soft transition hover:bg-surface-raised"
         >
           Continue with Google
         </button>
 
-        <p className="mt-5 text-center text-sm text-slate-500">
+        <p className="mt-5 text-center text-sm text-ink-muted">
           {mode === "signIn" ? "No account yet?" : "Already have an account?"}{" "}
           <button
             type="button"
@@ -131,14 +133,14 @@ export default function LoginPage() {
               setMode(mode === "signIn" ? "signUp" : "signIn");
               setError(null);
             }}
-            className="font-semibold text-emerald-700 hover:underline"
+            className="font-semibold text-accent hover:underline"
           >
             {mode === "signIn" ? "Sign up" : "Sign in"}
           </button>
         </p>
 
         <p className="mt-3 text-center text-sm">
-          <Link href="/" className="text-slate-400 hover:underline">
+          <Link href="/" className="text-ink-faint hover:underline">
             Back to search
           </Link>
         </p>

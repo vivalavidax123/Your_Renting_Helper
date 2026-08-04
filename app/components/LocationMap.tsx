@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTheme } from "@/app/components/ThemeProvider";
 import {
   createPlaceMarker,
   loadGoogleMaps,
@@ -31,6 +32,8 @@ export function LocationMap({
   const markerEntriesRef = useRef(new Map<string, MarkerEntry>());
   const openInfoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const [mapError, setMapError] = useState("");
+  const [mapRevision, setMapRevision] = useState(0);
+  const { theme } = useTheme();
   const apiKey = process.env.NEXT_PUBLIC_MAPS_API_KEY;
 
   const openEntry = useCallback((entry: MarkerEntry) => {
@@ -49,7 +52,7 @@ export function LocationMap({
     let isMounted = true;
 
     async function renderMap() {
-      if (!apiKey || !location || !mapRef.current) {
+      if (!apiKey || !location || !mapRef.current || !theme) {
         return;
       }
 
@@ -67,6 +70,10 @@ export function LocationMap({
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
+          colorScheme:
+            theme === "dark"
+              ? mapsApi.maps.ColorScheme.DARK
+              : mapsApi.maps.ColorScheme.LIGHT,
         });
 
         googleApiRef.current = mapsApi;
@@ -85,12 +92,13 @@ export function LocationMap({
           for (const place of group.places.slice(0, 8)) {
             markerEntriesRef.current.set(
               place.id,
-              createPlaceMarker(mapsApi, map, place, group, openEntry),
+              createPlaceMarker(mapsApi, map, place, group, theme, openEntry),
             );
           }
         }
 
         setMapError("");
+        setMapRevision((revision) => revision + 1);
       } catch (error) {
         if (isMounted) {
           setMapError(
@@ -105,13 +113,13 @@ export function LocationMap({
     return () => {
       isMounted = false;
     };
-  }, [apiKey, location, placeGroups, openEntry]);
+  }, [apiKey, location, placeGroups, theme, openEntry]);
 
   useEffect(() => {
     const mapsApi = googleApiRef.current;
     const map = mapInstanceRef.current;
 
-    if (!selectedPlace || !mapsApi || !map) {
+    if (!selectedPlace || !mapsApi || !map || !theme) {
       return;
     }
 
@@ -124,7 +132,14 @@ export function LocationMap({
         );
 
         if (place) {
-          entry = createPlaceMarker(mapsApi, map, place, group, openEntry);
+          entry = createPlaceMarker(
+            mapsApi,
+            map,
+            place,
+            group,
+            theme,
+            openEntry,
+          );
           markerEntriesRef.current.set(place.id, entry);
           break;
         }
@@ -149,11 +164,11 @@ export function LocationMap({
         onAutoScroll();
       }
     }
-  }, [selectedPlace, placeGroups, openEntry, onAutoScroll]);
+  }, [selectedPlace, placeGroups, theme, mapRevision, openEntry, onAutoScroll]);
 
   if (!apiKey) {
     return (
-      <div className="mt-5 flex aspect-[4/3] items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-5 text-center text-sm leading-6 text-slate-600">
+      <div className="mt-5 flex aspect-[4/3] items-center justify-center rounded-lg border border-line bg-surface-subtle p-5 text-center text-sm leading-6 text-ink-soft">
         Add NEXT_PUBLIC_MAPS_API_KEY to show the live map.
       </div>
     );
@@ -161,17 +176,17 @@ export function LocationMap({
 
   if (!location) {
     return (
-      <div className="mt-5 flex aspect-[4/3] items-center justify-center rounded-lg border border-slate-200 bg-[#dfe8e3] p-5 text-center text-sm leading-6 text-slate-600">
+      <div className="mt-5 flex aspect-[4/3] items-center justify-center rounded-lg border border-line bg-accent-soft p-5 text-center text-sm leading-6 text-ink-soft">
         Search for a location to preview it on the map.
       </div>
     );
   }
 
   return (
-    <div className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+    <div className="mt-5 overflow-hidden rounded-lg border border-line bg-surface-raised">
       <div ref={mapRef} className="aspect-[4/3] w-full scroll-mt-16" />
       {mapError ? (
-        <p className="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <p className="border-t border-danger-line bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">
           {mapError}
         </p>
       ) : null}

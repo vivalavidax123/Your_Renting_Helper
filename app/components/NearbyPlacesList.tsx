@@ -48,22 +48,22 @@ function PlaceRow({
         type="button"
         onClick={() => onSelect(place.id)}
         className={`flex w-full items-center gap-2 rounded-md px-1 py-1 text-left ${
-          selected ? "bg-emerald-50" : "hover:bg-slate-50"
+          selected ? "bg-accent-soft" : "hover:bg-hover"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selected ? "font-medium text-emerald-900" : "text-slate-800"
+            selected ? "font-medium text-accent-ink" : "text-ink-soft"
           }`}
         >
           {place.name}
         </span>
         {groupId !== "transport" ? (
-          <span className="shrink-0 text-[11px] text-slate-400">
+          <span className="shrink-0 text-[11px] text-ink-faint">
             {formatReviewSummary(place)}
           </span>
         ) : null}
-        <span className="shrink-0 text-xs font-medium text-slate-600">
+        <span className="shrink-0 text-xs font-medium text-ink-soft">
           {formatDistance(place.distanceMeters)}
         </span>
       </button>
@@ -75,16 +75,16 @@ function PlaceRow({
             return (
               <li
                 key={`${service.routeNumber}-${service.destination}`}
-                className="flex items-center gap-2 text-[11px] leading-4 text-slate-600"
+                className="flex items-center gap-2 text-[11px] leading-4 text-ink-soft"
               >
-                <span className="min-w-8 rounded bg-slate-100 px-1.5 py-0.5 text-center font-semibold text-slate-700">
+                <span className="min-w-8 rounded bg-surface-raised px-1.5 py-0.5 text-center font-semibold text-ink-soft">
                   {service.routeNumber}
                 </span>
                 <span className="min-w-0 flex-1 truncate">
                   to {service.destination}
                 </span>
                 {departureTime ? (
-                  <span className="shrink-0 text-slate-500">{departureTime}</span>
+                  <span className="shrink-0 text-ink-muted">{departureTime}</span>
                 ) : null}
               </li>
             );
@@ -115,14 +115,14 @@ function CategorySection({
   const hiddenCount = group.places.length - collapsedRowCount;
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+    <section className="rounded-lg border border-line bg-surface px-4 py-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-semibold text-slate-950">{group.label}</h3>
-        <span className="text-xs text-slate-400">{formatGroupScope(group)}</span>
+        <h3 className="text-sm font-semibold text-ink">{group.label}</h3>
+        <span className="text-xs text-ink-faint">{formatGroupScope(group)}</span>
       </div>
       {group.places.length > 0 ? (
         <>
-          <ul className="mt-1 divide-y divide-slate-100">
+          <ul className="mt-1 divide-y divide-line-soft">
             {visiblePlaces.map((place) => (
               <PlaceRow
                 key={place.id}
@@ -137,14 +137,14 @@ function CategorySection({
             <button
               type="button"
               onClick={() => setExpanded((value) => !value)}
-              className="mt-1 w-full rounded-md py-1 text-xs font-medium text-slate-500 hover:text-slate-800"
+              className="mt-1 w-full rounded-md py-1 text-xs font-medium text-ink-muted hover:text-ink"
             >
               {expanded ? "Show top 3" : `Show all ${group.places.length}`}
             </button>
           ) : null}
         </>
       ) : (
-        <p className="py-2 text-sm text-slate-500">No nearby matches found.</p>
+        <p className="py-2 text-sm text-ink-muted">No nearby matches found.</p>
       )}
     </section>
   );
@@ -170,32 +170,32 @@ export function NearbyPlacesList({
   );
 
   return (
-    <div className="mt-6 border-t border-slate-200 pt-5">
+    <div className="mt-6 border-t border-line pt-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-slate-950">Nearby amenities</h2>
+          <h2 className="text-base font-semibold text-ink">Nearby amenities</h2>
           {placesState === "success" ? (
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-ink-soft">
               {allPlaces.length} found
               {closestPlace ? ` / nearest ${formatDistance(closestPlace.distanceMeters)}` : ""}
             </p>
           ) : null}
         </div>
         {placesState === "loading" ? (
-          <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
+          <span className="w-fit rounded-full bg-surface-raised px-3 py-1 text-sm font-medium text-ink-soft">
             Loading
           </span>
         ) : null}
       </div>
 
       {placesState === "idle" ? (
-        <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-600">
+        <p className="mt-3 rounded-lg border border-line bg-surface-subtle px-3 py-2.5 text-sm leading-6 text-ink-soft">
           Search for a location to load nearby amenities.
         </p>
       ) : null}
 
       {placesState === "error" ? (
-        <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+        <p className="mt-4 rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm font-medium text-danger-ink">
           {placesError}
         </p>
       ) : null}

@@ -379,3 +379,17 @@ How it works:
 * `page.tsx` owns `showReturnButton`. `LocationMap` receives an `onAutoScroll` callback (wrapped in `useCallback` with empty deps so its identity is stable and never re-triggers the map's selection effect) and calls it only inside the `!fullyVisible` branch — so the button appears only when an actual jump happened, not when the map was already on screen.
 * Each `PlaceRow` `<li>` carries `id={`place-row-${place.id}`}`; the button's handler finds it with `document.getElementById(...).scrollIntoView({ behavior: "smooth", block: "center" })`.
 * The button hides on click, and when a new search starts. The reset uses the render-time adjustment pattern (`prevPlacesState` state + guarded compare during render) because the new `react-hooks/set-state-in-effect` lint rule rejects calling `setState` synchronously inside `useEffect`.
+
+## Persistent Light/Dark Theme
+
+Added a clean, high-contrast dark theme across the dashboard, login flow, result states, comparison table, and Google Map without duplicating component markup.
+
+Design decisions and their reasons:
+
+* **Semantic tokens instead of scattered overrides.** `app/globals.css` defines page, surface, control, border, text, accent, action, warning, and danger roles for both themes. Components use role-based Tailwind utilities such as `bg-surface`, `text-ink-muted`, and `border-line`, so future palette changes stay centralized and category dot colors remain independent.
+* **One small justified theme type.** `Theme` is only the closed union `"light" | "dark"`; it prevents invalid stored or propagated values without adding parallel interfaces or theme configuration objects.
+* **No-flash startup.** A `beforeInteractive` root-layout script resolves the saved preference (or the operating-system preference) and sets `data-theme` before React hydrates. `ThemeProvider` owns the live value, system changes, cross-tab storage updates, and toggle action. The toggle renders identical server/client markup, with CSS selecting the sun or moon icon, avoiding hydration-dependent icon output.
+* **Persistent but user-controlled.** The first visit follows the operating system. Once toggled, the preference is stored locally and survives navigation and reloads; no account or database write is needed.
+* **The map is themed at construction.** Google Maps treats `colorScheme` as a map-construction option, so `LocationMap` recreates the map when the app theme changes and rebuilds markers from existing result data. Marker outlines and info-window text also adjust for contrast, while amenity category colors stay recognizable.
+
+Verification: section-level ESLint and TypeScript checks passed after the provider, component migration, and map changes. The final full run passed ESLint, all 32 Vitest tests, TypeScript, and the optimized Next.js 16 build. Browser checks confirmed initial dark rendering, light/dark toggling, persistence after reload, login coverage, no 375 px horizontal overflow, no framework error overlay, and no console errors. The sandboxed local server could not reach the external geocoding service, so the live Google basemap could not be populated there; its themed error state rendered correctly, while map integration remained covered by type/build checks.
