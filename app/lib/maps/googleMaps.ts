@@ -86,6 +86,12 @@ export function createPlaceMarker(
 ): MarkerEntry {
   const color = categoryColors[group.id] ?? "#334155";
   const position = { lat: place.latitude, lng: place.longitude };
+  const googleMapsUrl =
+    group.id === "transport"
+      ? null
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          `${place.name}, ${place.address}`,
+        )}&query_place_id=${encodeURIComponent(place.id)}`;
   const marker = new mapsApi.maps.Marker({
     position,
     map,
@@ -105,6 +111,11 @@ export function createPlaceMarker(
         <strong>${escapeHtml(place.name)}</strong>
         <div>${escapeHtml(group.label)} · ${formatDistance(place.distanceMeters)}</div>
         <div class="map-info-window-address">${escapeHtml(place.address)}</div>
+        ${
+          googleMapsUrl
+            ? `<a class="map-info-window-link" href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View on Google Maps (opens in a new tab)">View on Google Maps <span aria-hidden="true">↗</span></a>`
+            : ""
+        }
       </div>
     `,
   });
