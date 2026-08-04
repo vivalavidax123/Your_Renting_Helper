@@ -15,15 +15,7 @@ import { RecentSearches } from "./components/RecentSearches";
 
 export default function Home() {
   const {
-    query,
-    setQuery,
-    suggestions,
-    setSuggestions,
-    showSuggestions,
-    setShowSuggestions,
-    activeSuggestionIndex,
-    setActiveSuggestionIndex,
-    setSelectedSuggestionText,
+    autocomplete,
     searchState,
     location,
     error,
@@ -36,23 +28,17 @@ export default function Home() {
     profile,
     changeProfile,
     handleSearch,
-    handleSuggestionSelect,
-    handleLocationKeyDown,
     searchFromHistory,
   } = useLocationSearch();
 
-  // Saving is per-account, so the lists refetch when the viewer changes
-  // and the star buttons only render for signed-in users.
   const { data: session } = authClient.useSession();
 
-  // Shared by the chips and the comparison panel — one copy of the lists.
   const { recent, saved, toggleSaved } = useSavedSearches(
     placesState,
     session?.user.id ?? null,
   );
 
-  // A fresh object per click (not a bare id) so re-clicking the same row
-  // still re-triggers the map's pan/info-window effect.
+  // A fresh object lets repeated clicks on the same place retrigger the map.
   const [selectedPlace, setSelectedPlace] = useState<{ placeId: string } | null>(
     null,
   );
@@ -61,8 +47,6 @@ export default function Home() {
   // user has a one-tap way back to the row they were reading.
   const [showReturnButton, setShowReturnButton] = useState(false);
 
-  // Stable identity (state setters never change), so passing it into
-  // LocationMap's effect dependencies never re-triggers that effect.
   const handleAutoScroll = useCallback(() => setShowReturnButton(true), []);
 
   // A new search replaces the rows the button would return to, so drop the
@@ -123,21 +107,11 @@ export default function Home() {
           </div>
 
           <SearchForm
-            query={query}
-            setQuery={setQuery}
-            suggestions={suggestions}
-            setSuggestions={setSuggestions}
-            showSuggestions={showSuggestions}
-            setShowSuggestions={setShowSuggestions}
-            activeSuggestionIndex={activeSuggestionIndex}
-            setActiveSuggestionIndex={setActiveSuggestionIndex}
-            setSelectedSuggestionText={setSelectedSuggestionText}
+            autocomplete={autocomplete}
             searchState={searchState}
             placesState={placesState}
             error={error}
-            handleSearch={handleSearch}
-            handleSuggestionSelect={handleSuggestionSelect}
-            handleLocationKeyDown={handleLocationKeyDown}
+            onSearch={handleSearch}
           />
 
           <RecentSearches

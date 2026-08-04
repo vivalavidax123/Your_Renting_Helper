@@ -32,7 +32,7 @@ Build and migration pipeline: `postinstall` runs `prisma generate` (Vercel build
 
 The app is deployed at https://rent-score-prototype.vercel.app/ (Vercel, auto-deploys on push to main). Environment variables are configured in the Vercel dashboard — paste bare values there, no quotes (a quoted `DATABASE_URL` failed the first deploy with P1012). The browser Maps key is referrer-restricted to localhost and the vercel.app domains and API-restricted to Maps JavaScript API; the server key has no referrer restriction (server calls send none) and is API-restricted to Places API (New) and Geocoding API.
 
-Environments are separated with Neon branches: local dev uses a `development` branch (its connection string in local `.env`), while production uses the default `production` branch (its string in Vercel). A development branch can be forked copy-on-write from production with data and migration history included. Day-to-day flow: generate and test schema changes with `npm run db:migrate` against development, commit the migration, then run `npm run db:migrate:deploy` explicitly against production before releasing dependent code. A push/Vercel build does not perform that database mutation. Destructive maintenance (such as clearing snapshots after scoring changes) must also be run deliberately in each intended environment; otherwise stale scores simply age out through later searches.
+Environments are separated with Neon branches: local dev uses a `development` branch, while production uses the default `production` branch. Both sets of configuration now live in the linked Vercel project under their matching scopes; `npx vercel@latest env pull .env.local --environment=development` restores the ignored local file on a new machine. Development values cannot use Vercel's write-only Sensitive mode because they must be retrievable by the CLI. The pull replaces `.env.local`, so manually managed overrides belong in `.env.development.local`. A development branch can be forked copy-on-write from production with data and migration history included. Day-to-day flow: run Prisma through `npx vercel@latest env run -- ...`, generate and test schema changes against development, commit the migration, then run `db:migrate:deploy` explicitly against production before releasing dependent code. A push/Vercel build does not perform that database mutation. Destructive maintenance (such as clearing snapshots after scoring changes) must also be run deliberately in each intended environment; otherwise stale scores simply age out through later searches.
 
 Watch-out (hit 2026-07-08): the Neon project only had **one** branch — the separate `development` branch this doc describes did not actually exist, so local `.env` had been quietly pointing at a stale/dead endpoint (and, worse, could as easily have been pointed straight at `production`). Recreated the `development` branch from `production` via the Neon console (New Branch → copies data + schema) and repointed local `.env` at its pooled connection string. If `migrate status` or a user-count query ever needs re-checking after a credential swap, verify the branch name in the Neon console before trusting this doc — branches get deleted or drift silently, and there is no in-app signal that a search is quietly hitting production.
 
@@ -77,7 +77,7 @@ Saved locations are independent of snapshot state: listings do not require a sna
 * **Route handlers only translate HTTP; `searchStore` owns all Prisma calls.** Swapping SQLite for Postgres, adding caching, or writing tests touches one file instead of every route. This is the same layering as Controller → Service → Repository in Spring-style backends.
 * **One component owns both chip rows.** Saved and Recent refresh at exactly the same moments (page load, search completion, star toggle); a single fetch effect guarantees they can never fall out of sync with each other.
 
-`DATABASE_URL` lives in `.env` (Prisma CLI reads `.env`, not `.env.local`). During the earlier SQLite phase, a conflicting `DATABASE_URL` in `.env.local` overrode `.env` for the Next.js runtime; the duplicate and an empty migration folder were removed. Keep one authoritative database URL per local environment to avoid the CLI and application connecting to different databases.
+`DATABASE_URL` now comes from the Vercel Development environment and is pulled into `.env.local` with the other runtime settings. Next.js reads that file directly; standalone Prisma commands run through `vercel env run` so the application and CLI cannot silently target different databases. During the earlier SQLite phase, competing values in `.env` and `.env.local` caused exactly that split-brain configuration and should not be reintroduced.
 
 ## Comparison View
 
@@ -142,7 +142,7 @@ Submitting a new search cancels both the previous geocode and any place lookup f
 
 The app is branded "Your Renting Helper" (layout metadata + the page H1; the tab previously still said "Create Next App" from the template). The repo/deployment name stays `rent-score-prototype`.
 
-Tests run with Vitest (`npm test` / `npm run test:watch`). The suite currently has 27 tests: 18 pure-function tests for `scoring.ts` and `utils.ts`, plus 9 isolated route tests for `/api/favourites`. Provider and database dependencies are mocked where appropriate, so CI does not need network access or a live database.
+Tests run with Vitest (`npm test` / `npm run test:watch`). The suite currently has 32 tests: 18 pure-function tests for `scoring.ts` and `utils.ts`, 9 isolated route tests for `/api/favourites`, 3 API-envelope tests, and 2 derived-indicator tests. Provider and database dependencies are mocked where appropriate, so CI does not need network access or a live database.
 
 ### Testing principles the suite demonstrates
 
@@ -303,12 +303,16 @@ AI summaries, crime data, school quality, and rental price analysis are deferred
 
 ## Architecture Refactoring
 
-To improve maintainability, the bloated monolithic files (`app/page.tsx` and `app/api/places/route.ts`) have been refactored using component-based and service-layer patterns:
-- **Shared code:** Extracted TypeScript interfaces to `app/lib/types.ts` and generic formatters to `app/lib/utils.ts`.
-- **Frontend Components:** Split `app/page.tsx` into a layout orchestrator coordinating `SearchForm`, `ScoreBreakdown`, and `NearbyPlacesList`. Complex React state and search side-effects were extracted into `app/hooks/useLocationSearch.ts`.
-- **Backend Services:** Separated API integration logic into dedicated services (`app/lib/services/googlePlaces.ts` and `app/lib/services/transitland.ts`), leaving `app/api/places/route.ts` responsible only for request coordination and score computation.
+The second architecture pass removed duplicated types and split stateful UI/provider orchestration at stable boundaries without reducing runtime type safety:
 
-*Note on Transitland API Refactor Issue:* During the initial service extraction, an issue occurred where Transitland bus stops were returned without fetching their distinct route departures. This was quickly identified and patched by ensuring `fetchTransitlandBusDepartures` iterates over the sorted stops and attaches `transportServices` prior to returning to the places route.
+* **Shared contracts:** `app/lib/types.ts` owns canonical domain models, a reusable request-state shape, and the generic `ApiResult<T>` envelope. `app/lib/api.ts` parses JSON and validates each endpoint's success payload before it reaches UI state; callers no longer repeat unchecked casts and error-envelope handling.
+* **Search controller:** `useAutocomplete` owns query text, debouncing, cancellation, stale-response protection, keyboard navigation, and suggestion selection. `SearchForm` now receives five intent-oriented props instead of fifteen raw values and setters. `useLocationSearch` groups related results into three state objects rather than fifteen independent state hooks.
+* **Provider boundary:** `app/lib/services/placeSearch.ts` owns category/provider orchestration, while `/api/places` is a 126-line HTTP/cache/session/scoring coordinator rather than a 550-line provider implementation. Google Places and Transitland remain isolated services, and V/Line station data is loaded once per request rather than once per place.
+* **Map boundary:** `app/lib/maps/googleMaps.ts` owns SDK loading, marker construction, HTML escaping, and official `google.maps` types from `@types/google.maps`. `LocationMap` is limited to React lifecycle and interaction coordination.
+* **Pure indicators:** `app/lib/indicators.ts` derives the five current indicators without mutating place arrays. `AdditionalIndicators` is presentation-only, and the pure calculations have direct unit tests.
+* **Measured result:** files over 200 lines dropped from 10 to 5, exported types from 33 to 28, `SearchForm` props from 15 to 5, and the test suite grew from 27 to 32 while total TS/TSX lines stayed effectively flat.
+
+The refactor was gated section-by-section with ESLint, TypeScript, targeted tests, the full 32-test suite, a production build, and a browser smoke test of search input and authentication pages.
 
 ## Docker Deployment
 
@@ -324,7 +328,7 @@ Design decisions and their reasons:
 
 ## Continuous Integration (GitHub Actions)
 
-A CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. On a fresh `ubuntu-latest` machine it checks out the code, installs Node 20, runs `npm ci`, then enforces four quality gates: `npm run lint` (ESLint), `npx tsc --noEmit` (type-check), `npm run test` (Vitest, currently 27 tests), and `npm run build` (optimized production compilation). A failure marks the commit/PR red.
+A CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. On a fresh `ubuntu-latest` machine it checks out the code, installs Node 20, runs `npm ci`, then enforces four quality gates: `npm run lint` (ESLint), `npx tsc --noEmit` (type-check), `npm run test` (Vitest, currently 32 tests), and `npm run build` (optimized production compilation). A failure marks the commit/PR red.
 
 Design decisions and their reasons:
 

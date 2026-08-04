@@ -1,41 +1,76 @@
-import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { WeightProfile } from "../lib/categories";
+import { isJsonRecord, readApiResult } from "../lib/api";
+import { useAutocomplete } from "./useAutocomplete";
 import type {
   GeocodeLocation,
-  AddressSuggestion,
-  SearchState,
-  PlacesState,
+  RequestState,
   PlaceGroup,
   CategoryScore,
-  AutocompleteSuccess,
-  AutocompleteFailure,
-  GeocodeSuccess,
-  GeocodeFailure,
-  PlacesSuccess,
-  PlacesFailure,
   RecentSearch,
 } from "../lib/types";
 
+function isGeocodePayload(value: Record<string, unknown>) {
+  const location = value.location;
+
+  return (
+    isJsonRecord(location) &&
+    typeof location.query === "string" &&
+    typeof location.formattedAddress === "string" &&
+    typeof location.placeId === "string" &&
+    typeof location.latitude === "number" &&
+    typeof location.longitude === "number" &&
+    typeof location.locationType === "string" &&
+    Array.isArray(location.types)
+  );
+}
+
+function isPlacesPayload(value: Record<string, unknown>) {
+  return (
+    Array.isArray(value.groups) &&
+    Array.isArray(value.scores) &&
+    typeof value.overallScore === "number" &&
+    typeof value.cached === "boolean" &&
+    typeof value.fetchedAt === "string"
+  );
+}
+
+type SearchResultState = {
+  status: RequestState;
+  location: GeocodeLocation | null;
+  error: string;
+};
+
+type PlacesResultState = {
+  status: RequestState;
+  groups: PlaceGroup[];
+  scores: CategoryScore[];
+  overallScore: number | null;
+  error: string;
+  fromCache: boolean;
+};
+
+const initialSearchResult: SearchResultState = {
+  status: "idle",
+  location: null,
+  error: "",
+};
+
+const emptyPlacesResult: PlacesResultState = {
+  status: "idle",
+  groups: [],
+  scores: [],
+  overallScore: null,
+  error: "",
+  fromCache: false,
+};
+
 export function useLocationSearch() {
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
-  const [selectedSuggestionText, setSelectedSuggestionText] = useState("");
-  
-  const [searchState, setSearchState] = useState<SearchState>("idle");
-  const [location, setLocation] = useState<GeocodeLocation | null>(null);
-  const [error, setError] = useState("");
-  
-  const [placesState, setPlacesState] = useState<PlacesState>("idle");
-  const [placeGroups, setPlaceGroups] = useState<PlaceGroup[]>([]);
-  const [categoryScores, setCategoryScores] = useState<CategoryScore[]>([]);
-  const [overallScore, setOverallScore] = useState<number | null>(null);
-  const [placesError, setPlacesError] = useState("");
-  const [resultFromCache, setResultFromCache] = useState(false);
+  const [searchResult, setSearchResult] = useState(initialSearchResult);
+  const [placesResult, setPlacesResult] = useState(emptyPlacesResult);
+  const autocomplete = useAutocomplete(searchResult.status);
   const [profile, setProfile] = useState<WeightProfile>("carFree");
   
-  const autocompleteRequestId = useRef(0);
   const geocodeRequestId = useRef(0);
   const placesRequestId = useRef(0);
   const geocodeController = useRef<AbortController | null>(null);
@@ -65,62 +100,6 @@ export function useLocationSearch() {
     };
   }, []);
 
-  useEffect(() => {
-    const trimmedQuery = query.trim();
-
-    if (
-      trimmedQuery.length < 3 ||
-      trimmedQuery === selectedSuggestionText ||
-      searchState === "loading"
-    ) {
-      return;
-    }
-
-    const requestId = autocompleteRequestId.current + 1;
-    autocompleteRequestId.current = requestId;
-    const controller = new AbortController();
-    
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/autocomplete?query=${encodeURIComponent(trimmedQuery)}`,
-          { signal: controller.signal },
-        );
-        const data = (await response.json()) as
-          | AutocompleteSuccess
-          | AutocompleteFailure;
-
-        if (requestId !== autocompleteRequestId.current) {
-          return;
-        }
-
-        if (!response.ok || !data.ok) {
-          setSuggestions([]);
-          setShowSuggestions(false);
-          setActiveSuggestionIndex(-1);
-          return;
-        }
-
-        setSuggestions(data.suggestions);
-        setShowSuggestions(data.suggestions.length > 0);
-        setActiveSuggestionIndex(data.suggestions.length > 0 ? 0 : -1);
-      } catch {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setSuggestions([]);
-        setShowSuggestions(false);
-        setActiveSuggestionIndex(-1);
-      }
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, [query, searchState, selectedSuggestionText]);
-
   async function loadNearbyPlaces(
     nextLocation: GeocodeLocation,
     profileOverride?: WeightProfile,
@@ -135,12 +114,7 @@ export function useLocationSearch() {
     // profile passes the new value directly instead of reading stale state.
     const activeProfile = profileOverride ?? profile;
 
-    setPlacesState("loading");
-    setPlacesError("");
-    setPlaceGroups([]);
-    setCategoryScores([]);
-    setOverallScore(null);
-    setResultFromCache(false);
+    setPlacesResult({ ...emptyPlacesResult, status: "loading" });
 
     try {
       const placesUrl = new URLSearchParams({
@@ -155,7 +129,13 @@ export function useLocationSearch() {
       const response = await fetch(`/api/places?${placesUrl.toString()}`, {
         signal: controller.signal,
       });
-      const data = (await response.json()) as PlacesSuccess | PlacesFailure;
+      const data = await readApiResult<{
+        groups: PlaceGroup[];
+        scores: CategoryScore[];
+        overallScore: number;
+        cached: boolean;
+        fetchedAt: string;
+      }>(response, isPlacesPayload);
 
       if (
         controller.signal.aborted ||
@@ -165,16 +145,22 @@ export function useLocationSearch() {
       }
 
       if (!response.ok || !data.ok) {
-        setPlacesError(data.ok ? "Could not load nearby places." : data.error);
-        setPlacesState("error");
+        setPlacesResult({
+          ...emptyPlacesResult,
+          status: "error",
+          error: data.ok ? "Could not load nearby places." : data.error,
+        });
         return;
       }
 
-      setPlaceGroups(data.groups);
-      setCategoryScores(data.scores);
-      setOverallScore(data.overallScore);
-      setResultFromCache(data.cached);
-      setPlacesState("success");
+      setPlacesResult({
+        status: "success",
+        groups: data.groups,
+        scores: data.scores,
+        overallScore: data.overallScore,
+        error: "",
+        fromCache: data.cached,
+      });
     } catch {
       if (
         controller.signal.aborted ||
@@ -183,8 +169,11 @@ export function useLocationSearch() {
         return;
       }
 
-      setPlacesError("Nearby places failed to load. Try searching again.");
-      setPlacesState("error");
+      setPlacesResult({
+        ...emptyPlacesResult,
+        status: "error",
+        error: "Nearby places failed to load. Try searching again.",
+      });
     } finally {
       if (requestId === placesRequestId.current) {
         placesController.current = null;
@@ -192,20 +181,21 @@ export function useLocationSearch() {
     }
   }
 
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setShowSuggestions(false);
-
+  async function handleSearch() {
+    autocomplete.closeSuggestions();
     // A submitted search supersedes both an earlier geocode and any place
     // result still loading for the previous location.
     cancelGeocodeRequest();
     cancelPlacesRequest();
 
-    const trimmedQuery = query.trim();
+    const trimmedQuery = autocomplete.query.trim();
 
     if (trimmedQuery.length < 3) {
-      setError("Enter at least 3 characters to search.");
-      setSearchState("error");
+      setSearchResult((current) => ({
+        ...current,
+        status: "error",
+        error: "Enter at least 3 characters to search.",
+      }));
       return;
     }
 
@@ -213,20 +203,22 @@ export function useLocationSearch() {
     const controller = new AbortController();
     geocodeController.current = controller;
 
-    setSearchState("loading");
-    setError("");
-    setPlacesState("idle");
-    setPlacesError("");
-    setPlaceGroups([]);
-    setCategoryScores([]);
-    setOverallScore(null);
+    setSearchResult((current) => ({
+      ...current,
+      status: "loading",
+      error: "",
+    }));
+    setPlacesResult(emptyPlacesResult);
 
     try {
       const response = await fetch(
         `/api/geocode?query=${encodeURIComponent(trimmedQuery)}`,
         { signal: controller.signal },
       );
-      const data = (await response.json()) as GeocodeSuccess | GeocodeFailure;
+      const data = await readApiResult<{ location: GeocodeLocation }>(
+        response,
+        isGeocodePayload,
+      );
 
       if (
         controller.signal.aborted ||
@@ -236,13 +228,15 @@ export function useLocationSearch() {
       }
 
       if (!response.ok || !data.ok) {
-        setError(data.ok ? "Could not geocode this location." : data.error);
-        setSearchState("error");
+        setSearchResult((current) => ({
+          ...current,
+          status: "error",
+          error: data.ok ? "Could not geocode this location." : data.error,
+        }));
         return;
       }
 
-      setLocation(data.location);
-      setSearchState("success");
+      setSearchResult({ status: "success", location: data.location, error: "" });
       await loadNearbyPlaces(data.location);
     } catch {
       if (
@@ -252,8 +246,11 @@ export function useLocationSearch() {
         return;
       }
 
-      setError("Search failed. Check your connection and try again.");
-      setSearchState("error");
+      setSearchResult((current) => ({
+        ...current,
+        status: "error",
+        error: "Search failed. Check your connection and try again.",
+      }));
     } finally {
       if (requestId === geocodeRequestId.current) {
         geocodeController.current = null;
@@ -266,8 +263,8 @@ export function useLocationSearch() {
 
     // Rescore the current result immediately; the request is a guaranteed
     // cache hit, so switching profiles never costs a Google lookup.
-    if (location && placesState === "success") {
-      void loadNearbyPlaces(location, nextProfile);
+    if (searchResult.location && placesResult.status === "success") {
+      void loadNearbyPlaces(searchResult.location, nextProfile);
     }
   }
 
@@ -288,81 +285,25 @@ export function useLocationSearch() {
 
     // The saved coordinates make geocoding unnecessary; setting the query as
     // the selected suggestion also keeps autocomplete from reopening.
-    setQuery(search.query);
-    setSelectedSuggestionText(search.query);
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setActiveSuggestionIndex(-1);
-    setError("");
-    setLocation(nextLocation);
-    setSearchState("success");
+    autocomplete.selectQuery(search.query);
+    setSearchResult({ status: "success", location: nextLocation, error: "" });
     void loadNearbyPlaces(nextLocation);
   }
 
-  function handleSuggestionSelect(suggestion: AddressSuggestion) {
-    setQuery(suggestion.text);
-    setSelectedSuggestionText(suggestion.text);
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setActiveSuggestionIndex(-1);
-  }
-
-  function handleLocationKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (!showSuggestions || suggestions.length === 0) {
-      return;
-    }
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveSuggestionIndex((index) => (index + 1) % suggestions.length);
-      return;
-    }
-
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveSuggestionIndex(
-        (index) => (index - 1 + suggestions.length) % suggestions.length,
-      );
-      return;
-    }
-
-    if (event.key === "Enter" && activeSuggestionIndex >= 0) {
-      event.preventDefault();
-      handleSuggestionSelect(suggestions[activeSuggestionIndex]);
-      return;
-    }
-
-    if (event.key === "Escape") {
-      setShowSuggestions(false);
-      setActiveSuggestionIndex(-1);
-    }
-  }
-
   return {
-    query,
-    setQuery,
-    suggestions,
-    setSuggestions,
-    showSuggestions,
-    setShowSuggestions,
-    activeSuggestionIndex,
-    setActiveSuggestionIndex,
-    selectedSuggestionText,
-    setSelectedSuggestionText,
-    searchState,
-    location,
-    error,
-    placesState,
-    placeGroups,
-    categoryScores,
-    overallScore,
-    placesError,
-    resultFromCache,
+    autocomplete,
+    searchState: searchResult.status,
+    location: searchResult.location,
+    error: searchResult.error,
+    placesState: placesResult.status,
+    placeGroups: placesResult.groups,
+    categoryScores: placesResult.scores,
+    overallScore: placesResult.overallScore,
+    placesError: placesResult.error,
+    resultFromCache: placesResult.fromCache,
     profile,
     changeProfile,
     handleSearch,
-    handleSuggestionSelect,
-    handleLocationKeyDown,
     searchFromHistory,
   };
 }

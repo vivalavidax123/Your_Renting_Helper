@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { NearbyPlace, PlaceGroup, PlacesState } from "../lib/types";
+import type { NearbyPlace, PlaceGroup, RequestState } from "../lib/types";
 import {
   formatGroupScope,
   formatDistance,
@@ -11,7 +11,7 @@ import {
 } from "../lib/utils";
 
 type NearbyPlacesListProps = {
-  placesState: PlacesState;
+  placesState: RequestState;
   placesError: string;
   placeGroups: PlaceGroup[];
   selectedPlaceId: string | null;

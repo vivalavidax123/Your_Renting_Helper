@@ -1,8 +1,9 @@
 import type { WeightProfile } from "../lib/categories";
-import type { CategoryScore, PlacesState } from "../lib/types";
+import type { CategoryScore, RequestState } from "../lib/types";
+import { formatDistance } from "../lib/utils";
 
 type ScoreBreakdownProps = {
-  placesState: PlacesState;
+  placesState: RequestState;
   categoryScores: CategoryScore[];
   placesError: string;
   resultFromCache: boolean;
@@ -15,15 +16,8 @@ const profileOptions: { id: WeightProfile; label: string }[] = [
   { id: "carOwner", label: "Car owner" },
 ];
 
-function formatDistance(distanceMeters: number | null) {
-  if (distanceMeters === null) {
-    return "No match";
-  }
-
-  return distanceMeters < 1000
-    ? `${distanceMeters} m`
-    : `${(distanceMeters / 1000).toFixed(1)} km`;
-}
+const formatOptionalDistance = (distanceMeters: number | null) =>
+  distanceMeters === null ? "No match" : formatDistance(distanceMeters);
 
 export function ScoreBreakdown({
   placesState,
@@ -125,7 +119,7 @@ export function ScoreBreakdown({
                     {category.score}
                   </p>
                   <p className="mt-0.5 truncate text-xs text-slate-500">
-                    {category.count} nearby · {formatDistance(category.closestDistanceMeters)}
+                    {category.count} nearby · {formatOptionalDistance(category.closestDistanceMeters)}
                   </p>
                 </article>
               );
