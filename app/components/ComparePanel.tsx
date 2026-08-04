@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isJsonRecord, readApiResult } from "../lib/api";
 import type {
-  CompareFailure,
-  CompareSuccess,
   ComparisonSide,
   RecentSearch,
 } from "../lib/types";
+
+function isComparisonPayload(value: Record<string, unknown>) {
+  return isJsonRecord(value.a) && isJsonRecord(value.b);
+}
 
 type ComparePanelProps = {
   saved: RecentSearch[];
@@ -20,9 +23,6 @@ type LocationSelectProps = {
   onChange: (id: string) => void;
 };
 
-// Controlled select: the chosen id lives in React state so an effect can
-// react to it. The location picked on the other side is disabled to make
-// "compare something with itself" unselectable.
 function LocationSelect({ label, value, otherValue, saved, onChange }: LocationSelectProps) {
   return (
     <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-semibold text-slate-500">
@@ -69,21 +69,12 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
   const [aId, setAId] = useState("");
   const [bId, setBId] = useState("");
   const [result, setResult] = useState<{ a: ComparisonSide; b: ComparisonSide } | null>(null);
-  // Errors are stored with the selection pair they belong to, so an error
-  // for an old pair is simply not shown rather than needing a reset.
   const [error, setError] = useState<{ pair: string; message: string } | null>(null);
 
-  // A selection goes stale when its location is unstarred. Instead of
-  // fixing the state in an effect (which causes a second render pass),
-  // derive the effective value on every render: a stale id counts as
-  // "nothing selected" until the user picks again.
+  // Derive stale selections instead of synchronizing them in another effect.
   const effectiveAId = saved.some((search) => search.id === aId) ? aId : "";
   const effectiveBId = saved.some((search) => search.id === bId) ? bId : "";
 
-  // Fetch automatically once both sides are chosen. State is only set in
-  // the async callbacks — never synchronously in the effect body — and
-  // stale results/errors are filtered out at render time instead of being
-  // reset here.
   useEffect(() => {
     if (!effectiveAId || !effectiveBId || effectiveAId === effectiveBId) {
       return;
@@ -93,8 +84,11 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
     let cancelled = false;
 
     fetch(`/api/compare?a=${effectiveAId}&b=${effectiveBId}`)
-      .then(
-        (response) => response.json() as Promise<CompareSuccess | CompareFailure>,
+      .then((response) =>
+        readApiResult<{ a: ComparisonSide; b: ComparisonSide }>(
+          response,
+          isComparisonPayload,
+        ),
       )
       .then((data) => {
         if (cancelled) {
@@ -119,8 +113,6 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
     };
   }, [effectiveAId, effectiveBId]);
 
-  // Derived at render: only show a result or error that matches what is
-  // currently selected.
   const activeResult =
     result && result.a.id === effectiveAId && result.b.id === effectiveBId
       ? result

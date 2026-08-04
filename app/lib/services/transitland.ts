@@ -155,7 +155,6 @@ export async function fetchTransitlandBusStops({
     return [];
   }
 
-  // To properly sort, we need to extract and sort the valid stops
   const validStops = data.stops.flatMap((stop) => {
     const [stopLongitude, stopLatitude] = stop.geometry?.coordinates ?? [];
 
@@ -201,7 +200,6 @@ export async function fetchTransitlandBusStops({
     ];
   });
 
-  // Sort valid stops
   const sortedStops = validStops.sort((a, b) => a.place.distanceMeters - b.place.distanceMeters).slice(0, maxTransportBusStops);
 
   return Promise.all(

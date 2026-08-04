@@ -152,14 +152,18 @@ rent-score-prototype/
 │   │   ├── ScoreBreakdown.tsx
 │   │   └── SearchForm.tsx
 │   ├── hooks/
+│   │   ├── useAutocomplete.ts
 │   │   ├── useLocationSearch.ts
 │   │   └── useSavedSearches.ts
 │   ├── lib/
+│   │   ├── api.ts
 │   │   ├── auth.ts / auth-client.ts
 │   │   ├── categories.ts
 │   │   ├── db.ts
+│   │   ├── indicators.ts
+│   │   ├── maps/googleMaps.ts
 │   │   ├── scoring.ts
-│   │   ├── services/
+│   │   ├── services/ (Google, Transitland, place orchestration, persistence)
 │   │   ├── types.ts
 │   │   └── utils.ts
 │   ├── login/
@@ -175,8 +179,7 @@ rent-score-prototype/
 ├── README.md
 ├── package.json
 ├── vitest.config.ts
-├── .env (database configuration, not committed)
-└── .env.local (application/API configuration, not committed)
+└── .env.local (development configuration, not committed)
 ```
 
 ---
@@ -194,7 +197,8 @@ rent-score-prototype/
 * Per-user recent searches, saved locations, and two-location comparison
 * Vercel deployment, self-contained Docker deployment, and four-gate GitHub Actions CI
 * Request cancellation/stale-response protection for autocomplete, geocoding, and nearby-place searches
-* Vitest coverage for scoring, utilities, and favourite API behaviour
+* Runtime-validated API envelopes and focused autocomplete, indicator, map, and place-search modules
+* Vitest coverage for scoring, utilities, API envelopes, indicators, and favourite API behaviour
 
 ## Next Priorities
 
@@ -208,9 +212,18 @@ rent-score-prototype/
 
 # Environment Variables
 
-Create a `.env.local` file for application and API configuration:
+The recommended local setup is to keep a separate set of Development values in the linked Vercel project, then pull them into the ignored `.env.local` file:
+
+```bash
+npx vercel@latest link
+npx vercel@latest env pull .env.local --environment=development
+```
+
+`env pull` replaces `.env.local`, so keep manually managed overrides in `.env.development.local` instead. Vercel Development variables must remain retrievable (not marked Sensitive) so the CLI can download them. The required variables are:
 
 ```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
+
 GOOGLE_MAPS_API_KEY=YOUR_API_KEY
 NEXT_PUBLIC_MAPS_API_KEY=YOUR_PUBLIC_KEY
 TRANSITLAND_API_KEY=YOUR_TRANSITLAND_KEY
@@ -222,15 +235,11 @@ GOOGLE_CLIENT_ID=YOUR_GOOGLE_OAUTH_CLIENT_ID
 GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_OAUTH_CLIENT_SECRET
 ```
 
-`TRANSITLAND_API_KEY` is optional and is used to show bus route numbers and destinations for nearby bus stops. `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are also optional; email/password authentication works without Google OAuth. Generate a long random value for `BETTER_AUTH_SECRET`, keep it stable within an environment, and never commit it. Deployments that share one database must use the same secret so encrypted OAuth token material remains readable; separate development and production databases/secrets are preferred.
+If Vercel is not used for local configuration, create `.env.local` manually with the same names. `TRANSITLAND_API_KEY` is optional and is used to show bus route numbers and destinations for nearby bus stops. `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are also optional; email/password authentication works without Google OAuth. Generate a long random value for `BETTER_AUTH_SECRET`, keep it stable within an environment, and never commit it. Deployments that share one database must use the same secret so encrypted OAuth token material remains readable; separate development and production databases/secrets are preferred.
 
 `NEXT_PUBLIC_MAPS_API_KEY` is exposed to the browser by design, so use a browser-restricted key. Keep `GOOGLE_MAPS_API_KEY` server-restricted. For Google OAuth, configure the local callback URL as `http://localhost:3000/api/auth/callback/google` and add the equivalent callback for every deployed domain. Google sends OAuth access and refresh tokens—not the user's Google password—back to the application, and Better Auth encrypts those tokens before database storage.
 
-Also create a `.env` file for the database (the Prisma CLI reads `.env`, not `.env.local`). Use your Neon (or any Postgres) connection string:
-
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
-```
+Standalone Prisma commands do not load `.env.local` automatically. When using Vercel-managed Development values, run them through `npx vercel@latest env run -- <command>`.
 
 ---
 
@@ -269,10 +278,10 @@ npm install
 ## Create the Database
 
 ```bash
-npm run db:migrate
+npx vercel@latest env run -- npm run db:migrate
 ```
 
-This applies all migrations to the database in `DATABASE_URL`. To browse the data visually, run `npm run db:studio`.
+This applies migrations to the Development database in `DATABASE_URL`. To browse that database visually, run `npx vercel@latest env run -- npm run db:studio`. If configuration is instead stored in a Prisma-readable `.env`, the shorter npm commands continue to work.
 
 For a deployed environment, apply committed migrations explicitly before releasing the application:
 

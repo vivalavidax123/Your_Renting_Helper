@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
+import { readApiResult } from "../lib/api";
 import type {
-  HistoryFailure,
-  HistorySuccess,
-  PlacesState,
+  RequestState,
   RecentSearch,
 } from "../lib/types";
+
+function isHistoryPayload(value: Record<string, unknown>) {
+  return Array.isArray(value.searches);
+}
 
 // Owns the recent-search and saved-location lists so every component that
 // needs them (chips, comparison panel) reads the same single copy.
 // userId is a dependency because both lists are user-relative: signing in
 // or out must refetch so stars and the saved row reflect the new viewer.
-export function useSavedSearches(placesState: PlacesState, userId: string | null) {
+export function useSavedSearches(placesState: RequestState, userId: string | null) {
   const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [saved, setSaved] = useState<RecentSearch[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -26,11 +29,11 @@ export function useSavedSearches(placesState: PlacesState, userId: string | null
     let cancelled = false;
 
     Promise.all([
-      fetch("/api/history").then(
-        (response) => response.json() as Promise<HistorySuccess | HistoryFailure>,
+      fetch("/api/history").then((response) =>
+        readApiResult<{ searches: RecentSearch[] }>(response, isHistoryPayload),
       ),
-      fetch("/api/favourites").then(
-        (response) => response.json() as Promise<HistorySuccess | HistoryFailure>,
+      fetch("/api/favourites").then((response) =>
+        readApiResult<{ searches: RecentSearch[] }>(response, isHistoryPayload),
       ),
     ])
       .then(([historyData, favouritesData]) => {

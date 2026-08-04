@@ -1,45 +1,44 @@
-import type { FormEvent, KeyboardEvent } from "react";
-import type { AddressSuggestion, SearchState, PlacesState } from "../lib/types";
+import type { FormEvent } from "react";
+import type { AutocompleteController } from "../hooks/useAutocomplete";
+import type { RequestState } from "../lib/types";
 
 type SearchFormProps = {
-  query: string;
-  setQuery: (val: string) => void;
-  suggestions: AddressSuggestion[];
-  setSuggestions: (val: AddressSuggestion[]) => void;
-  showSuggestions: boolean;
-  setShowSuggestions: (val: boolean) => void;
-  activeSuggestionIndex: number;
-  setActiveSuggestionIndex: (val: number) => void;
-  setSelectedSuggestionText: (val: string) => void;
-  searchState: SearchState;
-  placesState: PlacesState;
+  autocomplete: AutocompleteController;
+  searchState: RequestState;
+  placesState: RequestState;
   error: string;
-  handleSearch: (event: FormEvent<HTMLFormElement>) => void;
-  handleSuggestionSelect: (suggestion: AddressSuggestion) => void;
-  handleLocationKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  onSearch: () => void;
 };
 
 export function SearchForm({
-  query,
-  setQuery,
-  suggestions,
-  setSuggestions,
-  showSuggestions,
-  setShowSuggestions,
-  activeSuggestionIndex,
-  setActiveSuggestionIndex,
-  setSelectedSuggestionText,
+  autocomplete,
   searchState,
   placesState,
   error,
-  handleSearch,
-  handleSuggestionSelect,
-  handleLocationKeyDown,
+  onSearch,
 }: SearchFormProps) {
+  const {
+    query,
+    suggestions,
+    showSuggestions,
+    activeSuggestionIndex,
+    changeQuery,
+    selectSuggestion,
+    handleKeyDown,
+    openSuggestions,
+    closeSuggestions,
+    activateSuggestion,
+  } = autocomplete;
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSearch();
+  }
+
   return (
     <form
       className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-inner"
-      onSubmit={handleSearch}
+      onSubmit={handleSubmit}
     >
       <label
         htmlFor="location"
@@ -53,27 +52,12 @@ export function SearchForm({
             id="location"
             type="text"
             value={query}
-            onChange={(event) => {
-              const nextQuery = event.target.value;
-
-              setQuery(nextQuery);
-              setSelectedSuggestionText("");
-
-              if (nextQuery.trim().length < 3) {
-                setSuggestions([]);
-                setShowSuggestions(false);
-                setActiveSuggestionIndex(-1);
-              }
-            }}
-            onFocus={() => {
-              if (suggestions.length > 0) {
-                setShowSuggestions(true);
-              }
-            }}
+            onChange={(event) => changeQuery(event.target.value)}
+            onFocus={openSuggestions}
             onBlur={() => {
-              window.setTimeout(() => setShowSuggestions(false), 120);
+              window.setTimeout(closeSuggestions, 120);
             }}
-            onKeyDown={handleLocationKeyDown}
+            onKeyDown={handleKeyDown}
             placeholder="Try: Parramatta NSW"
             autoComplete="off"
             aria-autocomplete="list"
@@ -93,9 +77,9 @@ export function SearchForm({
                       type="button"
                       onMouseDown={(event) => {
                         event.preventDefault();
-                        handleSuggestionSelect(suggestion);
+                        selectSuggestion(suggestion);
                       }}
-                      onMouseEnter={() => setActiveSuggestionIndex(index)}
+                      onMouseEnter={() => activateSuggestion(index)}
                       className={`w-full px-4 py-2.5 text-left transition ${
                         index === activeSuggestionIndex
                           ? "bg-emerald-50"

@@ -8,34 +8,21 @@ export type GeocodeLocation = {
   types: string[];
 };
 
-export type GeocodeSuccess = {
-  ok: true;
-  location: GeocodeLocation;
-};
-
-export type GeocodeFailure = {
+export type ApiFailure = {
   ok: false;
   error: string;
   status?: string;
 };
 
-export type SearchState = "idle" | "loading" | "success" | "error";
+export type ApiResult<T extends object> = ({ ok: true } & T) | ApiFailure;
+
+export type RequestState = "idle" | "loading" | "success" | "error";
 
 export type AddressSuggestion = {
   placeId: string;
   text: string;
   mainText: string;
   secondaryText: string;
-};
-
-export type AutocompleteSuccess = {
-  ok: true;
-  suggestions: AddressSuggestion[];
-};
-
-export type AutocompleteFailure = {
-  ok: false;
-  error: string;
 };
 
 export type PlaceSource = "brand" | "generic";
@@ -80,15 +67,6 @@ export type CategoryScore = {
   explanation: string;
 };
 
-export type PlacesSuccess = {
-  ok: true;
-  groups: PlaceGroup[];
-  scores: CategoryScore[];
-  overallScore: number;
-  cached: boolean;
-  fetchedAt: string;
-};
-
 export type RecentSearch = {
   id: string;
   query: string;
@@ -104,16 +82,6 @@ export type RecentSearch = {
   overallScore: number | null;
 };
 
-export type HistorySuccess = {
-  ok: true;
-  searches: RecentSearch[];
-};
-
-export type HistoryFailure = {
-  ok: false;
-  error: string;
-};
-
 export type ComparisonSide = {
   id: string;
   query: string;
@@ -122,24 +90,6 @@ export type ComparisonSide = {
   scores: CategoryScore[];
   fetchedAt: string;
 };
-
-export type CompareSuccess = {
-  ok: true;
-  a: ComparisonSide;
-  b: ComparisonSide;
-};
-
-export type CompareFailure = {
-  ok: false;
-  error: string;
-};
-
-export type PlacesFailure = {
-  ok: false;
-  error: string;
-};
-
-export type PlacesState = "idle" | "loading" | "success" | "error";
 
 // Google Places API Types
 export type GooglePlace = {
