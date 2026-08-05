@@ -1,330 +1,71 @@
-# Rent Score Prototype
+# Your Renting Helper
 
-A web-based prototype that helps renters evaluate the convenience and livability of a location based on nearby amenities and services.
+Your Renting Helper is a personal web prototype for comparing how convenient a rental location is for everyday life. Search an Australian address or suburb to explore nearby amenities, transport access, practical services, and a compact location score.
 
-The system allows users to search for an address, suburb, street, or approximate location, then generates convenience scores using nearby facilities such as shopping centres, groceries, cafes, gyms, fuel stations, pharmacies, post offices, and public transport.
+[Open the live demo](https://rent-score-prototype.vercel.app/)
 
-This project is intended as a functional prototype rather than a production-ready platform.
+## What You Can Do
 
-**Live demo:** https://rent-score-prototype.vercel.app/
+- Search Australian addresses and suburbs with autocomplete.
+- Review nearby groceries, food, health, fitness, shopping, services, fuel, and transport.
+- Switch between no-car and car-owner views.
+- Explore category-coloured amenities on an interactive map.
+- Open the map in fullscreen and follow non-transport amenities into Google Maps.
+- View walkability, transit access, amenity density, daily convenience, and car-reliance indicators derived from the search result.
+- Use a persistent light or dark theme.
+- Create an account to keep recent searches, save locations, and compare two saved results.
 
----
+## Current Scope
 
-# Project Goals
+This is a working prototype, not an official property rating or valuation service. Results depend on third-party location data and use straight-line distance estimates rather than walking or driving routes.
 
-The purpose of this prototype is to:
+The interface lists population, rent, school, safety, and planning data as planned areas only; those datasets are not currently included in the result.
 
-* Help renters quickly evaluate the convenience of a location
-* Demonstrate location-based scoring using real-world map/place APIs
-* Visualise nearby amenities on an interactive map
-* Provide a simple and understandable scoring breakdown
-* Explore how geographic data can improve rental decision-making
+## Run Locally
 
----
-
-# Core Features
-
-## MVP Features
-
-* Search for an address or suburb
-* Convert search input into geographic coordinates
-* Retrieve nearby amenities from map/place APIs
-* Calculate category-based convenience scores
-* Display an overall location score
-* Show nearby places on an interactive map
-* Highlight nearby amenities as the primary result detail
-* Provide compact explanations for score calculations
-* Save favourite locations and compare two of them side by side
-* Show additional derived indicators such as walkability, transit access, amenity density, daily convenience, and car reliance
-* Switch between persistent light and dark themes, including the authentication and map views
-
----
-
-# Example Categories
-
-The scoring system evaluates convenience using categories such as:
-
-| Category          | Example Amenities                     |
-| ----------------- | ------------------------------------- |
-| Shopping Centres | Shopping malls, retail hubs           |
-| Groceries         | Supermarkets, grocery stores          |
-| Food & Cafes      | Cafes, restaurants, bakeries          |
-| Fitness & Recreation | Gyms, pools, recreation centres    |
-| Transport         | Train stations, tram stops, bus stops |
-| Health            | Pharmacies, clinics, hospitals        |
-| Services          | Post offices, banks                   |
-| Fuel & Automotive | Fuel stations                         |
-
----
-
-# Example Output
-
-```text
-Shopping Centres: 78/100
-Groceries: 82/100
-Food & Cafes: 76/100
-Transport: 65/100
-Fitness: 45/100
-Health: 70/100
-
-Overall Rent Convenience Score: 72/100
-```
-
-The current UI uses a compact dashboard layout: overall and category scores are intentionally small, while nearby amenities and map context receive more space. Additional indicators appear beside the map and distinguish between values derived from the current amenity data and planned future datasets. A header control switches between light and dark themes; the saved preference is applied before hydration so repeat visits do not flash the wrong theme.
-
----
-
-# Scoring Logic
-
-Each category scores out of 100 from three pillars:
-
-* **Proximity** — how close the nearest amenity is (walkable distances score highest, then a smooth decay)
-* **Variety** — how many options are nearby, with diminishing returns
-* **Quality** — how well the best nearby places are rated compared to what is typical for that kind of place
-
-The overall score is a weighted average across all categories, viewed through one of two lifestyle profiles switchable in the UI: **no car** (the default — transit weighs heavily, fuel counts for nothing, and distances beyond walking range hurt sharply) or **car owner** (fuel and malls matter, distance is forgiving). The exact formulas, constants, and calibration notes live in `dev_notes.md`.
-
----
-
-# Tech Stack
-
-## Frontend
-
-* Next.js
-* React
-* TypeScript
-* Tailwind CSS
-
-## Data & Persistence
-
-* Prisma 6 (ORM + migrations)
-* PostgreSQL on Neon (accounts, per-user history and favourites, cached score results)
-
-## APIs & Services
-
-* Google Places API
-* Google Geocoding API
-* Google Maps JavaScript API
-* Transitland API (optional transport enrichment)
-
-## Deployment
-
-* Vercel
-
----
-
-# Full-Stack Status
-
-This is a full-stack Next.js prototype: the frontend UI, API routes, scoring/business logic, database persistence, and third-party data integrations live in one application.
-
-Persistence is included: searches, cached score results, per-user recent-search history, authentication sessions, and starred favourite locations are stored in PostgreSQL and managed with Prisma. The hosted deployment uses Neon, while the Docker setup includes its own Postgres service. Implementation details and design rationale live in `dev_notes.md`.
-
-Authentication is implemented with Better Auth. Users can create an email/password account or optionally sign in with Google, and saved locations and search history are scoped to the signed-in account. Passwords are hashed by Better Auth. Google sign-in never exposes the user's Google password to this application; the OAuth access and refresh tokens returned by Google are encrypted before they are stored in PostgreSQL.
-
-It is not yet a production full-stack platform. The main missing pieces are:
-
-* Complete account-management flows such as email verification, password reset, and account settings
-* Admin tooling for managing scoring weights and category configuration outside code
-* Broader application-level rate limiting for search/provider routes, plus observability, background jobs, and error tracking
-* First-party or ingested datasets for rent trends, safety, schools, population density, and planning data
-
----
-
-# Project Structure
-
-```text
-rent-score-prototype/
-├── app/
-│   ├── api/
-│   │   ├── auth/[...all]/
-│   │   ├── autocomplete/
-│   │   ├── compare/
-│   │   ├── favourites/
-│   │   ├── geocode/
-│   │   ├── history/
-│   │   └── places/
-│   ├── components/
-│   │   ├── AdditionalIndicators.tsx
-│   │   ├── AuthStatus.tsx
-│   │   ├── ComparePanel.tsx
-│   │   ├── LocationMap.tsx
-│   │   ├── NearbyPlacesList.tsx
-│   │   ├── RecentSearches.tsx
-│   │   ├── ScoreBreakdown.tsx
-│   │   └── SearchForm.tsx
-│   ├── hooks/
-│   │   ├── useAutocomplete.ts
-│   │   ├── useLocationSearch.ts
-│   │   └── useSavedSearches.ts
-│   ├── lib/
-│   │   ├── api.ts
-│   │   ├── auth.ts / auth-client.ts
-│   │   ├── categories.ts
-│   │   ├── db.ts
-│   │   ├── indicators.ts
-│   │   ├── maps/googleMaps.ts
-│   │   ├── scoring.ts
-│   │   ├── services/ (Google, Transitland, place orchestration, persistence)
-│   │   ├── types.ts
-│   │   └── utils.ts
-│   ├── login/
-│   ├── layout.tsx
-│   └── page.tsx
-├── prisma/
-│   ├── migrations/
-│   └── schema.prisma
-├── .github/workflows/ci.yml
-├── Dockerfile
-├── docker-compose.yml
-├── dev_notes.md
-├── README.md
-├── package.json
-├── vitest.config.ts
-└── .env.local (development configuration, not committed)
-```
-
----
-
-# Development Roadmap
-
-## Completed
-
-* Next.js, TypeScript, Tailwind CSS, and responsive dashboard foundation
-* Address autocomplete, geocoding, nearby-place retrieval, and error states
-* Category scoring, lifestyle profiles, explanations, and derived indicators
-* Interactive Google map, amenity-to-map linking, and return-to-row navigation
-* PostgreSQL persistence with a 7-day shared result cache
-* Better Auth email/password and optional Google sign-in
-* Per-user recent searches, saved locations, and two-location comparison
-* Vercel deployment, self-contained Docker deployment, and four-gate GitHub Actions CI
-* Request cancellation/stale-response protection for autocomplete, geocoding, and nearby-place searches
-* Runtime-validated API envelopes and focused autocomplete, indicator, map, and place-search modules
-* Vitest coverage for scoring, utilities, API envelopes, indicators, and favourite API behaviour
-
-## Next Priorities
-
-* Email verification, password reset, and account settings
-* Broader API rate limiting, monitoring, structured logging, and error tracking
-* Additional automated coverage for authentication, caching, and provider failure paths
-* First-party datasets for rent, safety, schools, population, and planning signals
-* Continued accessibility, responsive-layout, and mobile interaction refinement
-
----
-
-# Environment Variables
-
-The recommended local setup is to keep a separate set of Development values in the linked Vercel project, then pull them into the ignored `.env.local` file:
+The recommended setup uses a separate Development configuration in the linked Vercel project.
 
 ```bash
+git clone https://github.com/vivalavidax123/Your_Renting_Helper.git
+cd Your_Renting_Helper
+npm install
 npx vercel@latest link
 npx vercel@latest env pull .env.local --environment=development
-```
-
-`env pull` replaces `.env.local`, so keep manually managed overrides in `.env.development.local` instead. Vercel Development variables must remain retrievable (not marked Sensitive) so the CLI can download them. The required variables are:
-
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
-
-GOOGLE_MAPS_API_KEY=YOUR_API_KEY
-NEXT_PUBLIC_MAPS_API_KEY=YOUR_PUBLIC_KEY
-TRANSITLAND_API_KEY=YOUR_TRANSITLAND_KEY
-
-BETTER_AUTH_SECRET=YOUR_RANDOM_SECRET
-BETTER_AUTH_URL=http://localhost:3000
-
-GOOGLE_CLIENT_ID=YOUR_GOOGLE_OAUTH_CLIENT_ID
-GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_OAUTH_CLIENT_SECRET
-```
-
-If Vercel is not used for local configuration, create `.env.local` manually with the same names. `TRANSITLAND_API_KEY` is optional and is used to show bus route numbers and destinations for nearby bus stops. `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are also optional; email/password authentication works without Google OAuth. Generate a long random value for `BETTER_AUTH_SECRET`, keep it stable within an environment, and never commit it. Deployments that share one database must use the same secret so encrypted OAuth token material remains readable; separate development and production databases/secrets are preferred.
-
-`NEXT_PUBLIC_MAPS_API_KEY` is exposed to the browser by design, so use a browser-restricted key. Keep `GOOGLE_MAPS_API_KEY` server-restricted. For Google OAuth, configure the local callback URL as `http://localhost:3000/api/auth/callback/google` and add the equivalent callback for every deployed domain. Google sends OAuth access and refresh tokens—not the user's Google password—back to the application, and Better Auth encrypts those tokens before database storage.
-
-Standalone Prisma commands do not load `.env.local` automatically. When using Vercel-managed Development values, run them through `npx vercel@latest env run -- <command>`.
-
----
-
-# Run with Docker (no Node or Postgres needed)
-
-The only prerequisite is [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose on Linux). The compose stack bundles the app and a Postgres database, and applies migrations automatically on startup.
-
-```bash
-git clone https://github.com/YOUR_USERNAME/rent-score-prototype.git
-cd rent-score-prototype
-cp .env.docker.example .env.docker   # fill in the API keys (see comments inside)
-docker compose --env-file .env.docker up --build
-```
-
-Then open http://localhost:3000. Database data persists in the `db-data` Docker volume across restarts; `docker compose down -v` wipes it.
-
-Note: `NEXT_PUBLIC_MAPS_API_KEY` is baked into the frontend at image build time, so rerun with `--build` after changing it.
-
----
-
-# Installation
-
-## Clone Repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/rent-score-prototype.git
-cd rent-score-prototype
-```
-
-## Install Dependencies
-
-```bash
-npm install
-```
-
-## Create the Database
-
-```bash
-npx vercel@latest env run -- npm run db:migrate
-```
-
-This applies migrations to the Development database in `DATABASE_URL`. To browse that database visually, run `npx vercel@latest env run -- npm run db:studio`. If configuration is instead stored in a Prisma-readable `.env`, the shorter npm commands continue to work.
-
-For a deployed environment, apply committed migrations explicitly before releasing the application:
-
-```bash
-npm run db:migrate:deploy
-```
-
-Database deployment is intentionally separate from `npm run build`, so compiling or validating the application never changes production data. A normal Vercel build does **not** apply migrations automatically; run the deployment command deliberately against the target database before releasing schema-dependent code. The Docker Compose stack runs it through its dedicated one-shot `migrate` service automatically.
-
-## Start Development Server
-
-```bash
+npx vercel@latest env run -- npm run db:migrate:deploy
 npm run dev
 ```
 
-Open:
+Open [http://localhost:3000](http://localhost:3000).
 
-```text
-http://localhost:3000
+The Vercel pull overwrites `.env.local`. Keep any manually managed local overrides in `.env.development.local`, and never commit credentials.
+
+Detailed environment, database, deployment, architecture, scoring, and maintenance notes are in [dev_notes.md](./dev_notes.md).
+
+## Run with Docker
+
+Docker Compose provides the application and a local PostgreSQL database.
+
+```bash
+cp .env.docker.example .env.docker
+# Fill in the required values in .env.docker
+docker compose --env-file .env.docker up --build
 ```
 
----
+The application will be available at [http://localhost:3000](http://localhost:3000). Database data persists in the `db-data` volume. Rebuild the image after changing `NEXT_PUBLIC_MAPS_API_KEY` because browser environment values are included at build time.
 
-# Future Improvements
+## Useful Commands
 
-Potential future features include:
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start local development |
+| `npm run lint` | Run ESLint |
+| `npx tsc --noEmit` | Type-check the project |
+| `npm test` | Run the test suite |
+| `npm run build` | Create a production build |
+| `npm run db:migrate` | Create and apply a development migration |
+| `npm run db:migrate:deploy` | Apply committed migrations |
+| `npm run db:studio` | Open Prisma Studio |
 
-* Crime and safety scoring
-* School quality integration
-* Rental price analysis
-* More detailed public transport accessibility metrics
-* Walkability based on real walking routes instead of straight-line distance estimates
-* Population density, suburb rent trends, schools, childcare, safety, and planned development datasets
-* Email verification, password reset, and account settings
-* Historical suburb trend analysis
-* AI-generated suburb summaries
-* Mobile-friendly optimisation
+## Disclaimer
 
----
-
-# Notes
-
-This project is a prototype intended for experimentation and demonstration purposes.
-
-The scoring system is not intended to represent official property valuations or guarantee rental quality.
+The project is intended for experimentation and rental-location comparison. Scores are indicative only and do not guarantee rental quality, safety, affordability, or suitability.

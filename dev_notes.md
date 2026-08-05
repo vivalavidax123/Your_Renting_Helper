@@ -1,395 +1,559 @@
 # Development Notes
 
-## Current Product Direction
+## Purpose of This File
 
-The application is a deployed functional prototype for evaluating rental locations by nearby everyday amenities. The core MVP now includes location search, scoring, authentication, per-user search history and favourites, comparison, PostgreSQL persistence, Vercel deployment, Docker deployment, and CI. Near-term work should focus on reliability, test coverage, account-management gaps, and prototype hardening rather than adding another broad feature surface.
+This is the technical source of truth for the repository. It records the current architecture, implementation status, scoring model, operational setup, known gaps, and roadmap.
 
-The UI direction is now amenities-first. Overall score and category scores are intentionally compact summary elements, while nearby amenities, the map, and additional location indicators carry the main result detail. This keeps the interface closer to a decision dashboard than a score report.
+The README is intentionally general. Historical debugging stories, superseded designs, temporary calibration output, and completed migration diaries do not belong in either document unless they still affect current operation.
+
+## Current Repository Status
+
+Status reviewed against the repository on 2026-08-05.
+
+| Area | Current state |
+| --- | --- |
+| Product | Deployed functional prototype |
+| Public application | https://rent-score-prototype.vercel.app/ |
+| Primary branch | `main`; Vercel auto-deploys changes pushed to it |
+| Application shape | Full-stack Next.js application in one repository |
+| Persistence | PostgreSQL through Prisma |
+| Authentication | Email/password and Google OAuth through Better Auth |
+| Quality gates | ESLint, TypeScript, Vitest, and production build |
+| Automated tests | 32 tests across 5 test files |
+| Production readiness | Not production-ready; hardening gaps are listed below |
+
+The core renter workflow is implemented:
+
+1. Search an Australian address or suburb.
+2. Geocode the query and retrieve nearby places.
+3. Calculate category and overall scores for a no-car or car-owner profile.
+4. Review amenities, derived indicators, and the interactive map.
+5. Sign in to keep history, save locations, and compare two saved results.
+
+The product direction remains amenities-first. Scores are compact summaries; nearby places, map context, and practical indicators carry most of the decision detail.
+
+## Feature Status
+
+### Implemented
+
+- Australian address autocomplete and geocoding.
+- Eight amenity categories with category-level filtering and deduplication.
+- No-car and car-owner scoring profiles.
+- Seven-day shared result cache.
+- Interactive Google map with searched-location and amenity markers.
+- Fullscreen map control.
+- List-to-map selection, automatic map scrolling, and a return-to-row button.
+- Theme-aware map, markers, and custom popup styling.
+- Google Maps links in non-transport amenity popups.
+- Optional Transitland bus-stop, route, destination, and departure enrichment.
+- Derived walkability, transit, density, convenience, and car-reliance indicators.
+- Persistent light and dark themes across the main and login views.
+- Better Auth email/password accounts and Google OAuth.
+- Per-user recent searches and saved locations.
+- Two-location comparison from saved results.
+- PostgreSQL persistence on Neon for hosted environments.
+- Vercel deployment and analytics.
+- Docker Compose deployment with local PostgreSQL and automatic migration application.
+- GitHub Actions quality checks.
+
+### Partial or Deferred
+
+- Population, rent, school, childcare, safety, and development data are placeholders only.
+- Walkability uses straight-line estimates, not route-aware walking times.
+- Account email verification, password reset, account settings, and account deletion are not implemented.
+- Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
+- Automated coverage does not yet include full authentication, database-cache integration, provider failures, or browser end-to-end flows.
 
 ## Full-Stack Status
 
-The project can be described as a full-stack Next.js prototype because it includes:
+The repository is a full-stack prototype because it contains:
 
-* a React/Next.js frontend
-* server-side route handlers under `app/api/*`
-* API integrations with Google Places, Google Geocoding, Google Maps, and optional Transitland
-* backend business logic for category retrieval, filtering, deduplication, scoring, and transport enrichment
-* environment-based server and browser API key configuration
+- a React interface and client-side interaction hooks;
+- Next.js route handlers under app/api;
+- server-side provider orchestration and scoring;
+- authentication and session handling;
+- PostgreSQL persistence and migrations;
+- deployment, Docker, test, and CI configuration.
 
-It should not yet be described as a production full-stack platform. It now has a persistent PostgreSQL application backend for authentication, search history, favourites, and cached score snapshots, but its runtime remains request/response oriented and lacks several production operations safeguards.
+It is not a production platform. The application still relies on synchronous request/response provider calls and lacks several operational and account-management safeguards. "Prototype" should remain part of public descriptions until the hardening roadmap is addressed.
 
-Missing production-grade full-stack pieces:
+## Technology Stack
 
-* **Backend operations:** the search/provider routes have no application-level rate limiting, background jobs, observability, structured logging, or error tracking. Better Auth owns its authentication protections; request caching exists via the database snapshot cache.
-* **Admin/data management:** category weights and brand lists are code-managed; there is no admin UI or config storage.
-* **First-party datasets:** rent trends, crime/safety, schools, childcare, population density, and planning/development signals are placeholders until dedicated sources are integrated.
+Versions are taken from the current package manifest and deployment files.
 
-## Persistence and Caching
+| Layer | Current implementation |
+| --- | --- |
+| Framework | Next.js 16.2.6 App Router |
+| UI | React 19.2.4 |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 4 plus semantic tokens in app/globals.css |
+| Fonts | Geist and Geist Mono through next/font |
+| Database | PostgreSQL |
+| ORM | Prisma 6.19.3 |
+| Authentication | Better Auth 1.6.23 with Prisma adapter |
+| Maps and places | Google Maps JavaScript API, Places API (New), and Geocoding API |
+| Transport enrichment | Transitland v2 REST API, optional |
+| Analytics | Vercel Analytics |
+| Tests | Vitest 4.1.10 |
+| Static checks | ESLint 9 and TypeScript |
+| Hosted deployment | Vercel with Neon PostgreSQL |
+| Container deployment | Node 22 slim application image and PostgreSQL 17 |
+| CI runtime | GitHub Actions with Node 20 |
 
-Database persistence was added with Prisma 6, initially on SQLite and later switched to hosted Postgres (Neon, Sydney region) for deployment — Vercel's serverless platform has no persistent filesystem for an SQLite file. The provider switch changed only `schema.prisma` and `DATABASE_URL`; no query code changed. The SQLite-dialect migration history was regenerated as a single Postgres init migration, since the cloud database started empty. Local development now uses a dedicated Neon development branch rather than the production branch. Prisma 7 was intentionally avoided for now because it requires a driver-adapter setup; upgrade later with the official guide if needed.
+Prisma 6 is intentional. There is no current need to add the Prisma 7 driver-adapter work to this personal project.
 
-Build and migration pipeline: `postinstall` runs `prisma generate` (Vercel builds start from a clean machine), while `npm run build` runs only `next build`. Production schema deployment is deliberately separate in `npm run db:migrate:deploy`. This keeps local builds, Vercel builds, and CI side-effect free; a schema change must be applied explicitly to the target database before schema-dependent application code is released. Docker Compose automates that explicit step through its one-shot `migrate` service.
+## Repository Structure
 
-The app is deployed at https://rent-score-prototype.vercel.app/ (Vercel, auto-deploys on push to main). Environment variables are configured in the Vercel dashboard — paste bare values there, no quotes (a quoted `DATABASE_URL` failed the first deploy with P1012). The browser Maps key is referrer-restricted to localhost and the vercel.app domains and API-restricted to Maps JavaScript API; the server key has no referrer restriction (server calls send none) and is API-restricted to Places API (New) and Geocoding API.
+```text
+app/
+  api/
+    auth/[...all]/       Better Auth handler
+    autocomplete/        Google address suggestions
+    compare/             Stored score comparison
+    favourites/          Per-user saved locations
+    geocode/             Address to coordinates
+    history/             Per-user recent searches
+    places/              Cache, providers, scoring, and persistence coordinator
+  components/            Dashboard, map, auth, theme, scores, and result views
+  hooks/                 Autocomplete, search, and saved-search controllers
+  lib/
+    maps/                 Browser-only Google Maps integration
+    services/             Google, Transitland, and persistence services
+    api.ts                Runtime API-envelope validation
+    auth.ts               Better Auth server configuration
+    categories.ts         Category metadata and profile weights
+    indicators.ts         Pure derived-indicator calculations
+    scoring.ts            Pure scoring and distance calculations
+    types.ts              Shared domain and API types
+  login/                  Sign-in and sign-up page
+  layout.tsx              Metadata, fonts, analytics, and theme bootstrap
+  page.tsx                Main client composition root
+prisma/
+  migrations/             Committed PostgreSQL migrations
+  schema.prisma           Application and Better Auth models
+.github/workflows/ci.yml  Quality-gate workflow
+Dockerfile                Multi-stage production image
+docker-compose.yml        App, migration, and PostgreSQL services
+```
 
-Environments are separated with Neon branches: local dev uses a `development` branch, while production uses the default `production` branch. Both sets of configuration now live in the linked Vercel project under their matching scopes; `npx vercel@latest env pull .env.local --environment=development` restores the ignored local file on a new machine. Development values cannot use Vercel's write-only Sensitive mode because they must be retrievable by the CLI. The pull replaces `.env.local`, so manually managed overrides belong in `.env.development.local`. A development branch can be forked copy-on-write from production with data and migration history included. Day-to-day flow: run Prisma through `npx vercel@latest env run -- ...`, generate and test schema changes against development, commit the migration, then run `db:migrate:deploy` explicitly against production before releasing dependent code. A push/Vercel build does not perform that database mutation. Destructive maintenance (such as clearing snapshots after scoring changes) must also be run deliberately in each intended environment; otherwise stale scores simply age out through later searches.
+## Architecture and Code Boundaries
 
-Watch-out (hit 2026-07-08): the Neon project only had **one** branch — the separate `development` branch this doc describes did not actually exist, so local `.env` had been quietly pointing at a stale/dead endpoint (and, worse, could as easily have been pointed straight at `production`). Recreated the `development` branch from `production` via the Neon console (New Branch → copies data + schema) and repointed local `.env` at its pooled connection string. If `migrate status` or a user-count query ever needs re-checking after a credential swap, verify the branch name in the Neon console before trusting this doc — branches get deleted or drift silently, and there is no in-app signal that a search is quietly hitting production.
+The project deliberately uses a small number of direct boundaries:
 
-Eight models live in `prisma/schema.prisma`:
+- **Route handlers** validate HTTP input, resolve sessions when needed, coordinate services, and translate failures into response codes.
+- **Service modules** own Google, Transitland, and Prisma operations.
+- **Pure modules** own scoring, indicators, formatting, and shared calculations.
+- **Hooks** own browser request state, cancellation, and interaction workflows.
+- **Components** focus on rendering and user intent.
+- **app/lib/types.ts** owns shared domain contracts. Local component or hook state types remain local when no other module needs them.
+- **app/lib/api.ts** validates the common success/error envelope before API data enters UI state.
+- **app/lib/maps/googleMaps.ts** is marked client-only and owns SDK loading, marker construction, popup HTML escaping, and map-specific types.
 
-* **SearchLocation:** one shared row per searched location. `cacheKey` is the lat/lng rounded to 4 decimal places (~11 m), so repeat searches of the same spot reuse the row even if geocoding jitters.
-* **ScoreSnapshot:** cached computed results, holding `overallScore` plus the full category scores and place groups as JSON strings. The strings were retained from the SQLite version for migration simplicity; PostgreSQL's native `Json` type remains a possible later cleanup.
-* **UserSearch:** the per-user recent-search join, keyed by `(userId, locationId)` and updated on repeat searches.
-* **UserSavedLocation:** the per-user favourite join, keyed by `(userId, locationId)`, with `savedAt` as its list sort timestamp.
-* **User, Session, Account, Verification:** Better Auth's user identity, database session, linked credential/provider account, and verification records.
+This structure is sufficient for the current project. Do not add repositories, dependency-injection layers, duplicate DTOs, generic state frameworks, or other abstractions without a concrete current need.
 
-Flow in `/api/places`: look up the newest snapshot for the cache key; if it is younger than 7 days, return it with `cached: true` and skip all Google calls. Otherwise fetch from Google, score, save a new snapshot, and return `cached: false`. Database errors are caught and logged so a broken database degrades to a normal Google lookup instead of failing the search.
+## Search and Data Flow
 
-Watch-out from that degradation design: when the local `DATABASE_URL` goes stale (this happened 2026-07-08 — the Neon dev endpoint/password had been reset, old `ep-empty-queen` string kept failing with Prisma P1000), the app keeps working but *every* search and profile switch silently becomes a full live Google lookup, burning Places quota with no visible error in the UI. The tell is the badge always reading "Live nearby data" (profile switches should always be cache hits) plus `Search cache lookup failed` / `Saving search result failed` in the server console. Fix is re-pasting the current connection string from the Neon console. The `channel_binding=require` param Neon now appends is harmless to Prisma 6.19 — it was ruled out as a cause.
+### Browser flow
 
-Supporting pieces:
+1. useAutocomplete waits 250 ms after input, requests /api/autocomplete, and supports keyboard selection.
+2. Submitting the form requests /api/geocode.
+3. useLocationSearch requests /api/places with coordinates, location metadata, and the selected profile.
+4. The client validates each API envelope before updating result state.
+5. Older autocomplete, geocode, and places requests are aborted and invalidated so stale responses cannot overwrite newer actions.
 
-* `app/lib/db.ts` — PrismaClient singleton guarded against dev hot-reload connection leaks.
-* `app/lib/services/searchStore.ts` — cache key builder, snapshot lookup/save, recent-search and saved-location listing, and save/unsave.
-* `/api/history` — returns recent searches ordered by `lastSearchedAt`.
-* `RecentSearches` component — chips under the search form; clicking one re-runs the search from stored coordinates without geocoding. The recent row filters out locations that are already saved, so a location never appears as two chips at once.
-* Cache status is folded into the existing badge next to the "Category scores" heading ("Cached result" vs "Live nearby data", with a hover tooltip for the full explanation) instead of a standalone sentence in the layout.
-* The green geocode confirmation box under the search form was removed: the matched address is visible in the input and the chips, and coordinates are not user-relevant.
+### Places route flow
 
-## Saved Locations
+1. Coordinates are rounded to four decimal places to form a shared cache key.
+2. /api/places checks for the newest snapshot younger than seven days.
+3. A cache hit returns stored place groups and recalculates the requested profile score without calling Google.
+4. A cache miss retrieves all categories, filters and deduplicates places, calculates the requested score, and stores a canonical no-car snapshot.
+5. If the visitor is signed in, the location is upserted into that user's recent-search history.
+6. Cache or persistence failures are logged and do not block a live provider result.
 
-Users can star any recent search to keep it permanently. Implementation:
+Profile changes call /api/places again. They are cache-only in normal operation, but a broken or unavailable database can cause another live provider lookup.
 
-* `UserSavedLocation` stores one row per `(userId, locationId)` star. Its `savedAt` timestamp records when that user saved the location and sorts that user's saved list. `SearchLocation` and its score snapshots remain shared cache data.
-* `/api/favourites` — REST verbs on one route: GET lists saved locations, POST (`{ locationId }`) saves, DELETE (`?id=`) unsaves. Input is validated at the route boundary: missing/invalid ids answer 400, unknown ids answer 404 (Prisma error `P2025` is caught in `setLocationSaved` and mapped to `false`).
-* `RecentSearches` renders both a "Saved locations" and a "Recent searches" chip row. Each chip is a div with two sibling buttons (address re-runs the search, star toggles saving) because HTML forbids nesting buttons. After a toggle the component refetches both lists instead of hand-editing local state, keeping the database the single source of truth.
+## API Routes
 
-This completes CRUD coverage over the persistence layer (create/read via search caching, update via save toggling; snapshot deletion is still only via cascade).
+| Route | Access | Responsibility |
+| --- | --- | --- |
+| GET /api/autocomplete | Public | Australian Google Places suggestions |
+| GET /api/geocode | Public | Address geocoding and provider error mapping |
+| GET /api/places | Public, session-aware | Cache lookup, provider retrieval, scoring, snapshot save, optional history write |
+| GET /api/history | Public, session-aware | Current user's recent searches; signed-out users receive an empty list |
+| GET /api/favourites | Signed in | Current user's saved locations |
+| POST /api/favourites | Signed in | Save a known location |
+| DELETE /api/favourites | Signed in | Remove a saved location |
+| GET /api/compare | Public at route level | Return the newest stored score snapshots for two location IDs |
+| /api/auth/[...all] | Better Auth | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks |
 
-Saved locations are independent of snapshot state: listings do not require a snapshot to exist, so clearing `ScoreSnapshot` (done on scoring-algorithm changes) never makes favourites vanish — they show without a score badge until re-searched, and the compare panel offers only the ones that have scores. `UserSavedLocation` rows are never deleted by the cache-expiry process; the 7-day TTL only decides when Google is re-queried.
+The comparison UI only offers the signed-in user's saved locations, but /api/compare does not currently authenticate or verify ownership. Protecting that route is an outstanding hardening task.
 
-### Why these choices
+## Place Retrieval and Categories
 
-* **Join row instead of a global flag.** Saving is a relationship between one user and one shared location, so the composite-key `UserSavedLocation` table prevents one account's star from appearing for another. Its timestamp also provides the per-user saved-list order without changing the shared location row.
-* **Validation lives at the API boundary, not in the service layer.** The route is the front door: everything past it can assume clean input, so `searchStore` stays free of defensive checks and is easier to read and test. Error codes are deliberately split — 400 means "your request is malformed", 404 means "well-formed but no such row", 500 means "our bug" — because callers debug very different problems depending on which one they get.
-* **Refetch after every mutation instead of hand-editing component state.** The database is the single source of truth; the UI is a mirror of it (`UI = f(data)`). Hand-edited local state can drift — e.g. a star lights up even though the request failed, or two open tabs disagree. The cost is one extra GET per toggle, which is trivial for a prototype and removes a whole class of sync bugs.
-* **Route handlers only translate HTTP; `searchStore` owns all Prisma calls.** Swapping SQLite for Postgres, adding caching, or writing tests touches one file instead of every route. This is the same layering as Controller → Service → Repository in Spring-style backends.
-* **One component owns both chip rows.** Saved and Recent refresh at exactly the same moments (page load, search completion, star toggle); a single fetch effect guarantees they can never fall out of sync with each other.
+Category configuration lives in app/lib/categories.ts and is the single source of truth for labels, search radii, colour classes, rating baselines, brand terms, included place types, excluded primary types, and profile weights.
 
-`DATABASE_URL` now comes from the Vercel Development environment and is pulled into `.env.local` with the other runtime settings. Next.js reads that file directly; standalone Prisma commands run through `vercel env run` so the application and CLI cannot silently target different databases. During the earlier SQLite phase, competing values in `.env` and `.env.local` caused exactly that split-brain configuration and should not be reintroduced.
-
-## Comparison View
-
-Two saved locations can be compared side by side. Implementation:
-
-* `/api/compare?a=id1&b=id2` — GET with query params (a read-only endpoint, so the whole comparison is shareable as a URL). Both snapshot lookups run through `Promise.all` so total latency is the slower query, not the sum. Missing/equal ids answer 400, unknown ids 404.
-* `getComparisonSide` in `searchStore` returns a location plus its latest snapshot with the full `CategoryScore[]` parsed back out of `scoresJson` — the read-side twin of the `JSON.stringify` done at save time.
-* `ComparePanel` renders two controlled selects over the saved list and fetches automatically once both sides are chosen. The higher score per row is highlighted. It renders nothing until at least two locations are saved.
-* The panel lives in the right column between the map and additional indicators (it originally sat below the amenities list, which buried it several screens down and left the right column empty). Its selects stack vertically and its card styling matches the other right-column cards.
-
-### Why these choices
-
-* **State lifted into `useSavedSearches`.** The chips and the comparison panel both need the saved list; if each fetched its own copy they would drift apart after a star toggle. The hook owns one copy in `page.tsx` and both components receive it as props — `RecentSearches` became purely presentational in the process.
-* **No new database columns or Google calls.** Comparison is a pure read over existing snapshots — the payoff of persisting results in week one.
-* **Stale selections are derived away, not synced away.** If a location is unstarred while selected in a dropdown, the component does not fix the state in an effect (the `react-hooks/set-state-in-effect` lint rule forbids it because it causes a cascading second render). Instead the effective selection is derived on every render: an id no longer present in the saved list simply counts as "nothing selected". Rule of thumb: if a value can be computed from existing state/props, compute it during render instead of storing and synchronising it.
-
-Current next priorities are account-management completeness (email verification, password reset, settings), broader API safeguards and observability, and automated coverage for auth/cache/provider failure paths. Vercel, hosted PostgreSQL, authentication, per-user state, and the core search/score/save/compare loop are already implemented.
-
-## Authentication
-
-Accounts landed with Better Auth (email/password plus Google OAuth), chosen over Auth.js (its docs predate the Next 16 `middleware.ts` → `proxy.ts` rename and it discourages password auth) and Clerk (hosted; user data would live outside our database). Everything stays in the existing Neon Postgres through the Prisma adapter.
-
-Pieces:
-
-* `app/lib/auth.ts` — the server instance: password hashing (scrypt, stored in `account.password`), database sessions, and the Google token exchange. `account.encryptOAuthTokens: true` encrypts Google access/refresh token material before database storage. `BETTER_AUTH_SECRET` protects auth state and must stay stable within an environment; rotating it logs everyone out and makes previously encrypted OAuth token material unreadable.
-* `app/api/auth/[...all]/route.ts` — one catch-all handler serves every auth endpoint (sign-up, sign-in, sign-out, the Google callback at `/api/auth/callback/google`).
-* `app/lib/auth-client.ts` — browser client; `useSession()` is reactive, so signing out re-renders every subscriber.
-* `/login` — one page toggling between sign-in and sign-up (they share every field but name), plus "Continue with Google" which is a full-page redirect out and back.
-* The CLI (`npx @better-auth/cli generate`) wrote four models into `schema.prisma`: `user`, `session`, `account` (one row per linked login method — a user can hold both a password and a Google account), `verification`.
-
-Favourites became per-user via a `UserSavedLocation` join table (`userId`, `locationId`, `savedAt`, composite primary key). The old global `SearchLocation.savedAt` column was dropped — locations and snapshots stay a shared cache because a location's score does not depend on who asks; only the star is per-viewer. Existing global stars could not be assigned to an owner, so that migration deliberately removed them with the old column.
-
-Recent searches are per-account too, via a `UserSearch` join table (`userId`, `locationId`, `lastSearchedAt`, upserted so re-searching bumps instead of duplicating). Recents were briefly global after auth landed, which meant a fresh account saw strangers' searches — a privacy leak and confusing UX. Now `/api/places` records a `UserSearch` row for signed-in searchers (after `saveSnapshot`, so the location row exists; wrapped so a history-write failure never breaks the search), `listRecentSearches` reads only the viewer's rows, and signed-out visitors get an empty list. The chip shows when *this user* last searched a spot, not when anyone did. The shared `SearchLocation` cache is unchanged — an anonymous search still warms the snapshot cache for everyone; it just isn't attributed to anyone.
-
-API boundary: all `/api/favourites` verbs resolve the session cookie first and answer **401** without one — a fourth error code alongside 400/404/500, meaning "we don't know who you are". `/api/history` stays public. `setLocationSaved` maps `P2003` (unknown location on save) and `P2025` (missing row on unsave) to 404; saving twice is an idempotent upsert.
-
-UI: `AuthStatus` in the page header shows a sign-in link or email + sign-out; star buttons only render when signed in; `useSavedSearches` takes the viewer's user id as an effect dependency so login/logout refetches both lists, and a 401 from favourites renders as an empty saved list rather than a stale one.
-
-Signed-out visitors get one sign-up prompt: a muted line under the search form — "Sign in to save locations, keep your recent searches, and compare rentals side by side." It renders in the exact spot the chips occupy after login, so the position itself communicates what appears there; that also covers compare without a second prompt in the panel. One prompt, not three, per the minimal-UI rule (it earns its place by carrying function discovery). Frontend-only change — the APIs already gate, this is discoverability.
-
-OAuth security boundary: Google sign-in redirects the user to Google, so the application never receives or stores the user's Google password. It receives OAuth tokens after consent; those tokens are sensitive application credentials and are encrypted at rest by Better Auth. Existing plaintext tokens remain readable for backward compatibility and are encrypted when the provider account is subsequently created, refreshed, or signed in. Prefer separate Neon branches/databases and separate secrets for development and production. If two deployments intentionally share one database, they must share the same stable `BETTER_AUTH_SECRET` so they can decrypt the same token rows.
-
-Migration note: `prisma migrate dev` refuses non-interactive shells, so the auth migration was generated with `prisma migrate diff --from-schema-datasource --to-schema-datamodel --script` into a hand-named migration folder and applied with `prisma migrate deploy`. The repository now exposes that production operation as `npm run db:migrate:deploy`; it is separate from Vercel and CI builds.
-
-### Stale-session bug after email login
-
-Symptom: after signing out and signing back in with email/password, the first landing on the home page looked signed out (no email in the header, no star buttons) while the saved/recent lists still loaded — data that requires a valid session. A second sign-in "fixed" it.
-
-Cause: the login page navigated with `router.push("/")` — a client-side navigation that keeps all in-memory JS state alive. `useSession`'s cached value had been set to null at sign-out, and the refresh it should get after sign-in raced the navigation, so the home page rendered against the stale null. The server saw the (valid) session cookie on every API call, hence the split-brain: server-fetched lists present, client-side session absent. Google login never had the bug because OAuth is a full-page redirect — everything reloads from scratch on return.
-
-Fix: after successful email sign-in/up, navigate with `window.location.assign("/")` instead of `router.push`. A hard load refetches the session from zero, so no stale cache can survive — deliberately matching the redirect behaviour of the Google flow. Rule of thumb: after a whole-session state change (login, logout), prefer a full page load over SPA navigation; the lost smoothness is trivial next to a whole class of stale-state bugs.
-
-Deployment configuration: each environment needs a stable `BETTER_AUTH_SECRET` and its own canonical `BETTER_AUTH_URL`. Google login additionally needs `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and an authorised callback URI ending in `/api/auth/callback/google` for each local/deployed origin. Email/password works without the Google pair. Values belong in local ignored env files or the deployment dashboard, never in Git.
-
-## Search Request Race Protection
-
-`useLocationSearch` prevents a slower, older request from overwriting a newer user action. Autocomplete, geocoding, and nearby-place loads each carry a monotonically increasing request id; the active request is also cancelled with `AbortController` when it is superseded. A response updates state only when its id is still current and its signal was not aborted.
-
-Submitting a new search cancels both the previous geocode and any place lookup for the old location. Choosing a history item cancels typed geocoding, and changing lifestyle profile cancels the prior place request before rescoring. Cleanup on unmount invalidates request ids in addition to aborting network work, covering responses that were already queued by the browser. This guarantees that the visible address, score, place groups, cache badge, and selected profile all come from the latest action.
-
-## Naming and Unit Tests
-
-The app is branded "Your Renting Helper" (layout metadata + the page H1; the tab previously still said "Create Next App" from the template). The repo/deployment name stays `rent-score-prototype`.
-
-Tests run with Vitest (`npm test` / `npm run test:watch`). The suite currently has 32 tests: 18 pure-function tests for `scoring.ts` and `utils.ts`, 9 isolated route tests for `/api/favourites`, 3 API-envelope tests, and 2 derived-indicator tests. Provider and database dependencies are mocked where appropriate, so CI does not need network access or a live database.
-
-### Testing principles the suite demonstrates
-
-* **Test through the public API.** The scoring pillars are private; every test calls `scorePlaceGroups`. Tests pinned to internals break on refactors, tests pinned to behaviour only break when behaviour changes.
-* **Property tests over exact numbers.** The curve constants are explicitly "first-pass values kept in one place for easy retuning" — asserting `score(700) === 43` would break on every retune. Instead the tests assert shape: monotonic decay, walkable-ring equality, carOwner ≥ carFree at distance, rated-above-baseline > unrated > rated-below.
-* **Invariant tests.** The overall score is recomputed from the returned parts inside the test and required to match, so the aggregation formula cannot silently drift; weights must sum to 100.
-* **Oracle tests.** `getDistanceMeters` is checked against an independently known value (one degree of latitude ≈ 111.2 km) instead of re-deriving haversine in the test.
-* **Edge cases that lie silently.** `Number("") === 0` would turn an empty query param into coordinates in the Gulf of Guinea; GTFS `25:10` means 1:10 am next service day and must not be "fixed". The locale-dependent `toLocaleTimeString` branch is deliberately untested so the suite passes on any machine.
-
-## Category Configuration
-
-Category metadata lives in `app/lib/categories.ts` instead of inside the Places API route. This keeps one source of truth for:
-
-* category IDs and labels
-* score weights
-* UI colors
-* branded search terms
-* generic Google Places types
-
-This avoids duplicating category labels, weights, or colors between the API, scoring logic, and UI.
-
-Places should be assigned to one primary category only. Category order is also the dedupe priority:
+Current category order also defines cross-category deduplication priority:
 
 1. Shopping Centres
 2. Groceries
 3. Food & Cafes
 4. Transport
 5. Health
-6. Fitness
+6. Fitness & Recreation
 7. Fuel & Automotive
 8. Services
 
-This keeps mixed-use results such as fast food, fuel stations, convenience stores, and banks from appearing in multiple score buckets.
+### General retrieval rules
 
-## Places Retrieval
+- Shopping Centres use a 10 km radius; standard categories use 3 km.
+- Each non-transport category makes one Google Nearby Search with a maximum of 20 results.
+- Non-transport places with fewer than 30 Google reviews are excluded.
+- Brand matches are tagged by local name matching instead of a paid text request per brand.
+- Results display by review count, then rating, then distance.
+- Each Google place ID is assigned to only one category.
+- Category-specific excluded primary types prevent secondary-type mismatches such as hotels appearing as fitness venues.
 
-The search bar uses a server-side autocomplete route backed by Google Places Autocomplete (New). Suggestions are restricted to Australia, keep the Google API key server-side, and feed the selected suggestion text into the existing geocoding flow.
+A fresh uncached search currently makes ten Google Nearby Search calls and one V/Line Text Search. Transitland calls are additional when its key is configured. Keep the provider fan-out visible when adding categories or fields.
 
-The Places API route fetches each category with a single Nearby Search over the category's included place types (`maxResultCount: 20`, the API cap). Places whose name contains one of the category's `brandTerms` (Woolworths, Chemist Warehouse, Australia Post, major gyms, …) are tagged `source: "brand"`; brand pins render larger on the map, and a brand match is kept over a generic match when deduping by place ID.
+### Transport retrieval
 
-Brand recognition used to be a separate Text Search per brand term. That was the root cause of the daily quota burning out: 42 brand terms across the categories meant one uncached search cost 43 SearchText + 10 SearchNearby = 53 requests, so a 150/day SearchText quota allowed roughly 3 searches per day. The brand results were then filtered by local name matching anyway (`placeMatchesBrand`), and scoring never reads the brand flag — only the map pin size and dedup preference do — so the fan-out bought almost nothing. Tagging the nearby results locally instead cut a search to 11 requests (verified by counting outbound calls: 10 SearchNearby + 1 SearchText for V/Line). The trade-off: a brand store only shows up if it is among the 20 nearest of its type, which raising `maxResultCount` from 10 to 20 largely covers; if a wide-radius category (Shopping Centres) visibly suffers, give that one category a single brand Text Search rather than restoring the per-term loop.
+Transport is intentionally specialised:
 
-The one remaining Text Search is the transport category's "V/Line station" query, which type-based Nearby Search cannot replace (regional stations are not consistently typed, and the lookup deliberately has no radius cutoff).
+- Up to four nearest bus stops are selected within 1 km.
+- If no bus stop is found within 1 km, a wider 5 km fallback is used.
+- The nearest metro/train station and nearest recognised V/Line station are included.
+- A local V/Line station-name list avoids relying on inconsistent provider classification.
+- Transitland is preferred for bus stops and upcoming services when configured.
+- Google Places remains the bus-stop fallback, so the transport category still works without Transitland.
+- Review thresholds and review-count display do not apply to transport.
 
-Category-level duplicate place IDs are filtered after retrieval using the category priority above. Shopping Centres use a 10 km search radius; the other MVP categories use the default 3 km radius.
+## Scoring Model
 
-Within each category, returned places are sorted for display by Google review count, then rating, then distance. Scoring still calculates closest distance from all places in the category, so popularity ordering does not weaken the proximity score.
+The current algorithm is Scoring V3. Each category is rounded to an integer out of 100 after three continuous pillars:
 
-Transport is the exception to the general category retrieval. It shows up to four nearest bus stops within 1 km, or the closest bus stops from a wider fallback search if none are found within 1 km. It also shows one nearest metro/train station from nearby rail station results, and one nearest V/Line station with no hard distance cutoff. Bus stops query both Google Places `bus_stop` and `bus_station` types so ordinary stop-level results are not missed.
+### Proximity: 50 points
 
-When `TRANSITLAND_API_KEY` is configured, the transport lookup prefers Transitland bus stop data and enriches each returned bus stop with upcoming distinct route numbers, destinations, and departure times. Google Places remains the fallback for bus stops if Transitland is not configured or does not return nearby matches. V/Line classification is based on the local station list in `app/lib/vline-stations.txt`, which avoids relying on Google Places to label regional rail stations consistently. Transport rows do not show review counts because popularity is less useful for stops and stations.
+- Full points when the closest match is within 400 m.
+- Beyond 400 m, points decay exponentially.
+- The half-life is category radius multiplied by the active profile factor.
+- No-car factor: 0.25.
+- Car-owner factor: 0.7.
+- No match: zero proximity points.
 
-## Search Criteria Refinements
+### Variety: 30 points
 
-To guarantee high-quality results, the API applies strict filtering:
-* **Review Thresholds:** Any non-transport place returned from Google Places with fewer than 30 reviews is globally excluded from scoring and the UI.
-* **Narrow Categories:** The Fuel & Automotive category strictly searches for `gas_station` and specific auto parts brands, intentionally filtering out minor local mechanics (`car_repair`). The Services category strictly searches for `post_office` and `bank`, dropping standalone ATMs.
-* **Excluded primary types:** Google returns places whose *secondary* types match a search — hotels appeared in Fitness because they contain gyms, and stadiums appeared once the category expanded to sports types. Categories can list `excludedPrimaryTypes`; Fitness rejects hotel/lodging/club types plus spectator venues (`stadium`, `arena`, `event_venue`). Participatory venues (pools, rinks, fields) stay in.
-* **Fitness & Recreation:** the fitness category covers gyms plus pools, sports complexes, and recreation centres (`fitness_center`, `swimming_pool`, `sports_complex`, `sports_club` types and Aquatic/Recreation/Leisure Centre + YMCA brand terms). Its `typicalRating` dropped from 4.7 to 4.5 because public pools and rec centres rate lower than boutique gyms.
+The formula is 30 x (1 - exp(-count / k)).
 
-## Scoring V3
+- k = 6 for Food & Cafes and Fitness & Recreation.
+- k = 3 for other categories.
+- No results: zero variety points.
 
-Each category scores out of 100 across three pillars. V3 replaced V2's stepped tiers with continuous curves after real snapshots showed V2 compressing every location into 68–100 (a CBD and a new estate differed by only 9 overall points).
+### Quality: 20 points
 
-1. **Proximity (max 50):** full points within 400 m (genuinely walkable), then exponential decay with a half-life of 0.4 × the category search radius (1,200 m for standard 3 km categories, 4,000 m for 10 km shopping centres). No cliffs: 1,719 m and 1,721 m score essentially the same.
-2. **Variety (max 30):** `30 × (1 − e^(−count/k))` with k = 6 for high-variety categories (Food & Cafes, Fitness) and k = 3 otherwise. Diminishing returns instead of a hard cap — the 10th cafe still adds something, so 25 cafes now outscore 12.
-3. **Quality (max 20):** average rating of the top 3 rated places compared against the category's `typicalRating` baseline in `categories.ts` (banks ~3.3, stations ~3.8, gyms ~4.7): `10 + 12.5 × (avg − typical)`, clamped to 0–20. This cancels per-category review culture — a 4.1-rated bank is excellent for a bank, a 4.5 gym is ordinary. Places without ratings get the neutral midpoint 10, not free full marks.
+- Average the three highest available ratings.
+- Compare that average with the category's typical-rating baseline.
+- Formula: 10 + 12.5 x (average rating - typical rating), clamped to 0-20.
+- A populated category with no rating data receives the neutral midpoint of 10.
+- A category with no places receives zero.
 
-Overall score remains a weighted average of category scores.
+### Lifestyle weights
 
-### Lifestyle profiles
+Each profile sums to 100.
 
-The product is built for renters without a car, so `carFree` is the default profile and the canonical yardstick stored in snapshots (history chips and comparisons use it); `carOwner` is the alternative. A `balanced` middle profile existed briefly and was removed — two honest viewpoints beat three diluted ones. Profiles change two things, both defined in `categories.ts`:
+| Category | No car | Car owner |
+| --- | ---: | ---: |
+| Shopping Centres | 8 | 13 |
+| Groceries | 22 | 18 |
+| Food & Cafes | 14 | 12 |
+| Transport | 28 | 8 |
+| Health | 15 | 15 |
+| Fitness & Recreation | 10 | 10 |
+| Fuel & Automotive | 0 | 14 |
+| Services | 3 | 10 |
 
-* **Weights** (`weightProfiles`, each column sums to 100 so a weight reads as a percentage): carFree runs transport 28 / fuel 0 / services 3; carOwner runs fuel 14 / transport 8 / services 10. Fitness & Recreation is 10 in both — exercise habits do not correlate with car ownership.
-* **Distance tolerance** (`proximityHalfLifeFactor`): the proximity pillar halves every factor × category-radius past the 400 m walkable ring — 0.25 car-free (distance hurts when you carry groceries onto a bus), 0.7 with a car. This makes *category scores themselves* shift with the profile, not just the weighted total; variety and quality stay profile-independent because how many places exist and how good they are does not depend on the viewer. Within the walkable ring the profiles agree by construction.
+The overall score is the weighted average of the active category scores. No-car is the default and canonical stored profile. Raw place groups are retained in the snapshot, so another profile can be recalculated without new provider calls.
 
-Calibration on Williams Landing (a drive-everywhere estate): groceries 58 car-free vs 76 car-owning, services 29 vs 47, food identical at 88 (73 m — walkable is walkable), overall 71 vs 77. Weights-only profiles had produced an inverted 75 vs 72 there; modelling distance tolerance flipped it to match intuition.
+Any scoring or retrieval change that would make stored place groups or scores misleading requires deliberate ScoreSnapshot invalidation in each intended environment.
 
-The API takes a `profile` query parameter and the UI exposes a segmented control (No car / Car owner) above the category scores. Switching profiles never calls Google: snapshots cache the raw place groups and scores are recomputed per request — cache the expensive, stable part; recompute the cheap, variable part. The category cards show each weight (zero-weight categories dim to "not counted") and sort by weight, so switching visibly reorders and relabels the grid.
+## Derived Indicators
 
-Calibration was done by simulating the formulas against stored snapshots before implementation: Melbourne CBD 95→92, Hoppers Crossing 91→88, Williams Landing 86→72, widening the spread from 9 to 20 points and surfacing the new estate's real weaknesses (groceries/health at ~1.7 km, low-rated services). All constants (400 m ring, 0.4 half-life factor, k values, 12.5 slope, typical ratings) are first-pass values kept in one place for easy retuning; `typicalRating` is currently judgement-based and could later be derived from accumulated snapshot data.
+app/lib/indicators.ts derives five indicators from the current place groups and category scores:
 
-Because scores live in cached snapshots, the `ScoreSnapshot` table was cleared when V3 shipped — mixing V2 and V3 numbers in history or comparisons would be misleading. Saved locations were unaffected and re-scored on next search.
+- **Walkability:** estimated minutes at 80 metres per minute for key destinations.
+- **Transit access:** transport score label, closest distance, and available departure count.
+- **Amenity density:** total place count across current groups.
+- **Daily convenience:** average of groceries, food, health, services, and shopping scores.
+- **Car reliance:** estimate based on core categories beyond 1.2 km, with a small fuel-score offset.
 
-Future scoring can add better walking-distance estimates, public transport frequency, school data, safety signals, and rental price context.
+The visible planned list is not live data:
 
-## Provider Choice
+- population density;
+- median rent and rent trend;
+- schools and childcare;
+- safety;
+- planned development.
 
-Google Maps and Google Places remain the primary providers for geocoding, place retrieval, and map rendering. Transitland is used only as optional transport enrichment because Google Places can identify bus stops but does not expose stop-level route numbers, destinations, or departures.
+## Persistence and Cache
 
-## Map Preview
+The current Prisma schema contains eight models:
 
-The location preview uses the Google Maps JavaScript API through `NEXT_PUBLIC_MAPS_API_KEY`. The same underlying Google Cloud project can be used as the server key, but the browser-exposed key must be restricted by HTTP referrer.
+| Model | Purpose |
+| --- | --- |
+| SearchLocation | Shared canonical searched location keyed by rounded coordinates |
+| ScoreSnapshot | Timestamped overall score, category scores, and place groups |
+| UserSearch | Per-user recent-search relationship |
+| UserSavedLocation | Per-user saved-location relationship |
+| User | Better Auth identity |
+| Session | Better Auth database session |
+| Account | Password or OAuth provider account |
+| Verification | Better Auth verification records |
 
-The first map version shows:
+Important behaviour:
 
-* one primary marker for the searched location
-* category-colored markers for nearby amenities
-* slightly larger markers for brand matches
-* marker popups with name, category, distance, and address
+- SearchLocation and ScoreSnapshot are shared across users.
+- UserSearch and UserSavedLocation are scoped to one user.
+- Anonymous searches can warm the shared cache but are not added to history.
+- Saved locations survive snapshot deletion; they temporarily show without a score until searched again.
+- ScoreSnapshot currently stores scores and groups as JSON strings. PostgreSQL Json columns are a possible cleanup, not a current requirement.
+- The seven-day TTL controls reuse only; expired rows are not automatically deleted.
+- Database failures degrade to live Google retrieval. This preserves search availability but can increase provider usage without a visible database warning.
 
-Nearby place latitude and longitude are included in the `/api/places` response so the map can render amenity markers without making extra client-side Places requests.
+## Authentication and User Data
 
-## Amenities-First UI
+Better Auth uses the Prisma adapter and the same PostgreSQL database as the application.
 
-The main page layout is split into a wider left column and narrower right column:
+- Email/password sign-up and sign-in are enabled.
+- Google OAuth is configured when both Google credentials are available.
+- Password hashing and session cookies are managed by Better Auth.
+- OAuth access and refresh token material is encrypted before database storage.
+- BETTER_AUTH_SECRET must remain stable within an environment.
+- Environments sharing one database must share the same secret or encrypted OAuth material becomes unreadable.
+- Email sign-in uses a full-page redirect after success so the session is reloaded rather than reused from stale client state.
+- Favourites return 401 when signed out.
+- History is session-aware and returns an empty list when signed out.
 
-* Left column: search, compact overall score, compact category scores, and nearby amenities.
-* Right column: map preview and additional indicators.
+Google OAuth redirects the browser to Google; this application never receives the user's Google password.
 
-`NearbyPlacesList` is now part of the primary result area rather than a side panel. It summarizes total places found and the nearest amenity, then displays each category as a dense card. Place rows are compact single lines (name, review summary, distance); the address and place type moved into a hover tooltip so low-priority detail stays available without costing rows. Each category shows three places by default with a "Show all N" toggle (progressive disclosure — expansion state is local per-category `useState`, since nothing else reads it). Bus-stop rows keep their route/departure sublines because that is core transport detail.
+The login page currently always shows "Continue with Google." If OAuth credentials are intentionally omitted, the button is still visible and the flow will fail. Hiding or disabling it from server-provided configuration is deferred.
 
-`ScoreBreakdown` remains compact and uses category score, count, and closest distance. Longer category explanations are deliberately omitted from the main UI for now so they do not compete with amenities.
+## Map and Interaction Status
 
-## Minimal UI Pass
+LocationMap uses the browser-exposed NEXT_PUBLIC_MAPS_API_KEY and the Google Maps JavaScript API.
 
-A restyle applied one test to every visual element: it must carry information or function, or it goes. Changes:
+Current behaviour:
 
-* Rainbow progress bars removed from category scores — with V3 scores clustering in a healthy range the bars all looked alike, so the number carries the message. A small colour dot next to each category name keeps the link to the matching map markers (the informational part of the colour survived; the decoration didn't).
-* Amenity rows and indicator rows lost their per-row borders/backgrounds in favour of hairline dividers — one card level instead of three nested ones.
-* Solid colour badges (indicator tones, "Planned" pills, bus route chips) became right-aligned muted text or grey chips; the five planned-data rows collapsed into one muted line. The tone-mapping helpers were deleted along with them — decoration usually drags supporting code with it.
-* Headings unified to one size/weight across section cards; the uppercase eyebrow line above the H1 was dropped; the search button softened from black.
-* Kept deliberately: map marker colours (functional), compare-table winner highlighting (information), the star toggle (function), and the single emerald overall-score accent.
+- one labelled marker for the searched location;
+- category-coloured amenity markers;
+- larger markers for locally recognised brand matches;
+- up to eight initial markers per category, with on-demand marker creation when a later list row is selected;
+- only one custom amenity popup open at a time;
+- popup name, category, distance, and address;
+- a Google Maps search link for non-transport amenities using query and Google Place ID;
+- no custom Google Maps link for transport because Transitland stop IDs are not Google Place IDs;
+- built-in fullscreen control;
+- list-row selection that pans, opens the popup, and scrolls to the map when necessary;
+- a floating return button after automatic scrolling.
 
-## Additional Indicators
+The application uses semantic colour tokens for light and dark themes. Theme preference is saved in localStorage, follows the operating system on first visit, is applied before hydration, and synchronises across tabs. Google map colour scheme is a construction-time option, so the map and its markers are recreated when the theme changes. Custom popup surfaces, text, close control, and links are styled for both themes.
 
-`AdditionalIndicators` renders below the map in the right column. It separates currently derived indicators from future dataset placeholders.
+## Environment Configuration
 
-Currently derived indicators:
+Application variables:
 
-* **Walkability:** Uses straight-line distance estimates from current nearby place results. Walking time is estimated at 80 metres per minute. It shows the nearest bus stop/route, nearest major grocery, and nearest shopping centre as separate rows so long names can wrap.
-* **Transit access:** Uses the transport category score, closest transport distance, and available Transitland departure counts when configured.
-* **Amenity density:** Uses total nearby places across all current categories.
-* **Daily convenience:** Averages groceries, food, health, services, and shopping category scores.
-* **Car reliance:** Estimates whether core categories are beyond short walking range, with fuel/automotive availability providing a small offset.
+| Variable | Required | Exposure and purpose |
+| --- | --- | --- |
+| DATABASE_URL | Yes | Server-only PostgreSQL connection |
+| GOOGLE_MAPS_API_KEY | Yes | Server-only autocomplete, geocoding, and place retrieval |
+| NEXT_PUBLIC_MAPS_API_KEY | For live map | Browser-visible Maps JavaScript key |
+| BETTER_AUTH_SECRET | Yes | Server-only stable auth and token-encryption secret |
+| BETTER_AUTH_URL | Yes | Canonical application origin for auth |
+| TRANSITLAND_API_KEY | No | Server-only bus-stop and service enrichment |
+| GOOGLE_CLIENT_ID | No | Google OAuth; email/password works without it |
+| GOOGLE_CLIENT_SECRET | No | Google OAuth; server-only |
 
-Walkability grocery selection is intentionally restricted to major supermarket brands: Coles, Woolworths, Aldi, and IGA. Nearby grocery-like places such as specialty food stores are still useful in the amenities list and category scoring, but they are not used as the headline walkability grocery target.
+NEXT_PUBLIC_MAPS_API_KEY is public by design. Restrict it by HTTP referrer and to the Maps JavaScript API. Restrict the server key to the required server APIs and do not apply browser-referrer restrictions to server calls.
 
-The walkability badge color is based on average estimated walking time to the nearest bus, major grocery, and shopping centre:
+### Recommended development setup
 
-* 10 minutes or less: green
-* 15 minutes or less: blue
-* 25 minutes or less: amber
-* above 25 minutes: slate
+Use a dedicated Neon development branch and Vercel Development variables:
 
-Planned indicators are shown as placeholders and must not be treated as live data until dedicated sources are added:
+```bash
+npx vercel@latest link
+npx vercel@latest env pull .env.local --environment=development
+npx vercel@latest env run -- npm run db:migrate:deploy
+npm run dev
+```
 
-* population density
-* median rent / rent trend
-* schools / childcare
-* safety
-* planned development
+Operational rules:
 
-## Deferred Work
+- env pull replaces .env.local.
+- Put manually managed overrides in .env.development.local.
+- Development values that must be pulled cannot be Vercel write-only Sensitive values.
+- Run standalone Prisma commands through vercel env run when DATABASE_URL only exists in Vercel-managed local configuration.
+- Keep development and production on separate Neon branches and separate secrets where possible.
+- Never commit .env files.
 
-AI summaries, crime data, school quality, and rental price analysis are deferred. Map/list linking and the return-to-row interaction are now implemented. On the auth side, email verification, password reset, and account settings are deferred.
+Google OAuth callback URLs end in /api/auth/callback/google. Configure one authorised callback for localhost and one for every deployed origin.
 
-## Architecture Refactoring
+## Database Changes and Cache Invalidation
 
-The second architecture pass removed duplicated types and split stateful UI/provider orchestration at stable boundaries without reducing runtime type safety:
+- postinstall runs prisma generate and does not connect to a database.
+- npm run build runs only next build and never applies migrations.
+- npm run db:migrate is for interactive development migration work.
+- npm run db:migrate:deploy applies committed migrations to a target database.
+- Vercel builds do not migrate the production database automatically.
+- Docker Compose runs a one-shot migrate service after PostgreSQL becomes healthy and before the application starts.
 
-* **Shared contracts:** `app/lib/types.ts` owns canonical domain models, a reusable request-state shape, and the generic `ApiResult<T>` envelope. `app/lib/api.ts` parses JSON and validates each endpoint's success payload before it reaches UI state; callers no longer repeat unchecked casts and error-envelope handling.
-* **Search controller:** `useAutocomplete` owns query text, debouncing, cancellation, stale-response protection, keyboard navigation, and suggestion selection. `SearchForm` now receives five intent-oriented props instead of fifteen raw values and setters. `useLocationSearch` groups related results into three state objects rather than fifteen independent state hooks.
-* **Provider boundary:** `app/lib/services/placeSearch.ts` owns category/provider orchestration, while `/api/places` is a 126-line HTTP/cache/session/scoring coordinator rather than a 550-line provider implementation. Google Places and Transitland remain isolated services, and V/Line station data is loaded once per request rather than once per place.
-* **Map boundary:** `app/lib/maps/googleMaps.ts` owns SDK loading, marker construction, HTML escaping, and official `google.maps` types from `@types/google.maps`. `LocationMap` is limited to React lifecycle and interaction coordination.
-* **Pure indicators:** `app/lib/indicators.ts` derives the five current indicators without mutating place arrays. `AdditionalIndicators` is presentation-only, and the pure calculations have direct unit tests.
-* **Measured result:** files over 200 lines dropped from 10 to 5, exported types from 33 to 28, `SearchForm` props from 15 to 5, and the test suite grew from 27 to 32 while total TS/TSX lines stayed effectively flat.
+Before releasing schema-dependent code, explicitly deploy its committed migration to the target database.
 
-The refactor was gated section-by-section with ESLint, TypeScript, targeted tests, the full 32-test suite, a production build, and a browser smoke test of search input and authentication pages.
+Clear ScoreSnapshot deliberately when changing:
 
-## Docker Deployment
+- scoring formulas or constants that affect stored canonical scores;
+- category definitions or provider fields that affect stored place groups;
+- filtering, deduplication, or retrieval behaviour that makes old groups incompatible.
 
-Alongside the Vercel + Neon deployment, the repo now ships a self-contained Docker option (`Dockerfile` + `docker-compose.yml`) so someone can run the full stack with only Docker Desktop installed — no Node, npm, or Postgres setup. `docker compose --env-file .env.docker up --build` starts three services: `db` (postgres:17-alpine with a persistent `db-data` volume and a `pg_isready` healthcheck), `migrate` (one-shot `prisma migrate deploy`), and `app` (the Next.js server), ordered via `depends_on` conditions.
+Do not delete UserSavedLocation merely to invalidate scores.
 
-Design decisions and their reasons:
+## Deployment
 
-* **Migrations run at container start, not image build.** `npm run build` now performs only `next build`, while the explicit `npm run db:migrate:deploy` script owns production schema deployment. The Dockerfile uses the standard build script and a separate compose service applies migrations once the database is healthy.
-* **`output: "standalone"`** was added to `next.config.ts` so the runtime image only carries `.next/standalone` + static assets instead of full `node_modules` (verified: no effect on the Vercel build path).
-* **`NEXT_PUBLIC_MAPS_API_KEY` is a build arg**, not a runtime env var — Next.js inlines `NEXT_PUBLIC_*` into the client bundle during `next build`, so setting it at `docker run` time silently does nothing. Changing it requires an image rebuild.
-* **Debian slim base (`node:22-slim`), not Alpine**, so Prisma's engine auto-detection works without adding musl `binaryTargets` to `schema.prisma`; `openssl` is installed in both build and runtime stages because the Prisma engine requires it.
-* **Config comes from `.env.docker`** (gitignored via the existing `.env*` rule, with a `!.env.docker.example` exception for the committed template) passed through compose variable substitution, so secrets never bake into image layers. `BETTER_AUTH_SECRET` and `GOOGLE_MAPS_API_KEY` fail fast with `:?` if unset; Google OAuth keys are optional since email/password login works without them.
+### Vercel and Neon
 
-## Continuous Integration (GitHub Actions)
+- Vercel hosts the application and deploys main.
+- Neon supplies separate hosted PostgreSQL branches for development and production.
+- Environment variables are scoped in the linked Vercel project.
+- Database migration remains a separate explicit release operation.
 
-A CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. On a fresh `ubuntu-latest` machine it checks out the code, installs Node 20, runs `npm ci`, then enforces four quality gates: `npm run lint` (ESLint), `npx tsc --noEmit` (type-check), `npm run test` (Vitest, currently 32 tests), and `npm run build` (optimized production compilation). A failure marks the commit/PR red.
+### Docker Compose
 
-Design decisions and their reasons:
+docker-compose.yml starts:
 
-* **The production build is side-effect free.** Database deployment was moved into `npm run db:migrate:deploy`, so CI can compile the complete application without provisioning or mutating Postgres. Non-secret placeholder environment values satisfy configuration validation; no database or provider API calls occur during compilation.
-* **Next.js build output is cached.** `actions/cache` persists `.next/cache` using dependency and source hashes, reducing repeat Turbopack work while invalidating the cache when application code changes.
-* **No database needed despite Prisma.** `npm ci` triggers the `postinstall` hook (`prisma generate`), which only reads `schema.prisma` to generate the client — it makes no database connection — so the type-check and tests that import `@prisma/client` compile and run on a clean machine.
-* **`npm ci`, not `npm install`.** `ci` installs exactly the locked versions from `package-lock.json` and fails if the lockfile is out of sync, making runs reproducible.
+1. db: PostgreSQL 17 with a persistent db-data volume;
+2. migrate: one-shot prisma migrate deploy;
+3. app: the standalone Next.js server.
 
-## API-Route Tests (favourites)
+The Docker image uses Node 22 slim and installs OpenSSL for Prisma. NEXT_PUBLIC_MAPS_API_KEY is a build argument because Next.js includes it in the browser bundle; changing it requires rebuilding the image.
 
-Added `app/api/favourites/route.test.ts` (9 tests) to cover a real feature end-to-end at the route level, plus `vitest.config.ts` to make it runnable. The suite grew from 18 to 27 tests.
+## Validation and CI
 
-What is verified: `GET` returns 401 when signed out and the caller-scoped saved list when signed in; `POST` returns 400 for non-JSON bodies and missing `locationId`, 401 when signed out, 404 when the location does not exist, and 200 on a successful save; `DELETE` returns 400 without an `id` and unsaves on success.
+GitHub Actions runs on pushes to main and pull requests targeting main:
 
-Design decisions and their reasons:
+1. npm ci
+2. npm run lint
+3. npx tsc --noEmit
+4. npm test
+5. npm run build with non-secret placeholder configuration
 
-* **Dependencies are mocked, not exercised.** The route depends on the auth layer (session cookie) and the search store (Postgres) — neither exists in CI. `vi.mock` replaces `@/app/lib/auth` and `@/app/lib/services/searchStore` with fakes, so the tests assert the route own decision logic (status codes, validation, per-user scoping) in isolation rather than testing the database.
-* **`vitest.config.ts` was required for the `@/` alias.** Tests import the route, which imports application code via the `@/...` alias tsconfig defines. Vitest does not read tsconfig `paths`, so the config maps `@` to the project root; without it those imports fail to resolve (verified by probe). Existing tests use relative imports and are unaffected.
-* **A minimal session stands in for the full better-auth shape.** The route only reads `session.user.id`, so the fake is `{ user: { id } }` cast to the real return type via `as unknown as` (avoids `any`, keeps lint clean) instead of constructing a complete session object.
-* **Validation-before-auth ordering is asserted.** POST parses and validates the body before the session lookup, so the malformed-body and missing-`locationId` tests confirm auth is never called on a bad request.
+The current 32-test suite covers:
 
-## Cache TTL: 24h to 7 days (Google free-tier optimisation)
+- scoring behaviour and invariants;
+- formatting, coordinate parsing, distance, and time utilities;
+- API-envelope validation;
+- derived indicators;
+- favourites route validation, authentication responses, and service coordination.
 
-Raised the snapshot cache TTL in `app/lib/services/searchStore.ts` from 24 hours to 7 days (`cacheTtlMs = 7 * 24 * 60 * 60 * 1000`).
+The tests mock provider, auth, or database dependencies where appropriate. CI does not require a live database or external network calls.
 
-Root cause / motivation: the Places API (New) calls request `rating` + `userRatingCount`, which forces every SearchNearby into the **Enterprise** SKU — the smallest free bucket at 1,000 calls/month (Google removed the $200 monthly credit on 2025-03-01, replacing it with per-SKU monthly free tiers: Essentials 10k / Pro 5k / Enterprise 1k). Each uncached search fans out to ~10 SearchNearby calls, so the free ceiling is only ~100 unique searches/month, and SearchNearby (not SearchText, which the earlier brand-tagging refactor already cut to ~1/search) is the binding quota.
+## Known Gaps and Risks
 
-Why this helps without costing anything: a longer TTL only changes how long existing snapshot rows are reused before Google is re-queried — it adds no rows and no storage, and strictly *reduces* paid Google calls. The only trade-off is data freshness, and amenities change on a weeks-to-months timescale, so a week-old result is still accurate. 7 days (vs 30) was chosen as a freshness/savings balance. Fetch-layer changes (new categories, field-mask tweaks) still require clearing `ScoreSnapshot`, same as scoring-algorithm changes, since the cache stores raw place data.
+### Immediate correctness and security
 
-## Amenity List → Map Linking (clickable category rows)
+- /api/compare does not authenticate the caller or verify that both location IDs belong to the caller's saved list.
+- The cache badge tooltip still says "within the last 24 hours" even though the current cache TTL is seven days.
+- Google OAuth remains visibly available when its credentials are absent.
 
-Rows under each category in `NearbyPlacesList` are now buttons. Clicking one highlights the row, pans the map to that place, opens its info window, and — when the map is not fully visible (e.g. the row is far down the page) — smooth-scrolls the page up to the map.
+### Reliability and operations
 
-How it works:
+- No application-level rate limiting on autocomplete, geocode, or places routes.
+- No structured logging, monitoring dashboard, tracing, or error-tracking integration.
+- A database outage silently falls back to live Google calls and can increase quota usage.
+- Provider calls run within the request lifecycle; there are no background jobs or retries.
+- Provider pricing, quotas, and result quality remain external constraints.
 
-* **Selection state lives in `page.tsx`** as `selectedPlace: { placeId } | null`, because the list and the map are sibling components. A fresh object is created per click (instead of a bare id string) so re-clicking the same row still re-triggers the map effect.
-* **`LocationMap` keeps refs** to the map instance, the loaded Google API, a `Map<placeId, MarkerEntry>` of markers, and the currently open info window. Marker construction was extracted into `createPlaceMarker`, shared by the initial render (first 8 places per group) and on-demand creation when a clicked row is beyond the first 8. `openEntry` is the single open-info-window path (marker click or row click), closing the previous window so only one stays open.
-* **Scroll-to-map** happens in the selection effect: `mapDiv.scrollIntoView({ behavior: "smooth", block: "start" })`, guarded by a `getBoundingClientRect` check so the page stays put when the map is already fully visible. `scroll-mt-16` on the map div leaves breathing room at the viewport top.
+### Product and data
 
-Watch-out (verification): the embedded Claude browser pane freezes animation frames — `behavior: "smooth"` scrolling never moves there (instant scrolling works), screenshots time out, and the Maps JS API silently falls back to StaticMapService images (no `.gm-style`, no info windows). The feature was verified there by probing that `scrollIntoView` is called with the right args on the map div, plus manual verification in a real browser. Do not debug "scroll not working" in that pane.
+- Straight-line distances are not route-aware.
+- Planned housing, safety, education, population, and development datasets are not implemented.
+- Category baselines and scoring constants are manually calibrated.
+- The result is a convenience indicator, not a rental recommendation or official valuation.
 
-## Return-to-Row Button (after jumping to the map)
+### Testing
 
-After a clicked amenity row auto-scrolls the page to the map, a floating circular arrow button appears fixed at the bottom-right. Clicking it smooth-scrolls back to the row that was clicked (centred in the viewport) and hides the button.
+- No browser end-to-end suite.
+- No live database integration suite.
+- No complete authentication-flow tests.
+- Limited cache-expiry and provider-failure coverage.
 
-How it works:
+## Roadmap
 
-* `page.tsx` owns `showReturnButton`. `LocationMap` receives an `onAutoScroll` callback (wrapped in `useCallback` with empty deps so its identity is stable and never re-triggers the map's selection effect) and calls it only inside the `!fullyVisible` branch — so the button appears only when an actual jump happened, not when the map was already on screen.
-* Each `PlaceRow` `<li>` carries `id={`place-row-${place.id}`}`; the button's handler finds it with `document.getElementById(...).scrollIntoView({ behavior: "smooth", block: "center" })`.
-* The button hides on click, and when a new search starts. The reset uses the render-time adjustment pattern (`prevPlacesState` state + guarded compare during render) because the new `react-hooks/set-state-in-effect` lint rule rejects calling `setState` synchronously inside `useEffect`.
+Priorities are intentionally ordered around current needs rather than speculative scale.
 
-## Persistent Light/Dark Theme
+### 1. Correctness and route hardening
 
-Added a clean, high-contrast dark theme across the dashboard, login flow, result states, comparison table, and Google Map without duplicating component markup.
+- Update the cache badge tooltip from 24 hours to seven days.
+- Require a session in /api/compare and verify both locations are saved by that user.
+- Hide or disable Google sign-in when OAuth is not configured.
+- Add lightweight rate limiting to provider-backed routes.
 
-Design decisions and their reasons:
+### 2. Reliability and test coverage
 
-* **Semantic tokens instead of scattered overrides.** `app/globals.css` defines page, surface, control, border, text, accent, action, warning, and danger roles for both themes. Components use role-based Tailwind utilities such as `bg-surface`, `text-ink-muted`, and `border-line`, so future palette changes stay centralized and category dot colors remain independent.
-* **One small justified theme type.** `Theme` is only the closed union `"light" | "dark"`; it prevents invalid stored or propagated values without adding parallel interfaces or theme configuration objects.
-* **No-flash startup.** A `beforeInteractive` root-layout script resolves the saved preference (or the operating-system preference) and sets `data-theme` before React hydrates. `ThemeProvider` owns the live value, system changes, cross-tab storage updates, and toggle action. The toggle renders identical server/client markup, with CSS selecting the sun or moon icon, avoiding hydration-dependent icon output.
-* **Persistent but user-controlled.** The first visit follows the operating system. Once toggled, the preference is stored locally and survives navigation and reloads; no account or database write is needed.
-* **The map is themed at construction.** Google Maps treats `colorScheme` as a map-construction option, so `LocationMap` recreates the map when the app theme changes and rebuilds markers from existing result data. Marker outlines and info-window text also adjust for contrast, while amenity category colors stay recognizable.
+- Add focused tests for cache hits, expiry, persistence failure, and provider errors.
+- Add authentication-flow and comparison-authorisation tests.
+- Add one browser smoke flow covering search, map selection, save, and comparison.
+- Add structured error reporting before broader usage.
 
-Verification: section-level ESLint and TypeScript checks passed after the provider, component migration, and map changes. The final full run passed ESLint, all 32 Vitest tests, TypeScript, and the optimized Next.js 16 build. Browser checks confirmed initial dark rendering, light/dark toggling, persistence after reload, login coverage, no 375 px horizontal overflow, no framework error overlay, and no console errors. The sandboxed local server could not reach the external geocoding service, so the live Google basemap could not be populated there; its themed error state rendered correctly, while map integration remained covered by type/build checks.
+### 3. Account completeness
+
+- Email verification.
+- Password reset.
+- Account settings and deletion.
+
+### 4. Better location evidence
+
+- Route-aware walking times.
+- More reliable transit frequency and service coverage.
+- Rent, schools, childcare, safety, population, and planning datasets from suitable sources.
+
+### 5. Continued interface refinement
+
+- Accessibility and keyboard review.
+- Mobile map and long-list interaction review.
+- Clearer data freshness and provider-degradation messaging.
+
+## Personal-Project Engineering Rule
+
+This repository is a personal project. Prefer the smallest clear implementation that solves a real current requirement.
+
+- Reuse existing types, functions, and patterns.
+- Keep one canonical shared type rather than parallel DTOs.
+- Keep types local when they describe only one component or hook.
+- Add abstractions only when they remove actual duplication or protect a necessary boundary.
+- Preserve security, correctness, and data integrity without importing enterprise process or hypothetical scale.
+- Record current decisions here; do not turn this file back into a chronological debugging log.
+
+## Maintenance Checklists
+
+### Before committing application changes
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm test
+npm run build
+```
+
+Use checks proportionate to the change during development, then run the full set before a release or broad refactor.
+
+### Before releasing a schema change
+
+1. Create and test the migration against the development database.
+2. Commit the migration with the dependent code.
+3. Apply npm run db:migrate:deploy to the target database.
+4. Deploy the application.
+
+### Before changing scoring or retrieval
+
+1. Verify the change against representative stored results.
+2. Update focused tests.
+3. Decide whether existing ScoreSnapshot rows are compatible.
+4. Invalidate snapshots only in the intended environments when required.
+5. Leave saved-location relationships intact.
