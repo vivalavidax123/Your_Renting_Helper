@@ -60,7 +60,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 - Population, rent, school, childcare, safety, and development data are placeholders only.
 - Walkability uses straight-line estimates, not route-aware walking times.
-- Account email verification, password reset, account settings, and account deletion are not implemented.
+- Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset, account settings, and account deletion are not implemented.
 - Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
 - Automated coverage does not yet include full authentication, database-cache integration, provider failures, or browser end-to-end flows.
 
@@ -367,6 +367,8 @@ Application variables:
 | NEXT_PUBLIC_MAPS_API_KEY | For live map | Browser-visible Maps JavaScript key |
 | BETTER_AUTH_SECRET | Yes | Server-only stable auth and token-encryption secret |
 | BETTER_AUTH_URL | Yes | Canonical application origin for auth |
+| RESEND_API_KEY | When auth email is enabled | Server-only Resend API key for verification and password-reset messages |
+| AUTH_EMAIL_FROM | When auth email is enabled | Verified sender identity used for authentication messages |
 | TRANSITLAND_API_KEY | No | Server-only bus-stop and service enrichment |
 | GOOGLE_CLIENT_ID | No | Google OAuth; email/password works without it |
 | GOOGLE_CLIENT_SECRET | No | Google OAuth; server-only |
@@ -503,9 +505,11 @@ Priorities are intentionally ordered around current needs rather than speculativ
 
 ### 3. Account completeness
 
-- Email verification.
 - Password reset.
 - Account settings and deletion.
+
+The beginner-oriented implementation plan for the first two items is in
+[docs/auth-email-verification-password-reset-plan.md](./docs/auth-email-verification-password-reset-plan.md).
 
 ### 4. Better location evidence
 

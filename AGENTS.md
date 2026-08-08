@@ -14,3 +14,15 @@ This is a personal project, not a workplace or enterprise codebase. Prefer the s
 - Add a new type or abstraction only when it provides concrete value to the code being changed now, such as removing real duplication, enforcing a necessary boundary, or making current behavior easier to understand.
 - Optimize for readability, directness, and ease of maintenance by one person. Preserve necessary correctness, security, and data integrity without designing for hypothetical scale or teams.
 <!-- END:personal-project-simplicity-rules -->
+
+<!-- BEGIN:owner-learning-preference -->
+# Teach while implementing
+
+The project owner is a beginner and wants to learn while changes are made.
+
+- Explain the purpose of each meaningful step in plain language, including how data and requests move through the existing stack.
+- Break non-trivial implementation work into small checkpoints with a clear way to verify each checkpoint.
+- Introduce technical terms when they are useful, but define them on first use.
+- Show the important commands and explain what they prove; do not treat tooling output as self-explanatory.
+- Point out security or maintenance tradeoffs without adding unnecessary architecture.
+<!-- END:owner-learning-preference -->

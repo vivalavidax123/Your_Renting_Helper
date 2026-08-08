@@ -15,22 +15,51 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(
+    null,
+  );
   const [pending, setPending] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    setNotice(null);
+    setVerificationEmail(null);
     setPending(true);
 
     const result =
       mode === "signIn"
         ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ name, email, password });
+        : await authClient.signUp.email({
+            name,
+            email,
+            password,
+            callbackURL: "/verify-email?verified=1",
+          });
 
     setPending(false);
 
     if (result.error) {
+      if (mode === "signIn" && result.error.status === 403) {
+        setPassword("");
+        setVerificationEmail(email);
+        setNotice(
+          "This email still needs verification. Check your inbox or request a new link below.",
+        );
+        return;
+      }
+
       setError(result.error.message ?? "Something went wrong. Try again.");
+      return;
+    }
+
+    if (mode === "signUp") {
+      setPassword("");
+      setVerificationEmail(email);
+      setNotice(
+        "Check your inbox for a verification link before signing in.",
+      );
       return;
     }
 
@@ -42,17 +71,46 @@ export default function LoginPage() {
     window.location.assign("/");
   };
 
+  const handleResendVerification = async () => {
+    if (!verificationEmail) {
+      return;
+    }
+
+    setError(null);
+    setPending(true);
+
+    const result = await authClient.sendVerificationEmail({
+      email: verificationEmail,
+      callbackURL: "/verify-email?verified=1",
+    });
+
+    setPending(false);
+
+    if (result.error) {
+      setError(result.error.message ?? "Could not request a new link.");
+      return;
+    }
+
+    setNotice(
+      "If this address belongs to an unverified account, a new link is on its way.",
+    );
+  };
+
   // Google is a full-page redirect: the browser leaves for Google's consent
   // screen and comes back through /api/auth/callback/google, so there is no
   // result to handle here — only a failure to start the redirect.
   const handleGoogle = async () => {
     setError(null);
+    setNotice(null);
+    setVerificationEmail(null);
+    setPending(true);
     const result = await authClient.signIn.social({
       provider: "google",
       callbackURL: "/",
     });
 
     if (result.error) {
+      setPending(false);
       setError(result.error.message ?? "Could not start Google sign-in.");
     }
   };
@@ -70,44 +128,91 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-3">
           {mode === "signUp" && (
+            <div>
+              <label htmlFor="name" className="sr-only">
+                Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Name"
+                autoComplete="name"
+                className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
+              />
+            </div>
+          )}
+          <div>
+            <label htmlFor="email" className="sr-only">
+              Email
+            </label>
             <input
-              type="text"
+              id="email"
+              type="email"
               required
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Name"
-              autoComplete="name"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Email"
+              autoComplete="email"
               className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
             />
-          )}
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Email"
-            autoComplete="email"
-            className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
-          />
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Password (min. 8 characters)"
-            autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-            className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
-          />
+          </div>
+          <div>
+            <label htmlFor="password" className="sr-only">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              minLength={8}
+              maxLength={128}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Password (min. 8 characters)"
+              autoComplete={
+                mode === "signIn" ? "current-password" : "new-password"
+              }
+              className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
+            />
+          </div>
 
-          {error && <p className="text-sm text-danger-ink">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-danger-ink">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <div
+              role="status"
+              className="rounded-md border border-line bg-surface-subtle px-3 py-2 text-sm leading-6 text-ink-soft"
+            >
+              <p>{notice}</p>
+              {verificationEmail && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={handleResendVerification}
+                  className="mt-2 font-semibold text-accent hover:underline disabled:text-ink-faint"
+                >
+                  Resend verification email
+                </button>
+              )}
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={pending}
             className="w-full rounded-md bg-action py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover disabled:bg-action-disabled"
           >
-            {mode === "signIn" ? "Sign in" : "Sign up"}
+            {pending
+              ? "Please wait..."
+              : mode === "signIn"
+                ? "Sign in"
+                : "Sign up"}
           </button>
         </form>
 
@@ -120,7 +225,8 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={handleGoogle}
-          className="w-full rounded-md border border-line-strong bg-control py-2 text-sm font-medium text-ink-soft transition hover:bg-surface-raised"
+          disabled={pending}
+          className="w-full rounded-md border border-line-strong bg-control py-2 text-sm font-medium text-ink-soft transition hover:bg-surface-raised disabled:text-ink-faint"
         >
           Continue with Google
         </button>
@@ -132,6 +238,8 @@ export default function LoginPage() {
             onClick={() => {
               setMode(mode === "signIn" ? "signUp" : "signIn");
               setError(null);
+              setNotice(null);
+              setVerificationEmail(null);
             }}
             className="font-semibold text-accent hover:underline"
           >

@@ -48,6 +48,9 @@ services:
       # Optional: leave empty to disable Google sign-in (email/password still works).
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Used once email verification and password reset are enabled.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
