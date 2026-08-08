@@ -60,7 +60,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 - Population, rent, school, childcare, safety, and development data are placeholders only.
 - Walkability uses straight-line estimates, not route-aware walking times.
-- Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset, account settings, and account deletion are not implemented.
+- Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset is implemented with its manual inbox/password check pending. Account settings and account deletion are not implemented.
 - Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
 - Automated coverage does not yet include full authentication, database-cache integration, provider failures, or browser end-to-end flows.
 
@@ -323,6 +323,10 @@ Important behaviour:
 Better Auth uses the Prisma adapter and the same PostgreSQL database as the application.
 
 - Email/password sign-up and sign-in are enabled.
+- New email/password accounts must verify their address before signing in.
+- Verification and password-reset messages are delivered through Resend from `auth.viva.monster`.
+- Reset requests use generic browser wording, one-hour links, and a three-request-per-15-minute limit.
+- A successful password reset revokes the user's existing sessions.
 - Google OAuth is configured when both Google credentials are available.
 - Password hashing and session cookies are managed by Better Auth.
 - OAuth access and refresh token material is encrypted before database storage.
@@ -505,7 +509,7 @@ Priorities are intentionally ordered around current needs rather than speculativ
 
 ### 3. Account completeness
 
-- Password reset.
+- Complete the manual password-reset inbox, old/new password, link replay, and session-revocation checks.
 - Account settings and deletion.
 
 The beginner-oriented implementation plan for the first two items is in

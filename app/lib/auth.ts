@@ -41,6 +41,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
     async sendResetPassword({ user, url }) {
       queueAuthEmail(() => sendPasswordResetEmail(user.email, url));
     },
@@ -48,6 +50,7 @@ export const auth = betterAuth({
   rateLimit: {
     customRules: {
       "/send-verification-email": { window: 15 * 60, max: 3 },
+      "/request-password-reset": { window: 15 * 60, max: 3 },
     },
   },
   socialProviders: {

@@ -45,6 +45,8 @@ type AuthOptionsUnderTest = {
   emailAndPassword: {
     sendResetPassword: EmailCallback;
     requireEmailVerification: boolean;
+    resetPasswordTokenExpiresIn: number;
+    revokeSessionsOnPasswordReset: boolean;
   };
   rateLimit: {
     customRules: Record<string, { window: number; max: number }>;
@@ -72,8 +74,13 @@ describe("Better Auth email callbacks", () => {
       expiresIn: 60 * 60,
     });
     expect(options.emailAndPassword.requireEmailVerification).toBe(true);
+    expect(options.emailAndPassword.resetPasswordTokenExpiresIn).toBe(60 * 60);
+    expect(options.emailAndPassword.revokeSessionsOnPasswordReset).toBe(true);
     expect(
       options.rateLimit.customRules["/send-verification-email"],
+    ).toEqual({ window: 15 * 60, max: 3 });
+    expect(
+      options.rateLimit.customRules["/request-password-reset"],
     ).toEqual({ window: 15 * 60, max: 3 });
   });
 

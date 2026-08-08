@@ -179,6 +179,17 @@ export default function LoginPage() {
             />
           </div>
 
+          {mode === "signIn" && (
+            <p className="text-right text-sm">
+              <Link
+                href="/forgot-password"
+                className="font-semibold text-accent hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </p>
+          )}
+
           {error && (
             <p role="alert" className="text-sm text-danger-ink">
               {error}

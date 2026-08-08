@@ -1,6 +1,6 @@
 # Email Verification and Password Reset Plan
 
-Status: Parts 1-3 complete; Part 4 is next  
+Status: Parts 1-3 complete; Part 4 implemented with manual reset-flow check pending
 Prepared: 2026-08-08  
 Applies to: Better Auth 1.6.23, Next.js 16.2.6 App Router, Prisma 6.19.3, PostgreSQL
 
@@ -9,7 +9,7 @@ Applies to: Better Auth 1.6.23, Next.js 16.2.6 App Router, Prisma 6.19.3, Postgr
 - [x] Part 1: Resend dependency, server-only email helper, environment wiring, and focused tests.
 - [x] Part 2: Better Auth verification/reset callbacks, scheduled with Next.js `after()`.
 - [x] Part 3: Sign-up verification and resend interface. Automated checks pass, `auth.viva.monster` is verified in Resend, and the Development inbox/link flow was completed successfully on 2026-08-08.
-- [ ] Part 4: Forgot-password and reset-password interfaces.
+- [ ] Part 4: Forgot-password and reset-password interfaces. Automated checks pass; real inbox delivery, password replacement, link replay, and session revocation checks are pending.
 - [ ] Part 5: Full flow regression checks and current-state documentation.
 
 ## Outcome
@@ -25,7 +25,7 @@ After this work:
 - resetting a password revokes the user's other sessions;
 - Google sign-in continues to work as it does now.
 
-This is an implementation plan only. No authentication behaviour changes until the planned code is written and deployed.
+This document now tracks the staged implementation and its remaining manual checks.
 
 ## What Already Exists
 
