@@ -22,14 +22,14 @@ type GoogleRoutesResponse = {
   error?: { message?: string };
 };
 
-function durationToMinutes(value: string | undefined) {
+function durationToNearestFiveMinutes(value: string | undefined) {
   const seconds = value?.match(/^([0-9.]+)s$/)?.[1];
 
   if (!seconds) {
     return null;
   }
 
-  return Math.max(1, Math.round(Number(seconds) / 60));
+  return Math.max(5, Math.round(Number(seconds) / (5 * 60)) * 5);
 }
 
 function secondsToNearestFiveMinutes(value: number | undefined) {
@@ -170,7 +170,7 @@ async function fetchTransitMinutes({
     throw new Error(data.error?.message ?? "Google Routes request failed.");
   }
 
-  return durationToMinutes(data.routes?.[0]?.duration);
+  return durationToNearestFiveMinutes(data.routes?.[0]?.duration);
 }
 
 export async function getCbdTravel(

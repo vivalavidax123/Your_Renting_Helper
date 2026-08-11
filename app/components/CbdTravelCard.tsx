@@ -123,16 +123,18 @@ export function CbdTravelCard({
               </dd>
             </div>
             <div className="rounded-lg bg-surface-subtle p-3">
-              <dt className="text-xs text-ink-muted">Transit at 8am</dt>
+              <dt className="text-xs text-ink-muted">
+                Indicative transit at 8am
+              </dt>
               <dd className="mt-1 text-sm font-semibold text-ink">
                 {formatMinutes(travel.transitMinutes)}
               </dd>
             </div>
           </dl>
           <p className="mt-3 text-xs leading-5 text-ink-faint">
-            Driving assumes free-flow traffic and is rounded to the nearest 5
-            minutes; public transport uses the usual weekday timetable at 8:00
-            am Melbourne time. Actual trips vary.
+            Driving assumes free-flow traffic; both times are rounded to the
+            nearest 5 minutes. Public transport uses the usual weekday
+            timetable at 8:00 am Melbourne time. Actual trips vary.
           </p>
           {travel.driveMinutes !== null || travel.transitMinutes !== null ? (
             <p className="mt-2 text-xs font-normal text-ink-muted">

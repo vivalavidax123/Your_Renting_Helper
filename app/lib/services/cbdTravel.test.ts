@@ -19,7 +19,7 @@ describe("getCbdTravel", () => {
         new Response(JSON.stringify({ results: [{ time: 1880 }] })),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ routes: [{ duration: "2700s" }] })),
+        new Response(JSON.stringify({ routes: [{ duration: "2800s" }] })),
       );
     vi.stubGlobal("fetch", fetchMock);
 
