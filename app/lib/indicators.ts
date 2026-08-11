@@ -10,7 +10,6 @@ export type Indicator = {
 
 export const plannedIndicators = [
   "Population density",
-  "Median rent / rent trend",
   "Schools / childcare",
   "Safety",
   "Planned development",

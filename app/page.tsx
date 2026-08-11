@@ -13,6 +13,8 @@ import { NearbyPlacesList } from "./components/NearbyPlacesList";
 import { AdditionalIndicators } from "./components/AdditionalIndicators";
 import { RecentSearches } from "./components/RecentSearches";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { CbdTravelCard } from "./components/CbdTravelCard";
+import { RentalInsights } from "./components/RentalInsights";
 
 export default function Home() {
   const {
@@ -158,6 +160,14 @@ export default function Home() {
                 : "Search for a location to show nearby amenities on the map."}
             </p>
           </div>
+
+          <CbdTravelCard location={location} />
+
+          <RentalInsights
+            key={location?.placeId ?? "no-location"}
+            location={location}
+            canContribute={Boolean(session)}
+          />
 
           <ComparePanel saved={saved} />
 

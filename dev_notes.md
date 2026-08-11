@@ -19,7 +19,7 @@ Status reviewed against the repository on 2026-08-05.
 | Persistence | PostgreSQL through Prisma |
 | Authentication | Email/password and Google OAuth through Better Auth |
 | Quality gates | ESLint, TypeScript, Vitest, and production build |
-| Automated tests | 32 tests across 5 test files |
+| Automated tests | 52 tests across 10 test files |
 | Production readiness | Not production-ready; hardening gaps are listed below |
 
 The core renter workflow is implemented:
@@ -27,8 +27,8 @@ The core renter workflow is implemented:
 1. Search an Australian address or suburb.
 2. Geocode the query and retrieve nearby places.
 3. Calculate category and overall scores for a no-car or car-owner profile.
-4. Review amenities, derived indicators, and the interactive map.
-5. Sign in to keep history, save locations, and compare two saved results.
+4. Review amenities, derived indicators, CBD travel, community rent evidence, and the interactive map.
+5. Sign in to keep history, save locations, compare two saved results, and submit known weekly rents.
 
 The product direction remains amenities-first. Scores are compact summaries; nearby places, map context, and practical indicators carry most of the decision detail.
 
@@ -47,6 +47,11 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Google Maps links in non-transport amenity popups.
 - Optional Transitland bus-stop, route, destination, and departure enrichment.
 - Derived walkability, transit, density, convenience, and car-reliance indicators.
+- Direct distance, rounded Geoapify driving time, and usual weekday 8am public-transport time to Melbourne CBD.
+- Radius-based community median rent estimates for matching property type and bedroom count.
+- Authenticated rent reporting with one updatable report per user/location/property combination.
+- A returning signed-in user has their latest report and comparison filters restored for each location.
+- When a new location's default profile is empty, the strongest nearby property/bedroom group within 10 km is selected automatically.
 - Persistent light and dark themes across the main and login views.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
@@ -58,7 +63,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 ### Partial or Deferred
 
-- Population, rent, school, childcare, safety, and development data are placeholders only.
+- Population, school, childcare, safety, and development data are placeholders only. Rent data is community-reported rather than an official market dataset.
 - Walkability uses straight-line estimates, not route-aware walking times.
 - Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset is implemented with its manual inbox/password check pending. Account settings and account deletion are not implemented.
 - Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
@@ -184,9 +189,19 @@ Profile changes call /api/places again. They are cache-only in normal operation,
 | POST /api/favourites | Signed in | Save a known location |
 | DELETE /api/favourites | Signed in | Remove a saved location |
 | GET /api/compare | Public at route level | Return the newest stored score snapshots for two location IDs |
+| GET /api/cbd-travel | Public | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD |
+| GET /api/rent-estimates | Public | Like-for-like community median rent within an adaptive 1–10 km radius |
+| POST /api/rent-estimates | Signed in | Create or update the caller's rent report for a location/property combination |
 | /api/auth/[...all] | Better Auth | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks |
 
 The comparison UI only offers the signed-in user's saved locations, but /api/compare does not currently authenticate or verify ownership. Protecting that route is an outstanding hardening task.
+
+CBD driving calls use the server-only `GEOAPIFY_API_KEY`, request free-flow
+traffic, and round the result to the nearest five minutes. Public transport
+temporarily uses the server-only `GOOGLE_MAPS_API_KEY` and a representative
+weekday at 8:00 am in `Australia/Melbourne`. The browser map key is never used
+for these web-service requests. Route durations are fetched per search and are
+not stored in the database.
 
 ## Place Retrieval and Categories
 
@@ -288,14 +303,13 @@ app/lib/indicators.ts derives five indicators from the current place groups and 
 The visible planned list is not live data:
 
 - population density;
-- median rent and rent trend;
 - schools and childcare;
 - safety;
 - planned development.
 
 ## Persistence and Cache
 
-The current Prisma schema contains eight models:
+The current Prisma schema contains nine models:
 
 | Model | Purpose |
 | --- | --- |
@@ -303,6 +317,7 @@ The current Prisma schema contains eight models:
 | ScoreSnapshot | Timestamped overall score, category scores, and place groups |
 | UserSearch | Per-user recent-search relationship |
 | UserSavedLocation | Per-user saved-location relationship |
+| RentalReport | Per-user known weekly rent evidence keyed by location and property profile |
 | User | Better Auth identity |
 | Session | Better Auth database session |
 | Account | Password or OAuth provider account |
@@ -367,7 +382,8 @@ Application variables:
 | Variable | Required | Exposure and purpose |
 | --- | --- | --- |
 | DATABASE_URL | Yes | Server-only PostgreSQL connection |
-| GOOGLE_MAPS_API_KEY | Yes | Server-only autocomplete, geocoding, and place retrieval |
+| GOOGLE_MAPS_API_KEY | Yes | Server-only autocomplete, geocoding, place retrieval, and temporary public-transport routing |
+| GEOAPIFY_API_KEY | Yes | Server-only indicative driving time to Melbourne CBD |
 | NEXT_PUBLIC_MAPS_API_KEY | For live map | Browser-visible Maps JavaScript key |
 | BETTER_AUTH_SECRET | Yes | Server-only stable auth and token-encryption secret |
 | BETTER_AUTH_URL | Yes | Canonical application origin for auth |
@@ -519,7 +535,7 @@ The beginner-oriented implementation plan for the first two items is in
 
 - Route-aware walking times.
 - More reliable transit frequency and service coverage.
-- Rent, schools, childcare, safety, population, and planning datasets from suitable sources.
+- Official rent trends plus schools, childcare, safety, population, and planning datasets from suitable sources.
 
 ### 5. Continued interface refinement
 

@@ -12,14 +12,16 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - Explore category-coloured amenities on an interactive map.
 - Open the map in fullscreen and follow non-transport amenities into Google Maps.
 - View walkability, transit access, amenity density, daily convenience, and car-reliance indicators derived from the search result.
+- See direct distance, indicative driving time, and usual weekday 8am public-transport time to Melbourne CBD.
+- See like-for-like community rent medians and, when signed in, contribute a known weekly rent.
 - Use a persistent light or dark theme.
 - Create an account to keep recent searches, save locations, and compare two saved results.
 
 ## Current Scope
 
-This is a working prototype, not an official property rating or valuation service. Results depend on third-party location data and use straight-line distance estimates rather than walking or driving routes.
+This is a working prototype, not an official property rating or valuation service. Amenity distances are straight-line estimates; CBD driving uses a rounded Geoapify estimate, while public transport currently uses a Google timetable estimate. Both can vary from an actual trip.
 
-The interface lists population, rent, school, safety, and planning data as planned areas only; those datasets are not currently included in the result.
+Community rent figures are user-reported evidence, not scraped market data or an official valuation. Population, school, safety, and planning datasets are not currently included.
 
 ## Run Locally
 

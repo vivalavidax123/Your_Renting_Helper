@@ -83,9 +83,31 @@ model User {
   accounts      Account[]
   savedLocations UserSavedLocation[]
   searches      UserSearch[]
+  rentalReports RentalReport[]
 
   @@unique([email])
   @@map("user")
+}
+
+// Community-supplied asking rents. One person can keep one current report for
+// each searched point/property combination, so repeatedly submitting the same
+// form updates their evidence instead of overweighting the area estimate.
+model RentalReport {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locationKey      String
+  formattedAddress String
+  latitude         Float
+  longitude        Float
+  weeklyRent       Int
+  propertyType     String
+  bedrooms         Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, locationKey])
+  @@index([latitude, longitude])
 }
 
 model Session {

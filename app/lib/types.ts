@@ -18,6 +18,38 @@ export type ApiResult<T extends object> = ({ ok: true } & T) | ApiFailure;
 
 export type RequestState = "idle" | "loading" | "success" | "error";
 
+export type CbdTravel = {
+  distanceMeters: number;
+  driveMinutes: number | null;
+  transitMinutes: number | null;
+  warning: string | null;
+};
+
+export type RentalEstimate = {
+  medianWeeklyRent: number | null;
+  reportCount: number;
+  radiusMeters: number;
+  confidence: "none" | "early" | "community";
+};
+
+export type RentalReportSummary = {
+  weeklyRent: number;
+  propertyType: RentalPropertyType;
+  bedrooms: number;
+};
+
+export type RentalPropertyProfile = Pick<
+  RentalReportSummary,
+  "propertyType" | "bedrooms"
+>;
+
+export type RentalPropertyType =
+  | "apartment"
+  | "house"
+  | "townhouse"
+  | "unit"
+  | "other";
+
 export type AddressSuggestion = {
   placeId: string;
   text: string;
