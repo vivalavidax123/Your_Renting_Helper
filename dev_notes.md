@@ -581,3 +581,12 @@ Use checks proportionate to the change during development, then run the full set
 3. Decide whether existing ScoreSnapshot rows are compatible.
 4. Invalidate snapshots only in the intended environments when required.
 5. Leave saved-location relationships intact.
+
+## Rental Report Production Incident (2026-08-12)
+
+- **Symptom:** The community-rent form and `/api/rent-estimates` returned HTTP 500 in production.
+- **Cause:** The application code expected `RentalReport`, but its committed migration had not been applied to the database used by the live Vercel deployment. Vercel builds intentionally do not run migrations automatically.
+- **Evidence:** Production logs showed Prisma error `P2021`: `public.RentalReport` did not exist. Focused tests passed and the development database was already up to date.
+- **Fix:** A one-time production build ran `prisma migrate deploy` before `next build`, creating the missing table, indexes, and foreign key. The normal `next build` command was restored afterward.
+- **Verification:** The public rental-estimate endpoint returned `ok: true`, and a signed-in rental report saved successfully.
+- **Prevention:** Follow the schema-release checklist above and apply committed migrations to the target database before deploying schema-dependent code.

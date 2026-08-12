@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import type { WeightProfile } from "../lib/categories";
 import { isJsonRecord, readApiResult } from "../lib/api";
 import { useAutocomplete } from "./useAutocomplete";
+import { scorePlaceGroups } from "../lib/scoring";
 import type {
   GeocodeLocation,
   RequestState,
@@ -100,19 +101,12 @@ export function useLocationSearch() {
     };
   }, []);
 
-  async function loadNearbyPlaces(
-    nextLocation: GeocodeLocation,
-    profileOverride?: WeightProfile,
-  ) {
+  async function loadNearbyPlaces(nextLocation: GeocodeLocation) {
     cancelPlacesRequest();
 
     const requestId = placesRequestId.current;
     const controller = new AbortController();
     placesController.current = controller;
-
-    // State updates are asynchronous, so a caller that just changed the
-    // profile passes the new value directly instead of reading stale state.
-    const activeProfile = profileOverride ?? profile;
 
     setPlacesResult({ ...emptyPlacesResult, status: "loading" });
 
@@ -124,7 +118,7 @@ export function useLocationSearch() {
         address: nextLocation.formattedAddress,
         placeId: nextLocation.placeId,
         locationType: nextLocation.locationType,
-        profile: activeProfile,
+        profile,
       });
       const response = await fetch(`/api/places?${placesUrl.toString()}`, {
         signal: controller.signal,
@@ -261,11 +255,20 @@ export function useLocationSearch() {
   function changeProfile(nextProfile: WeightProfile) {
     setProfile(nextProfile);
 
-    // Rescore the current result immediately; the request is a guaranteed
-    // cache hit, so switching profiles never costs a Google lookup.
-    if (searchResult.location && placesResult.status === "success") {
-      void loadNearbyPlaces(searchResult.location, nextProfile);
-    }
+    // Profiles change only scoring. Reuse the existing amenity groups so the
+    // map keeps the same instance, markers, viewport, and open info window.
+    setPlacesResult((current) => {
+      if (current.status !== "success") {
+        return current;
+      }
+
+      const { scores, overallScore } = scorePlaceGroups(
+        current.groups,
+        nextProfile,
+      );
+
+      return { ...current, scores, overallScore };
+    });
   }
 
   function searchFromHistory(search: RecentSearch) {
