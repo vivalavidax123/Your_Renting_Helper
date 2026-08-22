@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against the repository on 2026-08-05.
+Status reviewed against the repository on 2026-08-22.
 
 | Area | Current state |
 | --- | --- |
@@ -19,7 +19,7 @@ Status reviewed against the repository on 2026-08-05.
 | Persistence | PostgreSQL through Prisma |
 | Authentication | Email/password and Google OAuth through Better Auth |
 | Quality gates | ESLint, TypeScript, Vitest, and production build |
-| Automated tests | 52 tests across 10 test files |
+| Automated tests | 53 tests across 10 test files |
 | Production readiness | Not production-ready; hardening gaps are listed below |
 
 The core renter workflow is implemented:
@@ -50,7 +50,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Direct distance, rounded Geoapify driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - Radius-based community median rent estimates for matching property type and bedroom count.
 - Authenticated rent reporting with one updatable report per user/location/property combination.
-- A returning signed-in user has their latest report and comparison filters restored for each location.
+- The latest rent report for a signed-in user and searched location is returned so the form can restore it.
 - When a new location's default profile is empty, the strongest nearby property/bedroom group within 10 km is selected automatically.
 - Persistent light and dark themes across the main and login views.
 - Better Auth email/password accounts and Google OAuth.
@@ -114,11 +114,13 @@ app/
   api/
     auth/[...all]/       Better Auth handler
     autocomplete/        Google address suggestions
+    cbd-travel/           Distance and indicative travel to Melbourne CBD
     compare/             Stored score comparison
     favourites/          Per-user saved locations
     geocode/             Address to coordinates
     history/             Per-user recent searches
     places/              Cache, providers, scoring, and persistence coordinator
+    rent-estimates/       Community rent estimates and contributions
   components/            Dashboard, map, auth, theme, scores, and result views
   hooks/                 Autocomplete, search, and saved-search controllers
   lib/
@@ -162,9 +164,10 @@ This structure is sufficient for the current project. Do not add repositories, d
 
 1. useAutocomplete waits 250 ms after input, requests /api/autocomplete, and supports keyboard selection.
 2. Submitting the form requests /api/geocode.
-3. useLocationSearch requests /api/places with coordinates, location metadata, and the selected profile.
-4. The client validates each API envelope before updating result state.
-5. Older autocomplete, geocode, and places requests are aborted and invalidated so stale responses cannot overwrite newer actions.
+3. useLocationSearch requests /api/places with coordinates and location metadata.
+4. CbdTravelCard and RentalInsights independently request /api/cbd-travel and /api/rent-estimates for the matched location.
+5. The client validates each API envelope before updating result state.
+6. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
 
 ### Places route flow
 
@@ -175,7 +178,7 @@ This structure is sufficient for the current project. Do not add repositories, d
 5. If the visitor is signed in, the location is upserted into that user's recent-search history.
 6. Cache or persistence failures are logged and do not block a live provider result.
 
-Profile changes call /api/places again. They are cache-only in normal operation, but a broken or unavailable database can cause another live provider lookup.
+Profile changes recalculate scores in the browser from the existing place groups. They do not call /api/places again or recreate the map.
 
 ## API Routes
 
@@ -202,6 +205,13 @@ temporarily uses the server-only `GOOGLE_MAPS_API_KEY` and a representative
 weekday at 8:00 am in `Australia/Melbourne`. The browser map key is never used
 for these web-service requests. Route durations are fetched per search and are
 not stored in the database.
+
+Community rent estimates use reports with the same property type and bedroom
+count. The service selects the smallest 1, 3, 5, or 10 km radius containing at
+least three reports; when fewer exist within 10 km, it currently returns an
+early-data median. A signed-in contribution is upserted by user, rounded
+location, property type, and bedroom count so resubmitting that combination
+updates the existing row.
 
 ## Place Retrieval and Categories
 
@@ -465,13 +475,16 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 4. npm test
 5. npm run build with non-secret placeholder configuration
 
-The current 32-test suite covers:
+The current 53-test suite across 10 files covers:
 
 - scoring behaviour and invariants;
 - formatting, coordinate parsing, distance, and time utilities;
 - API-envelope validation;
 - derived indicators;
-- favourites route validation, authentication responses, and service coordination.
+- favourites and rent-estimate route behavior;
+- authentication email configuration and delivery callbacks;
+- community-rent medians, adaptive radii, report upserts, and profile suggestions;
+- CBD driving/transit response parsing and Melbourne daylight-saving calculations.
 
 The tests mock provider, auth, or database dependencies where appropriate. CI does not require a live database or external network calls.
 
@@ -479,13 +492,16 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 ### Immediate correctness and security
 
+- RentalInsights restores a saved or suggested property profile only for the first searched location in its component lifetime. Form values and feedback can carry into a later location until this state is scoped per location.
+- Public rent estimates currently reveal a median with only one or two reports. A one-report median is that contributor's exact submitted rent, and repeated nearby submissions from one account can influence an area estimate.
 - /api/compare does not authenticate the caller or verify that both location IDs belong to the caller's saved list.
 - The cache badge tooltip still says "within the last 24 hours" even though the current cache TTL is seven days.
 - Google OAuth remains visibly available when its credentials are absent.
 
 ### Reliability and operations
 
-- No application-level rate limiting on autocomplete, geocode, or places routes.
+- No application-level rate limiting on provider-backed search/CBD routes or authenticated rent contributions.
+- /api/cbd-travel prevents response caching and can call both Geoapify and Google Routes on every request, creating a quota and cost-exposure risk.
 - No structured logging, monitoring dashboard, tracing, or error-tracking integration.
 - A database outage silently falls back to live Google calls and can increase quota usage.
 - Provider calls run within the request lifecycle; there are no background jobs or retries.
@@ -495,6 +511,7 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 - Straight-line distances are not route-aware.
 - Planned housing, safety, education, population, and development datasets are not implemented.
+- Community rent figures are user-reported, have no moderation workflow, and are not an official rental dataset or valuation.
 - Category baselines and scoring constants are manually calibrated.
 - The result is a convenience indicator, not a rental recommendation or official valuation.
 
@@ -503,6 +520,8 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 - No browser end-to-end suite.
 - No live database integration suite.
 - No complete authentication-flow tests.
+- No component or browser test covering rent-form state across multiple searched locations.
+- POST /api/rent-estimates and the /api/cbd-travel route do not have focused route tests.
 - Limited cache-expiry and provider-failure coverage.
 
 ## Roadmap
@@ -511,10 +530,12 @@ Priorities are intentionally ordered around current needs rather than speculativ
 
 ### 1. Correctness and route hardening
 
+- Reset RentalInsights state for each searched location.
+- Require a minimum number of distinct contributors before publishing a community rent median.
 - Update the cache badge tooltip from 24 hours to seven days.
 - Require a session in /api/compare and verify both locations are saved by that user.
 - Hide or disable Google sign-in when OAuth is not configured.
-- Add lightweight rate limiting to provider-backed routes.
+- Add lightweight rate limiting to provider-backed routes and rent contributions.
 
 ### 2. Reliability and test coverage
 
