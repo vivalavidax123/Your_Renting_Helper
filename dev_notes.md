@@ -317,6 +317,22 @@ The visible planned list is not live data:
 - safety;
 - planned development.
 
+## AI Location Analyst
+
+The result page includes a lightweight single-location chat panel. It explains the deterministic application data rather than replacing the scoring system.
+
+Request flow:
+
+1. `/api/places` returns the persisted `SearchLocation` id with the score result.
+2. The client sends that id, the current mobility profile, and one question to `POST /api/locations/[propertyId]/chat`.
+3. The server loads the latest stored place groups and recomputes scores for the selected profile.
+4. The context builder keeps the score breakdown and up to five nearest amenities per category.
+5. The analyst sends that structured context to the OpenAI Responses API and returns only the answer text.
+
+The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, and distinguish facts from interpretation. The request sets `store: false`, disabling storage for later retrieval through the Responses API. Conversation messages live only in the current browser component and reset when the location or mobility profile changes.
+
+Current MVP boundaries: no RAG, web search, persistent conversation history, autonomous tools, map actions, or property comparison chat.
+
 ## Persistence and Cache
 
 The current Prisma schema contains nine models:
@@ -394,6 +410,8 @@ Application variables:
 | DATABASE_URL | Yes | Server-only PostgreSQL connection |
 | GOOGLE_MAPS_API_KEY | Yes | Server-only autocomplete, geocoding, place retrieval, and temporary public-transport routing |
 | GEOAPIFY_API_KEY | Yes | Server-only indicative driving time to Melbourne CBD |
+| OPENAI_API_KEY | For AI analyst | Server-only OpenAI credential used by the grounded location chat |
+| OPENAI_MODEL | For AI analyst | Server-only model name; development currently uses `gpt-5-mini` |
 | NEXT_PUBLIC_MAPS_API_KEY | For live map | Browser-visible Maps JavaScript key |
 | BETTER_AUTH_SECRET | Yes | Server-only stable auth and token-encryption secret |
 | BETTER_AUTH_URL | Yes | Canonical application origin for auth |

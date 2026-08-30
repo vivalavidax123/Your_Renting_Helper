@@ -45,6 +45,8 @@ services:
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:?set it in .env.docker}
       GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:?set it in .env.docker}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set it in .env.docker}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
       TRANSITLAND_API_KEY: ${TRANSITLAND_API_KEY:-}
       # Optional: leave empty to disable Google sign-in (email/password still works).
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}

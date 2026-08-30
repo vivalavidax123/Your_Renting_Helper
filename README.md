@@ -41,6 +41,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 The Vercel pull overwrites `.env.local`. Keep any manually managed local overrides in `.env.development.local`, and never commit credentials.
 
+The AI Location Analyst requires `OPENAI_API_KEY` and `OPENAI_MODEL`. For local development, add them to `.env.development.local`; configure the same server-only variables in the deployment environment before publishing the feature.
+
 Detailed environment, database, deployment, architecture, scoring, and maintenance notes are in [dev_notes.md](./dev_notes.md).
 
 ## Run with Docker
