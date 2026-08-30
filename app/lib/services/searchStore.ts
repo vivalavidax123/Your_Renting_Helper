@@ -21,6 +21,14 @@ export type SearchLocationInput = {
 // recompute and depend on the requested weight profile, so the API route
 // rescores on every hit instead of reusing the stored (balanced) scores.
 export type CachedSearchResult = {
+  locationId: string;
+  groups: PlaceGroup[];
+  fetchedAt: string;
+};
+
+export type LocationAnalysisSource = {
+  id: string;
+  formattedAddress: string;
   groups: PlaceGroup[];
   fetchedAt: string;
 };
@@ -55,6 +63,7 @@ export async function findFreshSnapshot(
   });
 
   return {
+    locationId: location.id,
     groups: JSON.parse(snapshot.groupsJson) as PlaceGroup[],
     fetchedAt: snapshot.createdAt.toISOString(),
   };
@@ -93,6 +102,8 @@ export async function saveSnapshot({
       groupsJson: JSON.stringify(groups),
     },
   });
+
+  return location.id;
 }
 
 type LocationWithLatestSnapshot = {
@@ -222,6 +233,31 @@ export async function getComparisonSide(id: string) {
     formattedAddress: location.formattedAddress,
     overallScore: snapshot.overallScore,
     scores: JSON.parse(snapshot.scoresJson) as CategoryScore[],
+    fetchedAt: snapshot.createdAt.toISOString(),
+  };
+}
+
+// Supplies deterministic application data for location analysis. Scores are
+// recomputed by the analysis service because they depend on the user's current
+// mobility profile, just like the main search result.
+export async function getLocationAnalysisSource(
+  id: string,
+): Promise<LocationAnalysisSource | null> {
+  const location = await prisma.searchLocation.findUnique({
+    where: { id },
+    include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
+  });
+
+  const snapshot = location?.snapshots[0];
+
+  if (!location || !snapshot) {
+    return null;
+  }
+
+  return {
+    id: location.id,
+    formattedAddress: location.formattedAddress,
+    groups: JSON.parse(snapshot.groupsJson) as PlaceGroup[],
     fetchedAt: snapshot.createdAt.toISOString(),
   };
 }
