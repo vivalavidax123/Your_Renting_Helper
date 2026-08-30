@@ -31,6 +31,7 @@ function isPlacesPayload(value: Record<string, unknown>) {
     Array.isArray(value.groups) &&
     Array.isArray(value.scores) &&
     typeof value.overallScore === "number" &&
+    (typeof value.propertyId === "string" || value.propertyId === null) &&
     typeof value.cached === "boolean" &&
     typeof value.fetchedAt === "string"
   );
@@ -47,6 +48,7 @@ type PlacesResultState = {
   groups: PlaceGroup[];
   scores: CategoryScore[];
   overallScore: number | null;
+  propertyId: string | null;
   error: string;
   fromCache: boolean;
 };
@@ -62,6 +64,7 @@ const emptyPlacesResult: PlacesResultState = {
   groups: [],
   scores: [],
   overallScore: null,
+  propertyId: null,
   error: "",
   fromCache: false,
 };
@@ -127,6 +130,7 @@ export function useLocationSearch() {
         groups: PlaceGroup[];
         scores: CategoryScore[];
         overallScore: number;
+        propertyId: string | null;
         cached: boolean;
         fetchedAt: string;
       }>(response, isPlacesPayload);
@@ -152,6 +156,7 @@ export function useLocationSearch() {
         groups: data.groups,
         scores: data.scores,
         overallScore: data.overallScore,
+        propertyId: data.propertyId,
         error: "",
         fromCache: data.cached,
       });
@@ -302,6 +307,7 @@ export function useLocationSearch() {
     placeGroups: placesResult.groups,
     categoryScores: placesResult.scores,
     overallScore: placesResult.overallScore,
+    propertyId: placesResult.propertyId,
     placesError: placesResult.error,
     resultFromCache: placesResult.fromCache,
     profile,

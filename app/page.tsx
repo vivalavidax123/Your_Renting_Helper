@@ -15,6 +15,7 @@ import { RecentSearches } from "./components/RecentSearches";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { CbdTravelCard } from "./components/CbdTravelCard";
 import { RentalInsights } from "./components/RentalInsights";
+import { LocationAnalyst } from "./components/LocationAnalyst";
 
 export default function Home() {
   const {
@@ -26,6 +27,7 @@ export default function Home() {
     placeGroups,
     categoryScores,
     overallScore,
+    propertyId,
     placesError,
     resultFromCache,
     profile,
@@ -134,6 +136,13 @@ export default function Home() {
             resultFromCache={resultFromCache}
             profile={profile}
             onProfileChange={changeProfile}
+          />
+
+          <LocationAnalyst
+            key={`${propertyId ?? "no-location"}-${profile}`}
+            propertyId={propertyId}
+            profile={profile}
+            placesState={placesState}
           />
 
           <NearbyPlacesList
