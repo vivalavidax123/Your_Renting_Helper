@@ -12,13 +12,20 @@ const context: LocationAnalysisContext = {
   overallScore: 72,
   scoreBreakdown: [],
   nearbyAmenities: [],
+  practicalIndicators: [
+    {
+      label: "Car reliance",
+      value: "Lower",
+      detail: "0 core categories likely need a longer walk or drive",
+    },
+  ],
   preferences: { mobilityProfile: "carFree" },
   dataAsOf: "2026-08-30T00:00:00.000Z",
 };
 
 beforeEach(() => {
   vi.stubEnv("OPENAI_API_KEY", "test-key");
-  vi.stubEnv("OPENAI_MODEL", "gpt-5-mini");
+  vi.stubEnv("OPENAI_MODEL", "gpt-5.6-terra");
 });
 
 afterEach(() => {
@@ -56,16 +63,19 @@ describe("analyzeLocation", () => {
       },
     });
     expect(body).toMatchObject({
-      model: "gpt-5-mini",
+      model: "gpt-5.6-terra",
       max_output_tokens: 1200,
-      reasoning: { effort: "low" },
+      reasoning: { effort: "medium" },
+      text: { verbosity: "medium" },
       store: false,
     });
     expect(body.instructions).toContain("only the structured location data");
-    expect(body.instructions).toContain("does not currently have");
-    expect(body.instructions).toContain("Do not offer to search");
-    expect(body.instructions).toContain("never exceed 180 words");
+    expect(body.instructions).toContain("picture day-to-day life");
+    expect(body.instructions).toContain("Do not merely repeat");
+    expect(body.instructions).toContain("practical implication");
+    expect(body.instructions).toContain("never exceed 220 words");
     expect(body.input).toContain("1 Test Street, Melbourne VIC");
+    expect(body.input).toContain("Car reliance");
     expect(body.input).toContain("Is this suitable without a car?");
   });
 

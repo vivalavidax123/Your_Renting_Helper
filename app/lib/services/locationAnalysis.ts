@@ -1,7 +1,9 @@
 import "server-only";
 
 import type { WeightProfile } from "@/app/lib/categories";
+import { buildDerivedIndicators } from "@/app/lib/indicators";
 import { scorePlaceGroups } from "@/app/lib/scoring";
+import type { Indicator } from "@/app/lib/indicators";
 import type {
   CategoryScore,
   NearbyPlace,
@@ -43,6 +45,7 @@ export type LocationAnalysisContext = {
     count: number;
     nearest: AnalysisAmenity[];
   }[];
+  practicalIndicators: Indicator[];
   preferences: {
     mobilityProfile: WeightProfile;
   };
@@ -76,6 +79,7 @@ export function assembleLocationAnalysisContext({
   dataAsOf: string;
 }): LocationAnalysisContext {
   const { overallScore, scores } = scorePlaceGroups(groups, profile);
+  const practicalIndicators = buildDerivedIndicators(scores, groups);
 
   return {
     propertyId,
@@ -119,6 +123,7 @@ export function assembleLocationAnalysisContext({
         nearest,
       };
     }),
+    practicalIndicators,
     preferences: { mobilityProfile: profile },
     dataAsOf,
   };

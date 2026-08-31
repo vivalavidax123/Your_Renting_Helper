@@ -64,6 +64,13 @@ describe("assembleLocationAnalysisContext", () => {
     expect(context.address).toBe("1 Test Street, Melbourne VIC");
     expect(context.suburb).toBeNull();
     expect(context.preferences.mobilityProfile).toBe("carOwner");
+    expect(context.practicalIndicators).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Walkability" }),
+        expect.objectContaining({ label: "Daily convenience" }),
+        expect.objectContaining({ label: "Car reliance" }),
+      ]),
+    );
     expect(context.scoreBreakdown.find((score) => score.id === "groceries"))
       .toMatchObject({ count: 6, weight: 18, closestDistanceMeters: 100 });
     expect(
@@ -93,6 +100,7 @@ describe("assembleLocationAnalysisContext", () => {
 
     expect(context.overallScore).toBe(0);
     expect(context.nearbyAmenities).toHaveLength(8);
+    expect(context.practicalIndicators).toHaveLength(5);
     expect(context.nearbyAmenities).toContainEqual(
       expect.objectContaining({
         categoryId: "transport",
