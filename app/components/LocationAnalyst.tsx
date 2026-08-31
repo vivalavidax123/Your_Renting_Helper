@@ -7,10 +7,10 @@ import type { RequestState } from "@/app/lib/types";
 
 const suggestedQuestions = [
   "Why did this location get this score?",
-  "What are the main strengths?",
-  "What are the main weaknesses?",
-  "Is this location good without a car?",
-  "What amenities are nearby?",
+  "What would day-to-day life be like here?",
+  "How easy would errands be without a car?",
+  "What are the biggest trade-offs?",
+  "What should I verify before renting here?",
 ];
 
 type ChatMessage = {
@@ -109,13 +109,12 @@ export function LocationAnalyst({
   return (
     <section className="mt-6 border-t border-line pt-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <h2 className="text-base font-semibold text-ink">
             Ask about this location
           </h2>
-          <p className="mt-1 text-sm leading-6 text-ink-soft">
-            Answers use the score and nearby amenities shown here. Your
-            question and a compact location summary are sent to OpenAI.
+          <p className="text-xs leading-5 text-ink-muted">
+            (Answers use the score and nearby amenities shown here.)
           </p>
         </div>
         <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent-ink">
@@ -123,41 +122,69 @@ export function LocationAnalyst({
         </span>
       </div>
 
-      <div
-        className="mt-4 max-h-80 min-h-32 space-y-3 overflow-y-auto rounded-lg border border-line bg-surface-subtle p-3"
-        aria-live="polite"
+      <form
+        onSubmit={handleSubmit}
+        className="mt-4 overflow-hidden rounded-lg border border-line bg-surface-subtle focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-ring"
       >
-        {messages.length === 0 && status !== "loading" ? (
-          <p className="text-sm leading-6 text-ink-muted">
-            {available
-              ? "Choose a suggested question or ask your own."
-              : unavailableMessage}
-          </p>
-        ) : null}
-
-        {messages.map((message, index) => (
+        {messages.length > 0 || status === "loading" ? (
           <div
-            key={`${message.role}-${index}`}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            className="max-h-64 space-y-3 overflow-y-auto p-3"
+            aria-live="polite"
           >
-            <div
-              className={`min-w-0 max-w-[90%] rounded-lg px-3 py-2 text-sm leading-6 whitespace-pre-wrap break-words ${
-                message.role === "user"
-                  ? "bg-action text-action-ink"
-                  : "border border-line bg-surface text-ink-soft"
-              }`}
-            >
-              {message.content}
-            </div>
-          </div>
-        ))}
+            {messages.map((message, index) => (
+              <div
+                key={`${message.role}-${index}`}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`min-w-0 max-w-[90%] rounded-lg px-3 py-2 text-sm leading-6 whitespace-pre-wrap break-words ${
+                    message.role === "user"
+                      ? "bg-action text-action-ink"
+                      : "border border-line bg-surface text-ink-soft"
+                  }`}
+                >
+                  {message.content}
+                </div>
+              </div>
+            ))}
 
-        {status === "loading" ? (
-          <p className="w-fit rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink-muted">
-            Analysing this location...
-          </p>
+            {status === "loading" ? (
+              <p className="w-fit rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink-muted">
+                Analysing this location...
+              </p>
+            ) : null}
+          </div>
         ) : null}
-      </div>
+
+        <div
+          className={`relative ${messages.length > 0 || status === "loading" ? "border-t border-line" : ""}`}
+        >
+          <label htmlFor="location-analyst-question" className="sr-only">
+            Ask about this location
+          </label>
+          <textarea
+            id="location-analyst-question"
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            maxLength={1000}
+            rows={messages.length > 0 ? 2 : 5}
+            disabled={!available || status === "loading"}
+            placeholder={
+              available
+                ? "Ask about daily life, or include your commute and priorities..."
+                : unavailableMessage
+            }
+            className="block w-full resize-none bg-transparent px-3 py-3 pr-24 text-sm leading-6 text-ink outline-none placeholder:text-ink-muted disabled:cursor-not-allowed disabled:opacity-70"
+          />
+          <button
+            type="submit"
+            disabled={!available || !question.trim() || status === "loading"}
+            className="absolute right-3 bottom-3 rounded-md bg-action px-4 py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover disabled:cursor-not-allowed disabled:bg-action-disabled"
+          >
+            Send
+          </button>
+        </div>
+      </form>
 
       {error ? (
         <p
@@ -181,28 +208,6 @@ export function LocationAnalyst({
           </button>
         ))}
       </div>
-
-      <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
-        <label htmlFor="location-analyst-question" className="sr-only">
-          Ask about this location
-        </label>
-        <input
-          id="location-analyst-question"
-          value={question}
-          onChange={(event) => setQuestion(event.target.value)}
-          maxLength={1000}
-          disabled={!available || status === "loading"}
-          placeholder={available ? "Ask about the score or amenities..." : "Search first"}
-          className="min-w-0 flex-1 rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent-ring disabled:cursor-not-allowed disabled:opacity-60"
-        />
-        <button
-          type="submit"
-          disabled={!available || !question.trim() || status === "loading"}
-          className="rounded-md bg-action px-4 py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover disabled:cursor-not-allowed disabled:bg-action-disabled"
-        >
-          Send
-        </button>
-      </form>
     </section>
   );
 }
