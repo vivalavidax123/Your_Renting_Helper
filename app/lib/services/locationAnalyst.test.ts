@@ -58,7 +58,7 @@ describe("analyzeLocation", () => {
     expect(body).toMatchObject({
       model: "gpt-5-mini",
       max_output_tokens: 1200,
-      reasoning: { effort: "minimal" },
+      reasoning: { effort: "low" },
       store: false,
     });
     expect(body.instructions).toContain("only the structured location data");
