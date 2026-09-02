@@ -213,6 +213,17 @@ export async function listSavedLocations(
   return rows.map((row) => toRecentSearch(row.location, row.savedAt));
 }
 
+export async function areLocationsSavedByUser(
+  userId: string,
+  locationIds: [string, string],
+) {
+  const savedCount = await prisma.userSavedLocation.count({
+    where: { userId, locationId: { in: locationIds } },
+  });
+
+  return savedCount === locationIds.length;
+}
+
 // Full category scores for one location, for the comparison view. Returns
 // null when the id is unknown or the location has no snapshot yet.
 export async function getComparisonSide(id: string) {
