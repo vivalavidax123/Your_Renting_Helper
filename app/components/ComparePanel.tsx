@@ -53,9 +53,14 @@ function LocationSelect({ label, value, otherValue, saved, onChange }: LocationS
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        disabled={saved.length === 0}
         className="w-full rounded-md border border-line bg-control px-2 py-1.5 text-sm font-normal text-ink"
       >
-        <option value="">Choose a saved location…</option>
+        <option value="">
+          {saved.length === 0
+            ? "No saved locations yet"
+            : "Choose a saved location…"}
+        </option>
         {saved.map((search) => (
           <option
             key={search.id}
@@ -161,6 +166,19 @@ function ComparisonAnalyst({
     void askQuestion(question);
   }
 
+  function handleQuestionKeyDown(
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      event.preventDefault();
+      void askQuestion(question);
+    }
+  }
+
   return (
     <section className="mt-5 border-t border-line pt-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -218,6 +236,7 @@ function ComparisonAnalyst({
             id="location-comparison-question"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={handleQuestionKeyDown}
             maxLength={1000}
             rows={messages.length > 0 ? 2 : 4}
             disabled={status === "loading"}
@@ -321,10 +340,6 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
       ? error.message
       : "";
 
-  if (saved.length < 2) {
-    return null;
-  }
-
   return (
     <div className="rounded-lg border border-line bg-surface p-6 shadow-sm">
       <h2 className="text-base font-semibold text-ink">Compare saved locations</h2>
@@ -349,6 +364,14 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
           onChange={setBId}
         />
       </div>
+
+      {saved.length < 2 ? (
+        <p className="mt-3 text-xs leading-5 text-ink-muted">
+          {saved.length === 0
+            ? "Save at least two scored locations to compare them."
+            : "Save one more scored location to start a comparison."}
+        </p>
+      ) : null}
 
       {activeError && <p className="mt-3 text-sm text-danger-ink">{activeError}</p>}
 
