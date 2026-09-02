@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { WeightProfile } from "../lib/categories";
 import { isJsonRecord, readApiResult } from "../lib/api";
 import type {
   ComparisonSide,
@@ -13,7 +14,29 @@ function isComparisonPayload(value: Record<string, unknown>) {
 
 type ComparePanelProps = {
   saved: RecentSearch[];
+  profile: WeightProfile;
 };
+
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+const suggestedComparisonQuestions = [
+  "Which is easier without a car?",
+  "Which has better everyday convenience?",
+  "What is the biggest trade-off between them?",
+  "Which better suits frequent café and gym use?",
+];
+
+function isComparisonChatPayload(value: Record<string, unknown>) {
+  return (
+    typeof value.answer === "string" &&
+    Array.isArray(value.propertyIds) &&
+    value.propertyIds.length === 2 &&
+    value.propertyIds.every((id) => typeof id === "string")
+  );
+}
 
 type LocationSelectProps = {
   label: string;
@@ -61,7 +84,183 @@ function scoreCell(score: number, otherScore: number) {
   );
 }
 
-export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
+function ComparisonAnalyst({
+  locationA,
+  locationB,
+  profile,
+}: {
+  locationA: ComparisonSide;
+  locationB: ComparisonSide;
+  profile: WeightProfile;
+}) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [question, setQuestion] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading">("idle");
+  const [error, setError] = useState("");
+  const controllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => controllerRef.current?.abort();
+  }, []);
+
+  async function askQuestion(rawQuestion: string) {
+    const trimmedQuestion = rawQuestion.trim();
+
+    if (!trimmedQuestion || status === "loading") {
+      return;
+    }
+
+    const propertyIds = [locationA.id, locationB.id];
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setMessages((current) => [
+      ...current,
+      { role: "user", content: trimmedQuestion },
+    ]);
+    setQuestion("");
+    setError("");
+    setStatus("loading");
+
+    try {
+      const response = await fetch("/api/locations/compare/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyIds, question: trimmedQuestion, profile }),
+        signal: controller.signal,
+      });
+      const data = await readApiResult<{
+        answer: string;
+        propertyIds: string[];
+      }>(response, isComparisonChatPayload);
+
+      if (!response.ok || !data.ok) {
+        setError(data.ok ? "Could not compare these locations." : data.error);
+        return;
+      }
+
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", content: data.answer },
+      ]);
+    } catch (requestError) {
+      if (requestError instanceof Error && requestError.name === "AbortError") {
+        return;
+      }
+
+      setError("The comparison analyst could not be reached. Please try again.");
+    } finally {
+      if (!controller.signal.aborted) {
+        setStatus("idle");
+        controllerRef.current = null;
+      }
+    }
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void askQuestion(question);
+  }
+
+  return (
+    <section className="mt-5 border-t border-line pt-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">
+            Ask about these locations
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-ink-muted">
+            Answers compare the saved scores and nearby amenities for A and B.
+          </p>
+        </div>
+        <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent-ink">
+          AI comparison
+        </span>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="mt-3 overflow-hidden rounded-lg border border-line bg-surface-subtle focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-ring"
+      >
+        {messages.length > 0 || status === "loading" ? (
+          <div className="max-h-64 space-y-3 overflow-y-auto p-3" aria-live="polite">
+            {messages.map((message, index) => (
+              <div
+                key={`${message.role}-${index}`}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`min-w-0 max-w-[90%] rounded-lg px-3 py-2 text-sm leading-6 whitespace-pre-wrap break-words ${
+                    message.role === "user"
+                      ? "bg-action text-action-ink"
+                      : "border border-line bg-surface text-ink-soft"
+                  }`}
+                >
+                  {message.content}
+                </div>
+              </div>
+            ))}
+
+            {status === "loading" ? (
+              <p className="w-fit rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink-muted">
+                Comparing these locations...
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div
+          className={`relative ${messages.length > 0 || status === "loading" ? "border-t border-line" : ""}`}
+        >
+          <label htmlFor="location-comparison-question" className="sr-only">
+            Ask about these locations
+          </label>
+          <textarea
+            id="location-comparison-question"
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            maxLength={1000}
+            rows={messages.length > 0 ? 2 : 4}
+            disabled={status === "loading"}
+            placeholder="Ask which location better fits your routines and priorities..."
+            className="block w-full resize-none bg-transparent px-3 py-3 pr-24 text-sm leading-6 text-ink outline-none placeholder:text-ink-muted disabled:cursor-not-allowed disabled:opacity-70"
+          />
+          <button
+            type="submit"
+            disabled={!question.trim() || status === "loading"}
+            className="absolute right-3 bottom-3 rounded-md bg-action px-4 py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover disabled:cursor-not-allowed disabled:bg-action-disabled"
+          >
+            Send
+          </button>
+        </div>
+      </form>
+
+      {error ? (
+        <p
+          role="alert"
+          className="mt-3 rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm font-medium text-danger-ink"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {suggestedComparisonQuestions.map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            onClick={() => void askQuestion(suggestion)}
+            disabled={status === "loading"}
+            className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:border-line-strong hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
   // Comparison needs stored scores, so only offer locations that have a
   // snapshot; scoreless favourites reappear here after being re-searched.
   const saved = allSaved.filter((search) => search.overallScore !== null);
@@ -154,7 +353,8 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
       {activeError && <p className="mt-3 text-sm text-danger-ink">{activeError}</p>}
 
       {activeResult && (
-        <table className="mt-4 w-full border-collapse text-sm">
+        <>
+          <table className="mt-4 w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-line-strong text-xs uppercase tracking-wide text-ink-muted">
               <th className="px-3 py-2 text-left font-semibold">Category</th>
@@ -190,7 +390,14 @@ export function ComparePanel({ saved: allSaved }: ComparePanelProps) {
               );
             })}
           </tbody>
-        </table>
+          </table>
+          <ComparisonAnalyst
+            key={`${activeResult.a.id}|${activeResult.b.id}|${profile}`}
+            locationA={activeResult.a}
+            locationB={activeResult.b}
+            profile={profile}
+          />
+        </>
       )}
     </div>
   );

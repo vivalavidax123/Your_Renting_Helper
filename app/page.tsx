@@ -178,7 +178,7 @@ export default function Home() {
             canContribute={Boolean(session)}
           />
 
-          <ComparePanel saved={saved} />
+          <ComparePanel saved={saved} profile={profile} />
 
           <AdditionalIndicators
             placesState={placesState}
