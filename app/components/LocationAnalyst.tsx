@@ -101,6 +101,19 @@ export function LocationAnalyst({
     void askQuestion(question);
   }
 
+  function handleQuestionKeyDown(
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      event.preventDefault();
+      void askQuestion(question);
+    }
+  }
+
   const unavailableMessage =
     placesState === "success" && propertyId === null
       ? "This result could not be saved, so grounded analysis is unavailable. Search again to retry."
@@ -166,6 +179,7 @@ export function LocationAnalyst({
             id="location-analyst-question"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={handleQuestionKeyDown}
             maxLength={1000}
             rows={messages.length > 0 ? 2 : 5}
             disabled={!available || status === "loading"}
