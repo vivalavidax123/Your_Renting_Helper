@@ -61,10 +61,7 @@ function extractResponseText(value: unknown) {
   return text || null;
 }
 
-export async function analyzeLocation(
-  context: LocationAnalysisContext,
-  question: string,
-) {
+async function requestAnalyst(instructions: string, input: string) {
   const { apiKey, model } = getConfiguration();
 
   let response: Response;
@@ -78,8 +75,8 @@ export async function analyzeLocation(
       },
       body: JSON.stringify({
         model,
-        instructions: analystInstructions,
-        input: `Location data:\n${JSON.stringify(context)}\n\nUser question:\n${question}`,
+        instructions,
+        input,
         max_output_tokens: maxOutputTokens,
         reasoning: { effort: "medium" },
         text: { verbosity: "medium" },
@@ -130,4 +127,30 @@ export async function analyzeLocation(
   }
 
   return answer;
+}
+
+export function analyzeLocation(
+  context: LocationAnalysisContext,
+  question: string,
+) {
+  return requestAnalyst(
+    analystInstructions,
+    `Location data:\n${JSON.stringify(context)}\n\nUser question:\n${question}`,
+  );
+}
+
+const comparisonInstructions = `${analystInstructions}
+You are comparing exactly two rental locations labelled Location A and Location B. Compare like-for-like evidence from both locations and make the most meaningful differences easy to understand.
+Refer to each location by its label or address so the renter can always tell which evidence belongs to which place. Mention a tie when a difference is negligible and state when data is unavailable rather than filling the gap.
+Give a conditional recommendation when the better choice depends on lifestyle or priorities. Do not force an overall winner when the supplied evidence does not support one.`;
+
+export function compareLocations(
+  locationA: LocationAnalysisContext,
+  locationB: LocationAnalysisContext,
+  question: string,
+) {
+  return requestAnalyst(
+    comparisonInstructions,
+    `Location A data:\n${JSON.stringify(locationA)}\n\nLocation B data:\n${JSON.stringify(locationB)}\n\nUser question:\n${question}`,
+  );
 }

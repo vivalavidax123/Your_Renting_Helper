@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { analyzeLocation } from "./locationAnalyst";
+import { analyzeLocation, compareLocations } from "./locationAnalyst";
 import type { LocationAnalysisContext } from "./locationAnalysis";
 
 const context: LocationAnalysisContext = {
@@ -133,5 +133,45 @@ describe("analyzeLocation", () => {
         status: 502,
       }),
     );
+  });
+});
+
+describe("compareLocations", () => {
+  it("labels both contexts and asks for a practical, conditional comparison", async () => {
+    const secondContext: LocationAnalysisContext = {
+      ...context,
+      propertyId: "location-2",
+      address: "2 Example Road, Melbourne VIC",
+      overallScore: 81,
+    };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({
+        output: [
+          {
+            content: [
+              {
+                type: "output_text",
+                text: "Location B is more convenient for daily errands.",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    await expect(
+      compareLocations(context, secondContext, "Which is more convenient?"),
+    ).resolves.toBe("Location B is more convenient for daily errands.");
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+
+    expect(body.instructions).toContain("comparing exactly two rental locations");
+    expect(body.instructions).toContain("conditional recommendation");
+    expect(body.input).toContain("Location A data:");
+    expect(body.input).toContain("1 Test Street, Melbourne VIC");
+    expect(body.input).toContain("Location B data:");
+    expect(body.input).toContain("2 Example Road, Melbourne VIC");
+    expect(body.input).toContain("Which is more convenient?");
   });
 });
