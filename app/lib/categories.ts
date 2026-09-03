@@ -151,32 +151,19 @@ export const rentScoreCategories: RentScoreCategory[] = [
 
 export type WeightProfile = "carFree" | "carOwner";
 
-// Category weights depend on lifestyle: a renter without a car has no use
-// for fuel stations but depends on transit; a car owner tolerates distance
-// and cares about parking-friendly destinations. Each column sums to 100 so
-// a weight reads directly as a percentage of the overall score. carFree is
-// the default — the product is built for renters without a car.
-export const weightProfiles: Record<WeightProfile, Record<string, number>> = {
-  carFree: {
-    shopping_centres: 8,
-    groceries: 22,
-    food: 14,
-    transport: 28,
-    health: 15,
-    fitness: 10,
-    fuel: 0,
-    services: 3,
-  },
-  carOwner: {
-    shopping_centres: 13,
-    groceries: 18,
-    food: 12,
-    transport: 8,
-    health: 15,
-    fitness: 10,
-    fuel: 14,
-    services: 10,
-  },
+// Profile scores must be directly comparable, so both use one fixed set of
+// category priorities. Car ownership changes only how strongly distance is
+// penalised below. These weights sum to 100; fuel remains useful context but
+// is not part of the everyday-convenience score.
+export const baseCategoryWeights: Record<string, number> = {
+  shopping_centres: 8,
+  groceries: 22,
+  food: 14,
+  transport: 28,
+  health: 15,
+  fitness: 10,
+  fuel: 0,
+  services: 3,
 };
 
 // How sharply the proximity pillar decays past the walkable ring: the score

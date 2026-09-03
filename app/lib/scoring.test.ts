@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getDistanceMeters, scorePlaceGroups } from "./scoring";
+import { rentScoreCategories } from "./categories";
 import type { NearbyPlace, PlaceGroup } from "./types";
 
 // The scoring pillars are private functions, so every test goes through the
@@ -99,7 +100,7 @@ describe("scorePlaceGroups", () => {
     expect(rated(null)).toBeGreaterThan(rated(3.4));
   });
 
-  it("weights fuel at zero for car-free renters", () => {
+  it("keeps fuel informational for both profiles", () => {
     const fuelGroup: PlaceGroup[] = [
       {
         id: "fuel",
@@ -113,11 +114,80 @@ describe("scorePlaceGroups", () => {
     const carOwner = scorePlaceGroups(fuelGroup, "carOwner");
 
     expect(carFree.scores.find((s) => s.id === "fuel")!.weight).toBe(0);
-    expect(carOwner.scores.find((s) => s.id === "fuel")!.weight).toBeGreaterThan(0);
-    // A perfect fuel score contributes nothing car-free...
+    expect(carOwner.scores.find((s) => s.id === "fuel")!.weight).toBe(0);
     expect(carFree.overallScore).toBe(0);
-    // ...but does count for car owners.
-    expect(carOwner.overallScore).toBeGreaterThan(0);
+    expect(carOwner.overallScore).toBe(0);
+  });
+
+  it("never lowers a category or overall score for car owners", () => {
+    for (const distanceMeters of [200, 800, 2500]) {
+      const groups: PlaceGroup[] = rentScoreCategories.map((category) => ({
+        id: category.id,
+        label: category.label,
+        radiusMeters: category.radiusMeters,
+        places: [
+          makePlace({
+            distanceMeters,
+            primaryType: category.placeTypes[0],
+          }),
+        ],
+      }));
+      const carFree = scorePlaceGroups(groups, "carFree");
+      const carOwner = scorePlaceGroups(groups, "carOwner");
+
+      expect(carOwner.overallScore).toBeGreaterThanOrEqual(carFree.overallScore);
+
+      for (const carFreeCategory of carFree.scores) {
+        const carOwnerCategory = carOwner.scores.find(
+          (category) => category.id === carFreeCategory.id,
+        );
+
+        expect(carOwnerCategory?.weight).toBe(carFreeCategory.weight);
+        expect(carOwnerCategory?.score).toBeGreaterThanOrEqual(
+          carFreeCategory.score,
+        );
+      }
+    }
+  });
+
+  it("improves a transit-strong suburban mix for a car owner", () => {
+    const group = (
+      categoryId: string,
+      count: number,
+      closestDistanceMeters: number,
+      rating: number | null,
+    ): PlaceGroup => {
+      const category = rentScoreCategories.find(
+        (candidate) => candidate.id === categoryId,
+      )!;
+
+      return {
+        id: category.id,
+        label: category.label,
+        radiusMeters: category.radiusMeters,
+        places: Array.from({ length: count }, (_, index) =>
+          makePlace({
+            distanceMeters: closestDistanceMeters + index * 25,
+            primaryType: category.placeTypes[0],
+            rating,
+          }),
+        ),
+      };
+    };
+    const groups = [
+      group("transport", 4, 189, null),
+      group("groceries", 4, 2100, 4.3),
+      group("health", 4, 201, 4.9),
+      group("food", 19, 196, 4.8),
+      group("fitness", 6, 273, 4.8),
+      group("shopping_centres", 19, 2500, 4.3),
+      group("services", 1, 2500, 3.6),
+      group("fuel", 2, 2400, 3.0),
+    ];
+    const carFree = scorePlaceGroups(groups, "carFree");
+    const carOwner = scorePlaceGroups(groups, "carOwner");
+
+    expect(carOwner.overallScore).toBeGreaterThan(carFree.overallScore);
   });
 
   it("computes the overall score as the weight-blended category average", () => {

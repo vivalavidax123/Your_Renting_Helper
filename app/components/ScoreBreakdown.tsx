@@ -51,21 +51,27 @@ export function ScoreBreakdown({
       </div>
 
       {placesState === "success" ? (
-        <div className="mb-3 flex w-fit gap-0.5 rounded-md bg-surface-raised p-0.5">
-          {profileOptions.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => onProfileChange(option.id)}
-              className={`rounded px-2.5 py-1 text-xs transition ${
-                option.id === profile
-                  ? "bg-surface font-medium text-ink shadow-sm"
-                  : "text-ink-muted hover:text-ink"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="mb-3">
+          <div className="flex w-fit gap-0.5 rounded-md bg-surface-raised p-0.5">
+            {profileOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => onProfileChange(option.id)}
+                className={`rounded px-2.5 py-1 text-xs transition ${
+                  option.id === profile
+                    ? "bg-surface font-medium text-ink shadow-sm"
+                    : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs leading-5 text-ink-muted">
+            Car owner relaxes distance penalties. Category weights stay the
+            same, and fuel is shown but not counted.
+          </p>
         </div>
       ) : null}
 
@@ -91,8 +97,8 @@ export function ScoreBreakdown({
 
       {placesState === "success" ? (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Sorted by weight so switching profiles visibly reorders the
-              cards; zero-weight categories dim out entirely. */}
+          {/* Fixed weights keep profile scores comparable; zero-weight
+              categories remain visible as useful context. */}
           {[...categoryScores]
             .sort((a, b) => b.weight - a.weight)
             .map((category) => {

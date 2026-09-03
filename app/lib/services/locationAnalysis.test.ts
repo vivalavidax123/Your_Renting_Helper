@@ -51,7 +51,7 @@ beforeEach(() => {
 });
 
 describe("assembleLocationAnalysisContext", () => {
-  it("uses profile-specific scores and keeps only the nearest amenities", () => {
+  it("uses profile distance tolerance and keeps only the nearest amenities", () => {
     const context = assembleLocationAnalysisContext({
       propertyId: "location-1",
       address: "1 Test Street, Melbourne VIC",
@@ -72,7 +72,7 @@ describe("assembleLocationAnalysisContext", () => {
       ]),
     );
     expect(context.scoreBreakdown.find((score) => score.id === "groceries"))
-      .toMatchObject({ count: 6, weight: 18, closestDistanceMeters: 100 });
+      .toMatchObject({ count: 6, weight: 22, closestDistanceMeters: 100 });
     expect(
       context.nearbyAmenities.find(
         (category) => category.categoryId === "groceries",

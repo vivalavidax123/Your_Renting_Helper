@@ -1,6 +1,6 @@
 import {
   rentScoreCategories,
-  weightProfiles,
+  baseCategoryWeights,
   proximityHalfLifeFactor,
   type WeightProfile,
 } from "./categories";
@@ -94,7 +94,6 @@ export function scorePlaceGroups(
   groups: PlaceGroup[],
   profile: WeightProfile = "carFree",
 ) {
-  const weights = weightProfiles[profile];
   const halfLifeFactor = proximityHalfLifeFactor[profile];
   const scores = rentScoreCategories.map((category) => {
     const group = groups.find((candidate) => candidate.id === category.id);
@@ -122,7 +121,7 @@ export function scorePlaceGroups(
       id: category.id,
       label: category.label,
       score,
-      weight: weights[category.id] ?? 0,
+      weight: baseCategoryWeights[category.id] ?? 0,
       colorClass: category.colorClass,
       detail: category.detail,
       count: places.length,
