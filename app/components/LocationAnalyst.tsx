@@ -137,9 +137,6 @@ export function LocationAnalyst({
             (Answers use the score and nearby amenities shown here.)
           </p>
         </div>
-        <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent-ink">
-          AI analyst
-        </span>
       </div>
 
       <form

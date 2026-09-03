@@ -195,9 +195,6 @@ function ComparisonAnalyst({
             Answers compare the saved scores and nearby amenities for A and B.
           </p>
         </div>
-        <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent-ink">
-          AI comparison
-        </span>
       </div>
 
       <form
