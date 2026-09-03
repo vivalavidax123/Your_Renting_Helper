@@ -112,9 +112,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const answer = await compareLocations(locationA, locationB, question);
+    const answerStream = await compareLocations(
+      locationA,
+      locationB,
+      question,
+    );
 
-    return Response.json({ ok: true, answer, propertyIds });
+    return new Response(answerStream, {
+      headers: {
+        "Cache-Control": "no-cache",
+        "Content-Type": "text/plain; charset=utf-8",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   } catch (error) {
     if (error instanceof LocationAnalystError) {
       return Response.json(

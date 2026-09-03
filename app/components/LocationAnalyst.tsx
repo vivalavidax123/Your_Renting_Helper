@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { WeightProfile } from "@/app/lib/categories";
-import { readApiResult } from "@/app/lib/api";
+import { readApiResult, readTextStream } from "@/app/lib/api";
 import type { RequestState } from "@/app/lib/types";
 
 const suggestedQuestions = [
@@ -17,12 +17,6 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
 };
-
-function isChatPayload(value: Record<string, unknown>) {
-  return (
-    typeof value.answer === "string" && typeof value.propertyId === "string"
-  );
-}
 
 export function LocationAnalyst({
   propertyId,
@@ -60,6 +54,7 @@ export function LocationAnalyst({
     setQuestion("");
     setError("");
     setStatus("loading");
+    let assistantStarted = false;
 
     try {
       const response = await fetch(`/api/locations/${propertyId}/chat`, {
@@ -68,25 +63,35 @@ export function LocationAnalyst({
         body: JSON.stringify({ question: trimmedQuestion, profile }),
         signal: controller.signal,
       });
-      const data = await readApiResult<{
-        answer: string;
-        propertyId: string;
-      }>(response, isChatPayload);
 
-      if (!response.ok || !data.ok) {
+      if (!response.ok) {
+        const data = await readApiResult<Record<string, never>>(
+          response,
+          () => true,
+        );
         setError(data.ok ? "Could not analyse this location." : data.error);
         return;
       }
 
+      assistantStarted = true;
       setMessages((current) => [
         ...current,
-        { role: "assistant", content: data.answer },
+        { role: "assistant", content: "" },
       ]);
+      await readTextStream(response, (answer) => {
+        setMessages((current) => [
+          ...current.slice(0, -1),
+          { role: "assistant", content: answer },
+        ]);
+      });
     } catch (requestError) {
       if (requestError instanceof Error && requestError.name === "AbortError") {
         return;
       }
 
+      if (assistantStarted) {
+        setMessages((current) => current.slice(0, -1));
+      }
       setError("The location analyst could not be reached. Please try again.");
     } finally {
       if (!controller.signal.aborted) {
@@ -118,6 +123,8 @@ export function LocationAnalyst({
     placesState === "success" && propertyId === null
       ? "This result could not be saved, so grounded analysis is unavailable. Search again to retry."
       : "Search for a location before asking the analyst.";
+  const awaitingFirstChunk =
+    status === "loading" && messages.at(-1)?.role !== "assistant";
 
   return (
     <section className="mt-6 border-t border-line pt-5">
@@ -157,11 +164,18 @@ export function LocationAnalyst({
                   }`}
                 >
                   {message.content}
+                  {status === "loading" &&
+                  message.role === "assistant" &&
+                  index === messages.length - 1 ? (
+                    <span aria-hidden="true" className="animate-pulse">
+                      ▍
+                    </span>
+                  ) : null}
                 </div>
               </div>
             ))}
 
-            {status === "loading" ? (
+            {awaitingFirstChunk ? (
               <p className="w-fit rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink-muted">
                 Analysing this location...
               </p>

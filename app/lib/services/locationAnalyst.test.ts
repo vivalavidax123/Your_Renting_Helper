@@ -5,6 +5,31 @@ vi.mock("server-only", () => ({}));
 import { analyzeLocation, compareLocations } from "./locationAnalyst";
 import type { LocationAnalysisContext } from "./locationAnalysis";
 
+function openAIStream(...events: object[]) {
+  const encoder = new TextEncoder();
+
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        for (const event of events) {
+          const message = encoder.encode(
+            `data: ${JSON.stringify(event)}\n\n`,
+          );
+          const midpoint = Math.ceil(message.length / 2);
+          controller.enqueue(message.slice(0, midpoint));
+          controller.enqueue(message.slice(midpoint));
+        }
+        controller.close();
+      },
+    }),
+    { headers: { "Content-Type": "text/event-stream" } },
+  );
+}
+
+async function readAnswer(answer: Promise<ReadableStream<Uint8Array>>) {
+  return new Response(await answer).text();
+}
+
 const context: LocationAnalysisContext = {
   propertyId: "location-1",
   address: "1 Test Street, Melbourne VIC",
@@ -36,20 +61,18 @@ afterEach(() => {
 describe("analyzeLocation", () => {
   it("sends grounded application context and returns the model text", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      Response.json({
-        output: [
-          {
-            type: "message",
-            content: [
-              { type: "output_text", text: "The transport data is strong." },
-            ],
-          },
-        ],
-      }),
+      openAIStream(
+        {
+          type: "response.output_text.delta",
+          delta: "The transport data ",
+        },
+        { type: "response.output_text.delta", delta: "is strong." },
+        { type: "response.completed" },
+      ),
     );
 
     await expect(
-      analyzeLocation(context, "Is this suitable without a car?"),
+      readAnswer(analyzeLocation(context, "Is this suitable without a car?")),
     ).resolves.toBe("The transport data is strong.");
 
     const [, init] = fetchMock.mock.calls[0];
@@ -68,6 +91,7 @@ describe("analyzeLocation", () => {
       reasoning: { effort: "medium" },
       text: { verbosity: "medium" },
       store: false,
+      stream: true,
     });
     expect(body.instructions).toContain("only the structured location data");
     expect(body.instructions).toContain("picture day-to-day life");
@@ -106,28 +130,27 @@ describe("analyzeLocation", () => {
   });
 
   it("rejects a successful response that contains no answer text", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      Response.json({ output: [] }),
-    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(openAIStream());
 
-    await expect(analyzeLocation(context, "Why this score?")).rejects.toEqual(
-      expect.objectContaining({ status: 502 }),
-    );
+    await expect(
+      readAnswer(analyzeLocation(context, "Why this score?")),
+    ).rejects.toEqual(expect.objectContaining({ status: 502 }));
   });
 
   it("rejects incomplete text instead of showing a partial answer", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      Response.json({
-        status: "incomplete",
-        output: [
-          {
-            content: [{ type: "output_text", text: "A cut-off answer" }],
-          },
-        ],
-      }),
+      openAIStream(
+        {
+          type: "response.output_text.delta",
+          delta: "A cut-off answer",
+        },
+        { type: "response.incomplete" },
+      ),
     );
 
-    await expect(analyzeLocation(context, "Why this score?")).rejects.toEqual(
+    await expect(
+      readAnswer(analyzeLocation(context, "Why this score?")),
+    ).rejects.toEqual(
       expect.objectContaining({
         message: "The AI service returned an incomplete answer. Please try again.",
         status: 502,
@@ -145,22 +168,19 @@ describe("compareLocations", () => {
       overallScore: 81,
     };
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      Response.json({
-        output: [
-          {
-            content: [
-              {
-                type: "output_text",
-                text: "Location B is more convenient for daily errands.",
-              },
-            ],
-          },
-        ],
-      }),
+      openAIStream(
+        {
+          type: "response.output_text.delta",
+          delta: "Location B is more convenient for daily errands.",
+        },
+        { type: "response.completed" },
+      ),
     );
 
     await expect(
-      compareLocations(context, secondContext, "Which is more convenient?"),
+      readAnswer(
+        compareLocations(context, secondContext, "Which is more convenient?"),
+      ),
     ).resolves.toBe("Location B is more convenient for daily errands.");
 
     const [, init] = fetchMock.mock.calls[0];

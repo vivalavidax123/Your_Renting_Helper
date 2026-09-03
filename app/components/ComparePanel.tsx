@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { WeightProfile } from "../lib/categories";
-import { isJsonRecord, readApiResult } from "../lib/api";
+import { isJsonRecord, readApiResult, readTextStream } from "../lib/api";
 import type {
   ComparisonSide,
   RecentSearch,
@@ -28,15 +28,6 @@ const suggestedComparisonQuestions = [
   "What is the biggest trade-off between them?",
   "Which better suits frequent café and gym use?",
 ];
-
-function isComparisonChatPayload(value: Record<string, unknown>) {
-  return (
-    typeof value.answer === "string" &&
-    Array.isArray(value.propertyIds) &&
-    value.propertyIds.length === 2 &&
-    value.propertyIds.every((id) => typeof id === "string")
-  );
-}
 
 type LocationSelectProps = {
   label: string;
@@ -125,6 +116,7 @@ function ComparisonAnalyst({
     setQuestion("");
     setError("");
     setStatus("loading");
+    let assistantStarted = false;
 
     try {
       const response = await fetch("/api/locations/compare/chat", {
@@ -133,25 +125,35 @@ function ComparisonAnalyst({
         body: JSON.stringify({ propertyIds, question: trimmedQuestion, profile }),
         signal: controller.signal,
       });
-      const data = await readApiResult<{
-        answer: string;
-        propertyIds: string[];
-      }>(response, isComparisonChatPayload);
 
-      if (!response.ok || !data.ok) {
+      if (!response.ok) {
+        const data = await readApiResult<Record<string, never>>(
+          response,
+          () => true,
+        );
         setError(data.ok ? "Could not compare these locations." : data.error);
         return;
       }
 
+      assistantStarted = true;
       setMessages((current) => [
         ...current,
-        { role: "assistant", content: data.answer },
+        { role: "assistant", content: "" },
       ]);
+      await readTextStream(response, (answer) => {
+        setMessages((current) => [
+          ...current.slice(0, -1),
+          { role: "assistant", content: answer },
+        ]);
+      });
     } catch (requestError) {
       if (requestError instanceof Error && requestError.name === "AbortError") {
         return;
       }
 
+      if (assistantStarted) {
+        setMessages((current) => current.slice(0, -1));
+      }
       setError("The comparison analyst could not be reached. Please try again.");
     } finally {
       if (!controller.signal.aborted) {
@@ -178,6 +180,9 @@ function ComparisonAnalyst({
       void askQuestion(question);
     }
   }
+
+  const awaitingFirstChunk =
+    status === "loading" && messages.at(-1)?.role !== "assistant";
 
   return (
     <section className="mt-5 border-t border-line pt-4">
@@ -214,11 +219,18 @@ function ComparisonAnalyst({
                   }`}
                 >
                   {message.content}
+                  {status === "loading" &&
+                  message.role === "assistant" &&
+                  index === messages.length - 1 ? (
+                    <span aria-hidden="true" className="animate-pulse">
+                      ▍
+                    </span>
+                  ) : null}
                 </div>
               </div>
             ))}
 
-            {status === "loading" ? (
+            {awaitingFirstChunk ? (
               <p className="w-fit rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink-muted">
                 Comparing these locations...
               </p>

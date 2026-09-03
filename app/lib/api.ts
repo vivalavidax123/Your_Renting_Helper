@@ -34,3 +34,39 @@ export async function readApiResult<T extends object>(
 
   return value as { ok: true } & T;
 }
+
+export async function readTextStream(
+  response: Response,
+  onText: (text: string) => void,
+) {
+  if (!response.body) {
+    throw new Error("The server returned an empty response.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+
+    if (done) {
+      const remaining = decoder.decode();
+
+      if (remaining) {
+        text += remaining;
+        onText(text);
+      }
+      break;
+    }
+
+    text += decoder.decode(value, { stream: true });
+    onText(text);
+  }
+
+  if (!text.trim()) {
+    throw new Error("The server returned an empty response.");
+  }
+
+  return text;
+}

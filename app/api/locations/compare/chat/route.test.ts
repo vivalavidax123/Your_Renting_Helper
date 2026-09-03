@@ -32,6 +32,15 @@ const checkSaved = vi.mocked(areLocationsSavedByUser);
 const buildContext = vi.mocked(buildLocationAnalysisContext);
 const compare = vi.mocked(compareLocations);
 
+function answerStream(answer: string) {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(answer));
+      controller.close();
+    },
+  });
+}
+
 type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
 
 function signedInAs(userId: string): Session {
@@ -127,7 +136,7 @@ describe("POST /api/locations/compare/chat", () => {
     expect(buildContext).not.toHaveBeenCalled();
   });
 
-  it("builds both contexts with the selected profile and returns the answer", async () => {
+  it("builds both contexts with the selected profile and streams the answer", async () => {
     const contextA = { propertyId: "location-1" } as NonNullable<
       Awaited<ReturnType<typeof buildLocationAnalysisContext>>
     >;
@@ -139,7 +148,9 @@ describe("POST /api/locations/compare/chat", () => {
     buildContext
       .mockResolvedValueOnce(contextA)
       .mockResolvedValueOnce(contextB);
-    compare.mockResolvedValue("Location A is easier without a car.");
+    compare.mockResolvedValue(
+      answerStream("Location A is easier without a car."),
+    );
 
     const response = await POST(
       request(
@@ -150,14 +161,13 @@ describe("POST /api/locations/compare/chat", () => {
         }),
       ),
     );
-    const body = await response.json();
+    const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({
-      ok: true,
-      answer: "Location A is easier without a car.",
-      propertyIds: ["location-1", "location-2"],
-    });
+    expect(response.headers.get("Content-Type")).toBe(
+      "text/plain; charset=utf-8",
+    );
+    expect(body).toBe("Location A is easier without a car.");
     expect(buildContext).toHaveBeenNthCalledWith(1, "location-1", "carFree");
     expect(buildContext).toHaveBeenNthCalledWith(2, "location-2", "carFree");
     expect(compare).toHaveBeenCalledWith(

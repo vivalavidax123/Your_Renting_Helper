@@ -39,26 +39,113 @@ function getConfiguration() {
   return { apiKey, model };
 }
 
-function extractResponseText(value: unknown) {
-  if (!isJsonRecord(value) || !Array.isArray(value.output)) {
-    return null;
+function createAnswerStream(body: ReadableStream<Uint8Array>) {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = "";
+  let completed = false;
+  let receivedText = false;
+
+  function readEvent(
+    event: string,
+    controller: TransformStreamDefaultController<Uint8Array>,
+  ) {
+    const data = event
+      .split("\n")
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).trimStart())
+      .join("\n");
+
+    if (!data || data === "[DONE]") {
+      return;
+    }
+
+    let value: unknown;
+
+    try {
+      value = JSON.parse(data);
+    } catch {
+      throw new LocationAnalystError(
+        "The AI service returned an incomplete answer. Please try again.",
+        502,
+      );
+    }
+
+    if (!isJsonRecord(value) || typeof value.type !== "string") {
+      return;
+    }
+
+    if (
+      value.type === "response.output_text.delta" &&
+      typeof value.delta === "string"
+    ) {
+      receivedText = true;
+      controller.enqueue(encoder.encode(value.delta));
+      return;
+    }
+
+    if (value.type === "response.completed") {
+      completed = true;
+      return;
+    }
+
+    if (
+      value.type === "response.failed" ||
+      value.type === "response.incomplete" ||
+      value.type === "error"
+    ) {
+      throw new LocationAnalystError(
+        "The AI service returned an incomplete answer. Please try again.",
+        502,
+      );
+    }
   }
 
-  const text = value.output
-    .flatMap((item) =>
-      isJsonRecord(item) && Array.isArray(item.content) ? item.content : [],
-    )
-    .filter(
-      (content) =>
-        isJsonRecord(content) &&
-        content.type === "output_text" &&
-        typeof content.text === "string",
-    )
-    .map((content) => (content as { text: string }).text)
-    .join("\n")
-    .trim();
+  function drainEvents(
+    controller: TransformStreamDefaultController<Uint8Array>,
+  ) {
+    buffer = buffer.replaceAll("\r\n", "\n");
+    let boundary = buffer.indexOf("\n\n");
 
-  return text || null;
+    while (boundary !== -1) {
+      readEvent(buffer.slice(0, boundary), controller);
+      buffer = buffer.slice(boundary + 2);
+      boundary = buffer.indexOf("\n\n");
+    }
+  }
+
+  const eventParser = new TransformStream<string, Uint8Array>({
+    transform(chunk, controller) {
+      buffer += chunk;
+      drainEvents(controller);
+    },
+    flush(controller) {
+      if (buffer.trim()) {
+        readEvent(buffer, controller);
+      }
+
+      if (!completed || !receivedText) {
+        throw new LocationAnalystError(
+          "The AI service returned an incomplete answer. Please try again.",
+          502,
+        );
+      }
+    },
+  });
+  const textDecoder = new TransformStream<Uint8Array, string>({
+    transform(chunk, controller) {
+      controller.enqueue(decoder.decode(chunk, { stream: true }));
+    },
+    flush(controller) {
+      const remaining = decoder.decode();
+
+      if (remaining) {
+        controller.enqueue(remaining);
+      }
+    },
+  });
+
+  return body.pipeThrough(textDecoder).pipeThrough(eventParser);
 }
 
 async function requestAnalyst(instructions: string, input: string) {
@@ -78,9 +165,10 @@ async function requestAnalyst(instructions: string, input: string) {
         instructions,
         input,
         max_output_tokens: maxOutputTokens,
-        reasoning: { effort: "medium" },
-        text: { verbosity: "medium" },
+        reasoning: { effort: "xhigh" },
+        text: { verbosity: "high" },
         store: false,
+        stream: true,
       }),
       signal: AbortSignal.timeout(requestTimeoutMs),
     });
@@ -108,25 +196,14 @@ async function requestAnalyst(instructions: string, input: string) {
     );
   }
 
-  const data: unknown = await response.json();
-
-  if (isJsonRecord(data) && data.status === "incomplete") {
+  if (!response.body) {
     throw new LocationAnalystError(
       "The AI service returned an incomplete answer. Please try again.",
       502,
     );
   }
 
-  const answer = extractResponseText(data);
-
-  if (!answer) {
-    throw new LocationAnalystError(
-      "The AI service returned an incomplete answer. Please try again.",
-      502,
-    );
-  }
-
-  return answer;
+  return createAnswerStream(response.body);
 }
 
 export function analyzeLocation(

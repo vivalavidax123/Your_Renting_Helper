@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-09-03.
 | Persistence | PostgreSQL through Prisma |
 | Authentication | Email/password and Google OAuth through Better Auth |
 | Quality gates | ESLint, TypeScript, Vitest, and production build |
-| Automated tests | 80 tests across 15 test files |
+| Automated tests | 82 tests across 15 test files |
 | Production readiness | Not production-ready; hardening gaps are listed below |
 
 The core renter workflow is implemented:
@@ -334,7 +334,7 @@ The result page includes a lightweight single-location chat panel, and the saved
 2. The client sends that id, the current mobility profile, and one question to `POST /api/locations/[propertyId]/chat`.
 3. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile.
 4. The context builder keeps the score breakdown and up to five nearest amenities per category.
-5. The analyst sends that structured context to the OpenAI Responses API and returns only the answer text.
+5. The analyst requests a streamed OpenAI response, extracts `response.output_text.delta` events on the server, and forwards only the answer text as it arrives.
 
 ### Saved-location comparison request flow
 
@@ -344,7 +344,7 @@ The result page includes a lightweight single-location chat panel, and the saved
 4. The server builds the same grounded context independently for each location and labels them Location A and Location B.
 5. The analyst explains meaningful differences, ties, trade-offs, and conditional recommendations without forcing a winner.
 
-The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, connect evidence to practical renter implications, and distinguish facts from interpretation. Requests use the environment-selected `OPENAI_MODEL`, medium reasoning effort, medium text verbosity, a 1,200-token output ceiling, a 20-second timeout, and `store: false`. Conversation messages live only in their current browser components. Single-location messages reset when the location or mobility profile changes; comparison messages reset when the selected pair or profile changes. Enter sends a question and Shift+Enter inserts a newline.
+The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, connect evidence to practical renter implications, and distinguish facts from interpretation. Requests use the environment-selected `OPENAI_MODEL`, medium reasoning effort, medium text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. Conversation messages live only in their current browser components. Single-location messages reset when the location or mobility profile changes; comparison messages reset when the selected pair or profile changes. Enter sends a question and Shift+Enter inserts a newline.
 
 Current MVP boundaries: no RAG, web search, persistent conversation history, autonomous tools, or map actions.
 
@@ -508,7 +508,7 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 4. npm test
 5. npm run build with non-secret placeholder configuration
 
-The current 80-test suite across 15 files covers:
+The current 82-test suite across 15 files covers:
 
 - scoring behaviour and invariants;
 - formatting, coordinate parsing, distance, and time utilities;
@@ -518,7 +518,7 @@ The current 80-test suite across 15 files covers:
 - authentication email configuration and delivery callbacks;
 - community-rent medians, adaptive radii, report upserts, and profile suggestions;
 - CBD driving/transit response parsing and Melbourne daylight-saving calculations;
-- grounded AI context construction, OpenAI request configuration, response parsing, and failure mapping;
+- grounded AI context construction, OpenAI request configuration, streamed response parsing, text-chunk accumulation, and failure mapping;
 - single-location and authenticated saved-location comparison chat routes;
 - the invariant that the car-owner profile never lowers category or overall scores.
 

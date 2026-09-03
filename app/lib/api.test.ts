@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readApiResult } from "./api";
+import { readApiResult, readTextStream } from "./api";
 
 const hasItems = (value: Record<string, unknown>) => Array.isArray(value.items);
 
@@ -34,5 +34,40 @@ describe("readApiResult", () => {
     await expect(
       readApiResult<{ items: string[] }>(response, hasItems),
     ).rejects.toThrow("incomplete data");
+  });
+});
+
+describe("readTextStream", () => {
+  it("reports the accumulated text as chunks arrive", async () => {
+    const encoder = new TextEncoder();
+    const response = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode("First "));
+          controller.enqueue(encoder.encode("second"));
+          controller.close();
+        },
+      }),
+    );
+    const updates: string[] = [];
+
+    await expect(
+      readTextStream(response, (text) => updates.push(text)),
+    ).resolves.toBe("First second");
+    expect(updates).toEqual(["First ", "First second"]);
+  });
+
+  it("rejects an empty stream", async () => {
+    const response = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.close();
+        },
+      }),
+    );
+
+    await expect(readTextStream(response, () => {})).rejects.toThrow(
+      "empty response",
+    );
   });
 });

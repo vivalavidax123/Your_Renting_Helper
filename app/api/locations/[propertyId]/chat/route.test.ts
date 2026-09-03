@@ -22,6 +22,15 @@ import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysi
 const buildContext = vi.mocked(buildLocationAnalysisContext);
 const analyze = vi.mocked(analyzeLocation);
 
+function answerStream(answer: string) {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(answer));
+      controller.close();
+    },
+  });
+}
+
 function request(body: string) {
   return new Request("http://test/api/locations/location-1/chat", {
     method: "POST",
@@ -72,12 +81,14 @@ describe("POST /api/locations/[propertyId]/chat", () => {
     expect(analyze).not.toHaveBeenCalled();
   });
 
-  it("builds the selected profile context and returns its answer", async () => {
+  it("builds the selected profile context and streams its answer", async () => {
     const context = { propertyId: "location-1" } as Awaited<
       ReturnType<typeof buildLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);
-    analyze.mockResolvedValue("Transport is the strongest category.");
+    analyze.mockResolvedValue(
+      answerStream("Transport is the strongest category."),
+    );
 
     const response = await POST(
       request(
@@ -88,14 +99,13 @@ describe("POST /api/locations/[propertyId]/chat", () => {
       ),
       routeContext,
     );
-    const body = await response.json();
+    const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({
-      ok: true,
-      answer: "Transport is the strongest category.",
-      propertyId: "location-1",
-    });
+    expect(response.headers.get("Content-Type")).toBe(
+      "text/plain; charset=utf-8",
+    );
+    expect(body).toBe("Transport is the strongest category.");
     expect(buildContext).toHaveBeenCalledWith("location-1", "carOwner");
     expect(analyze).toHaveBeenCalledWith(context, "Why this score?");
   });
