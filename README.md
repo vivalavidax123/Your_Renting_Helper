@@ -14,14 +14,15 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - View walkability, transit access, amenity density, daily convenience, and car-reliance indicators derived from the search result.
 - See direct distance, indicative driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - See like-for-like community rent medians and, when signed in, contribute a known weekly rent.
+- Ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting.
 - Use a persistent light or dark theme.
-- Create an account to keep recent searches, save locations, and compare two saved results.
+- Create an account to keep recent searches, save locations, compare two saved results, and ask AI-assisted comparison questions.
 
 ## Current Scope
 
-This is a working prototype, not an official property rating or valuation service. Amenity distances are straight-line estimates; CBD driving uses a rounded Geoapify estimate, while public transport currently uses a Google timetable estimate. Both can vary from an actual trip.
+This is a working prototype, not an official property rating or valuation service. Amenity distances are straight-line estimates; CBD driving uses a rounded Geoapify estimate, while public transport currently uses a Google timetable estimate. Both can vary from an actual trip. The car-owner profile uses the same priorities as the no-car profile with more tolerance for distance, so it cannot lower the displayed category or overall scores.
 
-Community rent figures are user-reported evidence, not scraped market data or an official valuation. Population, school, safety, and planning datasets are not currently included.
+Community rent figures are user-reported evidence, not scraped market data or an official valuation. AI answers are grounded in the score, nearby amenities, and derived indicators supplied by the application; they do not perform external research. Population, school, safety, and planning datasets are not currently included.
 
 ## Run Locally
 

@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against the repository on 2026-08-22.
+Status reviewed against committed `HEAD` on 2026-09-03.
 
 | Area | Current state |
 | --- | --- |
@@ -19,7 +19,7 @@ Status reviewed against the repository on 2026-08-22.
 | Persistence | PostgreSQL through Prisma |
 | Authentication | Email/password and Google OAuth through Better Auth |
 | Quality gates | ESLint, TypeScript, Vitest, and production build |
-| Automated tests | 53 tests across 10 test files |
+| Automated tests | 80 tests across 15 test files |
 | Production readiness | Not production-ready; hardening gaps are listed below |
 
 The core renter workflow is implemented:
@@ -28,7 +28,8 @@ The core renter workflow is implemented:
 2. Geocode the query and retrieve nearby places.
 3. Calculate category and overall scores for a no-car or car-owner profile.
 4. Review amenities, derived indicators, CBD travel, community rent evidence, and the interactive map.
-5. Sign in to keep history, save locations, compare two saved results, and submit known weekly rents.
+5. Ask the grounded AI analyst what the supplied location evidence means for day-to-day renting.
+6. Sign in to keep history, save locations, compare two saved results with scores and AI analysis, and submit known weekly rents.
 
 The product direction remains amenities-first. Scores are compact summaries; nearby places, map context, and practical indicators carry most of the decision detail.
 
@@ -55,7 +56,8 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Persistent light and dark themes across the main and login views.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
-- Two-location comparison from saved results.
+- Two-location score comparison from saved results, with an always-visible empty state before enough places are saved.
+- Grounded AI analysis for a searched location and authenticated AI comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.
 - Docker Compose deployment with local PostgreSQL and automatic migration application.
@@ -67,7 +69,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Walkability uses straight-line estimates, not route-aware walking times.
 - Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset is implemented with its manual inbox/password check pending. Account settings and account deletion are not implemented.
 - Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
-- Automated coverage does not yet include full authentication, database-cache integration, provider failures, or browser end-to-end flows.
+- Automated coverage does not yet include full authentication, database-cache integration, broad place/transport provider-failure paths, or browser end-to-end flows.
 
 ## Full-Stack Status
 
@@ -119,6 +121,7 @@ app/
     favourites/          Per-user saved locations
     geocode/             Address to coordinates
     history/             Per-user recent searches
+    locations/           Single-location and saved-location comparison chat
     places/              Cache, providers, scoring, and persistence coordinator
     rent-estimates/       Community rent estimates and contributions
   components/            Dashboard, map, auth, theme, scores, and result views
@@ -192,6 +195,8 @@ Profile changes recalculate scores in the browser from the existing place groups
 | POST /api/favourites | Signed in | Save a known location |
 | DELETE /api/favourites | Signed in | Remove a saved location |
 | GET /api/compare | Public at route level | Return the newest stored score snapshots for two location IDs |
+| POST /api/locations/[propertyId]/chat | Public | Answer one grounded question about a stored location and selected mobility profile |
+| POST /api/locations/compare/chat | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations |
 | GET /api/cbd-travel | Public | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD |
 | GET /api/rent-estimates | Public | Like-for-like community median rent within an adaptive 1–10 km radius |
 | POST /api/rent-estimates | Signed in | Create or update the caller's rent report for a location/property combination |
@@ -281,20 +286,22 @@ The formula is 30 x (1 - exp(-count / k)).
 - A populated category with no rating data receives the neutral midpoint of 10.
 - A category with no places receives zero.
 
-### Lifestyle weights
+### Category weights and mobility guarantee
 
-Each profile sums to 100.
+Both profiles use the same fixed category priorities, which sum to 100. Car ownership changes only the proximity decay described above.
 
-| Category | No car | Car owner |
-| --- | ---: | ---: |
-| Shopping Centres | 8 | 13 |
-| Groceries | 22 | 18 |
-| Food & Cafes | 14 | 12 |
-| Transport | 28 | 8 |
-| Health | 15 | 15 |
-| Fitness & Recreation | 10 | 10 |
-| Fuel & Automotive | 0 | 14 |
-| Services | 3 | 10 |
+| Category | Weight |
+| --- | ---: |
+| Shopping Centres | 8 |
+| Groceries | 22 |
+| Food & Cafes | 14 |
+| Transport | 28 |
+| Health | 15 |
+| Fitness & Recreation | 10 |
+| Fuel & Automotive | 0 |
+| Services | 3 |
+
+Using identical weights keeps the profiles directly comparable. The car-owner half-life is more distance-tolerant, so switching from no-car to car-owner can keep or improve every category score and cannot lower the overall score. Places within the 400 m walkable ring score equally for both profiles; farther amenities can score better for a car owner. Fuel remains visible context but does not affect either overall score.
 
 The overall score is the weighted average of the active category scores. No-car is the default and canonical stored profile. Raw place groups are retained in the snapshot, so another profile can be recalculated without new provider calls.
 
@@ -319,19 +326,27 @@ The visible planned list is not live data:
 
 ## AI Location Analyst
 
-The result page includes a lightweight single-location chat panel. It explains the deterministic application data rather than replacing the scoring system.
+The result page includes a lightweight single-location chat panel, and the saved-location comparison includes a second panel for comparing two locations. Both explain deterministic application data rather than replacing the scoring system.
 
-Request flow:
+### Single-location request flow
 
 1. `/api/places` returns the persisted `SearchLocation` id with the score result.
 2. The client sends that id, the current mobility profile, and one question to `POST /api/locations/[propertyId]/chat`.
-3. The server loads the latest stored place groups and recomputes scores for the selected profile.
+3. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile.
 4. The context builder keeps the score breakdown and up to five nearest amenities per category.
 5. The analyst sends that structured context to the OpenAI Responses API and returns only the answer text.
 
-The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, and distinguish facts from interpretation. The request sets `store: false`, disabling storage for later retrieval through the Responses API. Conversation messages live only in the current browser component and reset when the location or mobility profile changes.
+### Saved-location comparison request flow
 
-Current MVP boundaries: no RAG, web search, persistent conversation history, autonomous tools, map actions, or property comparison chat.
+1. The comparison panel loads deterministic scores for two scored saved locations through `GET /api/compare`.
+2. The client sends both location IDs, the current profile, and one question to `POST /api/locations/compare/chat`.
+3. The route requires a session and verifies that both locations are saved by that user.
+4. The server builds the same grounded context independently for each location and labels them Location A and Location B.
+5. The analyst explains meaningful differences, ties, trade-offs, and conditional recommendations without forcing a winner.
+
+The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, connect evidence to practical renter implications, and distinguish facts from interpretation. Requests use the environment-selected `OPENAI_MODEL`, medium reasoning effort, medium text verbosity, a 1,200-token output ceiling, a 20-second timeout, and `store: false`. Conversation messages live only in their current browser components. Single-location messages reset when the location or mobility profile changes; comparison messages reset when the selected pair or profile changes. Enter sends a question and Shift+Enter inserts a newline.
+
+Current MVP boundaries: no RAG, web search, persistent conversation history, autonomous tools, or map actions.
 
 ## Persistence and Cache
 
@@ -411,7 +426,7 @@ Application variables:
 | GOOGLE_MAPS_API_KEY | Yes | Server-only autocomplete, geocoding, place retrieval, and temporary public-transport routing |
 | GEOAPIFY_API_KEY | Yes | Server-only indicative driving time to Melbourne CBD |
 | OPENAI_API_KEY | For AI analyst | Server-only OpenAI credential used by the grounded location chat |
-| OPENAI_MODEL | For AI analyst | Server-only model name; development currently uses `gpt-5-mini` |
+| OPENAI_MODEL | For AI analyst | Server-only model selected by the environment; the tracked Docker example defaults to `gpt-5-mini` |
 | NEXT_PUBLIC_MAPS_API_KEY | For live map | Browser-visible Maps JavaScript key |
 | BETTER_AUTH_SECRET | Yes | Server-only stable auth and token-encryption secret |
 | BETTER_AUTH_URL | Yes | Canonical application origin for auth |
@@ -493,7 +508,7 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 4. npm test
 5. npm run build with non-secret placeholder configuration
 
-The current 53-test suite across 10 files covers:
+The current 80-test suite across 15 files covers:
 
 - scoring behaviour and invariants;
 - formatting, coordinate parsing, distance, and time utilities;
@@ -502,7 +517,10 @@ The current 53-test suite across 10 files covers:
 - favourites and rent-estimate route behavior;
 - authentication email configuration and delivery callbacks;
 - community-rent medians, adaptive radii, report upserts, and profile suggestions;
-- CBD driving/transit response parsing and Melbourne daylight-saving calculations.
+- CBD driving/transit response parsing and Melbourne daylight-saving calculations;
+- grounded AI context construction, OpenAI request configuration, response parsing, and failure mapping;
+- single-location and authenticated saved-location comparison chat routes;
+- the invariant that the car-owner profile never lowers category or overall scores.
 
 The tests mock provider, auth, or database dependencies where appropriate. CI does not require a live database or external network calls.
 
@@ -558,7 +576,7 @@ Priorities are intentionally ordered around current needs rather than speculativ
 ### 2. Reliability and test coverage
 
 - Add focused tests for cache hits, expiry, persistence failure, and provider errors.
-- Add authentication-flow and comparison-authorisation tests.
+- Add authentication-flow tests and, after protecting `GET /api/compare`, focused authorisation tests for that route.
 - Add one browser smoke flow covering search, map selection, save, and comparison.
 - Add structured error reporting before broader usage.
 
