@@ -6,7 +6,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 
 ## What You Can Do
 
-- Search Australian addresses and suburbs with autocomplete.
+- Start with a short usage guide and example suburbs, or search Australian addresses with autocomplete. No account is needed to search.
 - Review nearby groceries, food, health, fitness, shopping, services, fuel, and transport.
 - Switch between no-car and car-owner views.
 - Explore category-coloured amenities on an interactive map.

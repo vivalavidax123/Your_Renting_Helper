@@ -37,6 +37,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 ### Implemented
 
+- Guided welcome screen with example-suburb searches and an illustrative map preview; result panels stay hidden until a successful search.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
 - No-car and car-owner scoring profiles.
@@ -167,13 +168,14 @@ This structure is sufficient for the current project. Do not add repositories, d
 
 ### Browser flow
 
-1. useAutocomplete waits 250 ms after input, requests /api/autocomplete, and supports keyboard selection.
-2. Submitting the form requests /api/geocode.
-3. useLocationSearch requests /api/places with coordinates and location metadata.
-4. The matched address and amenity groups are committed together. Persisted results navigate to /locations/[propertyId]?profile=...; direct visits read stored evidence through GET /api/locations/[propertyId] without a provider refresh.
-5. CbdTravelCard and RentalInsights independently request /api/cbd-travel and /api/rent-estimates for the committed location.
-6. The client validates each API envelope before updating result state.
-7. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
+1. The initial welcome screen makes no amenities, CBD, rent, map-library, or AI requests. Example buttons explicitly submit their suburb through the normal search flow.
+2. useAutocomplete waits 250 ms after input, requests /api/autocomplete, and supports keyboard selection.
+3. Submitting the form requests /api/geocode.
+4. useLocationSearch requests /api/places with coordinates and location metadata.
+5. The matched address and amenity groups are committed together. Persisted results navigate to /locations/[propertyId]?profile=...; direct visits read stored evidence through GET /api/locations/[propertyId] without a provider refresh.
+6. CbdTravelCard and RentalInsights independently request /api/cbd-travel and /api/rent-estimates for the committed location.
+7. The client validates each API envelope before updating result state.
+8. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
 
 ### Places route flow
 

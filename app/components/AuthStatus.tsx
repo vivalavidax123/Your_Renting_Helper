@@ -10,7 +10,7 @@ export function AuthStatus() {
   const { data: session, isPending } = authClient.useSession();
 
   if (isPending) {
-    return null;
+    return <span role="status" aria-label="Checking sign-in" className="h-5 w-16 rounded bg-surface-raised" />;
   }
 
   if (!session) {
@@ -26,7 +26,7 @@ export function AuthStatus() {
 
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="text-ink-muted">{session.user.email}</span>
+      <span className="max-w-40 truncate text-ink-muted" title={session.user.email}>{session.user.email}</span>
       <button
         type="button"
         onClick={() => authClient.signOut()}

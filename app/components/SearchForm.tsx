@@ -58,7 +58,7 @@ export function SearchForm({
               window.setTimeout(closeSuggestions, 120);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Try: Parramatta NSW"
+            placeholder="Try: South Yarra VIC"
             autoComplete="off"
             aria-autocomplete="list"
             aria-controls="location-suggestions"

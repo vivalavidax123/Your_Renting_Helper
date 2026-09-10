@@ -1,4 +1,5 @@
 "use client";
+import { Welcome } from "./Welcome";
 import { useExplore } from "./ExploreProvider";
 
 import { useCallback, useState } from "react";
@@ -30,7 +31,7 @@ export function Home() {
     changeProfile,
     handleSearch,
     searchFromHistory,
-  recent, saved, toggleSaved, canSave,
+  recent, saved, toggleSaved, canSave, result, busy, stage,
   } = useExplore();
 
   // A fresh object lets repeated clicks on the same place retrigger the map.
@@ -68,6 +69,8 @@ export function Home() {
     setShowReturnButton(false);
   }
 
+  if (!result) return <Welcome />;
+
   return (
     <main className="min-h-screen bg-page px-4 py-5 text-ink sm:px-6 lg:px-8">
       <section className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.25fr_0.75fr]">
@@ -75,11 +78,10 @@ export function Home() {
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold leading-tight text-ink">
-                Your Renting Helper
+                {location?.formattedAddress}
               </h1>
               <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
-                Compare everyday convenience, transport access, food, health,
-                fitness, and practical services around a rental.
+                Choose a profile, explore category scores, or ask a question about this location.
               </p>
             </div>
 
@@ -106,10 +108,12 @@ export function Home() {
             onSearch={handleSearch}
           />
 
+          {busy ? <p role="status" className="mt-4 text-sm text-accent-ink">{stage} The previous result is shown until the new search completes.</p> : null}
+          {searchState === "error" ? <p className="mt-2 text-xs text-ink-muted">The previous result is still shown.</p> : null}
           <RecentSearches
             recent={recent}
             saved={saved}
-            disabled={placesState === "loading"}
+            disabled={busy}
             canSave={canSave}
             onSelect={searchFromHistory}
             onToggleSaved={toggleSaved}
