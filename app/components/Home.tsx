@@ -1,23 +1,19 @@
 "use client";
+import { useExplore } from "./ExploreProvider";
 
 import { useCallback, useState } from "react";
-import { authClient } from "./lib/auth-client";
-import { useLocationSearch } from "./hooks/useLocationSearch";
-import { useSavedSearches } from "./hooks/useSavedSearches";
-import { AuthStatus } from "./components/AuthStatus";
-import { ComparePanel } from "./components/ComparePanel";
-import { LocationMap } from "./components/LocationMap";
-import { SearchForm } from "./components/SearchForm";
-import { ScoreBreakdown } from "./components/ScoreBreakdown";
-import { NearbyPlacesList } from "./components/NearbyPlacesList";
-import { AdditionalIndicators } from "./components/AdditionalIndicators";
-import { RecentSearches } from "./components/RecentSearches";
-import { ThemeToggle } from "./components/ThemeToggle";
-import { CbdTravelCard } from "./components/CbdTravelCard";
-import { RentalInsights } from "./components/RentalInsights";
-import { LocationAnalyst } from "./components/LocationAnalyst";
+import { ComparePanel } from "@/app/components/ComparePanel";
+import { LocationMap } from "@/app/components/LocationMap";
+import { SearchForm } from "@/app/components/SearchForm";
+import { ScoreBreakdown } from "@/app/components/ScoreBreakdown";
+import { NearbyPlacesList } from "@/app/components/NearbyPlacesList";
+import { AdditionalIndicators } from "@/app/components/AdditionalIndicators";
+import { RecentSearches } from "@/app/components/RecentSearches";
+import { CbdTravelCard } from "@/app/components/CbdTravelCard";
+import { RentalInsights } from "@/app/components/RentalInsights";
+import { LocationAnalyst } from "@/app/components/LocationAnalyst";
 
-export default function Home() {
+export function Home() {
   const {
     autocomplete,
     searchState,
@@ -34,14 +30,8 @@ export default function Home() {
     changeProfile,
     handleSearch,
     searchFromHistory,
-  } = useLocationSearch();
-
-  const { data: session } = authClient.useSession();
-
-  const { recent, saved, toggleSaved } = useSavedSearches(
-    placesState,
-    session?.user.id ?? null,
-  );
+  recent, saved, toggleSaved, canSave,
+  } = useExplore();
 
   // A fresh object lets repeated clicks on the same place retrigger the map.
   const [selectedPlace, setSelectedPlace] = useState<{ placeId: string } | null>(
@@ -80,10 +70,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-page px-4 py-5 text-ink sm:px-6 lg:px-8">
-      <div className="mx-auto mb-3 flex max-w-7xl items-center justify-end gap-3">
-        <ThemeToggle />
-        <AuthStatus />
-      </div>
       <section className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="rounded-lg border border-line bg-surface p-4 shadow-sm sm:p-5">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -124,7 +110,7 @@ export default function Home() {
             recent={recent}
             saved={saved}
             disabled={placesState === "loading"}
-            canSave={session !== null && session !== undefined}
+            canSave={canSave}
             onSelect={searchFromHistory}
             onToggleSaved={toggleSaved}
           />
@@ -175,7 +161,7 @@ export default function Home() {
           <RentalInsights
             key={location?.placeId ?? "no-location"}
             location={location}
-            canContribute={Boolean(session)}
+            canContribute={canSave}
           />
 
           <ComparePanel saved={saved} profile={profile} />

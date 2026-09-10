@@ -121,7 +121,7 @@ app/
     favourites/          Per-user saved locations
     geocode/             Address to coordinates
     history/             Per-user recent searches
-    locations/           Single-location and saved-location comparison chat
+    locations/           Stored-location evidence and grounded chat
     places/              Cache, providers, scoring, and persistence coordinator
     rent-estimates/       Community rent estimates and contributions
   components/            Dashboard, map, auth, theme, scores, and result views
@@ -137,7 +137,9 @@ app/
     types.ts              Shared domain and API types
   login/                  Sign-in and sign-up page
   layout.tsx              Metadata, fonts, analytics, and theme bootstrap
-  page.tsx                Main client composition root
+  (explore)/              Shared search workspace and direct location routes
+  components/ExploreProvider.tsx  Search/session state retained across workspace pages
+  components/ConversationProvider.tsx  In-memory location/pair transcripts
 prisma/
   migrations/             Committed PostgreSQL migrations
   schema.prisma           Application and Better Auth models
@@ -168,9 +170,10 @@ This structure is sufficient for the current project. Do not add repositories, d
 1. useAutocomplete waits 250 ms after input, requests /api/autocomplete, and supports keyboard selection.
 2. Submitting the form requests /api/geocode.
 3. useLocationSearch requests /api/places with coordinates and location metadata.
-4. CbdTravelCard and RentalInsights independently request /api/cbd-travel and /api/rent-estimates for the matched location.
-5. The client validates each API envelope before updating result state.
-6. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
+4. The matched address and amenity groups are committed together. Persisted results navigate to /locations/[propertyId]?profile=...; direct visits read stored evidence through GET /api/locations/[propertyId] without a provider refresh.
+5. CbdTravelCard and RentalInsights independently request /api/cbd-travel and /api/rent-estimates for the committed location.
+6. The client validates each API envelope before updating result state.
+7. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
 
 ### Places route flow
 
@@ -195,6 +198,7 @@ Profile changes recalculate scores in the browser from the existing place groups
 | POST /api/favourites | Signed in | Save a known location |
 | DELETE /api/favourites | Signed in | Remove a saved location |
 | GET /api/compare | Public at route level | Return the newest stored score snapshots for two location IDs |
+| GET /api/locations/[propertyId] | Public | Read stored location metadata, raw groups and timestamp without user history or paid refresh |
 | POST /api/locations/[propertyId]/chat | Public | Answer one grounded question about a stored location and selected mobility profile |
 | POST /api/locations/compare/chat | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations |
 | GET /api/cbd-travel | Public | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD |
@@ -344,9 +348,9 @@ The result page includes a lightweight single-location chat panel, and the saved
 4. The server builds the same grounded context independently for each location and labels them Location A and Location B.
 5. The analyst explains meaningful differences, ties, trade-offs, and conditional recommendations without forcing a winner.
 
-The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, connect evidence to practical renter implications, and distinguish facts from interpretation. Requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. Conversation messages live only in their current browser components. Single-location messages reset when the location changes; comparison messages reset when the selected pair changes. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
+The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, connect evidence to practical renter implications, and distinguish facts from interpretation. Requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. ConversationProvider retains messages and drafts in memory per location or ordered comparison pair across workspace navigation. Confirmed account changes clear workspace state; initial session resolution does not erase anonymous work. Reloading or leaving the workspace starts fresh conversations. Route departure aborts active replies, preserves their text, and marks them interrupted. Clear conversation removes only the current transcript and draft. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
 
-Current MVP boundaries: no RAG, web search, persistent conversation history, autonomous tools, or map actions.
+Current MVP boundaries: no RAG, web search, durable conversation storage, model memory of earlier questions, autonomous tools, or map actions. Each request still sends one question; visible transcript retention does not add model conversation memory.
 
 ## Persistence and Cache
 

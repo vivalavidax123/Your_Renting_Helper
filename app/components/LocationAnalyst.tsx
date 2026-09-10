@@ -1,8 +1,9 @@
 "use client";
+import { useConversation } from "./ConversationProvider";
 
-import { useEffect, useRef, useState } from "react";
+
 import type { WeightProfile } from "@/app/lib/categories";
-import { readApiResult, readTextStream } from "@/app/lib/api";
+
 import type { RequestState } from "@/app/lib/types";
 
 const suggestedQuestions = [
@@ -13,11 +14,6 @@ const suggestedQuestions = [
   "What should I verify before renting here?",
 ];
 
-type ChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-  profile: WeightProfile;
-};
 
 export function LocationAnalyst({
   propertyId,
@@ -28,79 +24,9 @@ export function LocationAnalyst({
   profile: WeightProfile;
   placesState: RequestState;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [question, setQuestion] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading">("idle");
-  const [error, setError] = useState("");
-  const controllerRef = useRef<AbortController | null>(null);
   const available = placesState === "success" && propertyId !== null;
-
-  useEffect(() => {
-    return () => controllerRef.current?.abort();
-  }, []);
-
-  async function askQuestion(rawQuestion: string) {
-    const trimmedQuestion = rawQuestion.trim();
-
-    if (!available || !trimmedQuestion || status === "loading") {
-      return;
-    }
-
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    setMessages((current) => [
-      ...current,
-      { role: "user", content: trimmedQuestion, profile },
-    ]);
-    setQuestion("");
-    setError("");
-    setStatus("loading");
-    let assistantStarted = false;
-
-    try {
-      const response = await fetch(`/api/locations/${propertyId}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmedQuestion, profile }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const data = await readApiResult<Record<string, never>>(
-          response,
-          () => true,
-        );
-        setError(data.ok ? "Could not analyse this location." : data.error);
-        return;
-      }
-
-      assistantStarted = true;
-      setMessages((current) => [
-        ...current,
-        { role: "assistant", content: "", profile },
-      ]);
-      await readTextStream(response, (answer) => {
-        setMessages((current) => [
-          ...current.slice(0, -1),
-          { role: "assistant", content: answer, profile },
-        ]);
-      });
-    } catch (requestError) {
-      if (requestError instanceof Error && requestError.name === "AbortError") {
-        return;
-      }
-
-      if (assistantStarted) {
-        setMessages((current) => current.slice(0, -1));
-      }
-      setError("The location analyst could not be reached. Please try again.");
-    } finally {
-      if (!controller.signal.aborted) {
-        setStatus("idle");
-        controllerRef.current = null;
-      }
-    }
-  }
+  const { messages, question, setQuestion, status, error, askQuestion, clearConversation } = useConversation(
+    "location:" + propertyId, "/api/locations/" + propertyId + "/chat", profile, available);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,7 +51,7 @@ export function LocationAnalyst({
       ? "This result could not be saved, so grounded analysis is unavailable. Search again to retry."
       : "Search for a location before asking the analyst.";
   const awaitingFirstChunk =
-    status === "loading" && messages.at(-1)?.role !== "assistant";
+    status === "loading" && !messages.at(-1)?.content;
 
   return (
     <section className="mt-6 border-t border-line pt-5">
@@ -151,7 +77,7 @@ export function LocationAnalyst({
           >
             {messages.map((message, index) => (
               <div
-                key={`${message.role}-${index}`}
+                key={message.id}
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
@@ -167,6 +93,7 @@ export function LocationAnalyst({
                     </p>
                   ) : null}
                   {message.content}
+                  {message.interrupted ? <p className="text-xs text-ink-muted">Answer interrupted. Please ask again.</p> : null}
                   {status === "loading" &&
                   message.role === "assistant" &&
                   index === messages.length - 1 ? (
@@ -217,6 +144,7 @@ export function LocationAnalyst({
         </div>
       </form>
 
+      {messages.length ? <button type="button" onClick={clearConversation} className="mt-3 text-xs text-ink-muted underline">Clear conversation</button> : null}
       {error ? (
         <p
           role="alert"

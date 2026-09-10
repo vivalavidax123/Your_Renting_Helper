@@ -188,3 +188,12 @@ export type TransitlandStop = {
 export type TransitlandStopsResponse = {
   stops?: TransitlandStop[];
 };
+
+// One committed location result, reused by overview and evidence routes.
+export type LocationResult = {
+  location: GeocodeLocation;
+  groups: PlaceGroup[];
+  propertyId: string | null;
+  fetchedAt: string;
+  cached: boolean;
+};

@@ -1,318 +1,99 @@
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { WeightProfile } from "../lib/categories";
 import { isJsonRecord, readApiResult } from "../lib/api";
 import { useAutocomplete } from "./useAutocomplete";
 import { scorePlaceGroups } from "../lib/scoring";
-import type {
-  GeocodeLocation,
-  RequestState,
-  PlaceGroup,
-  CategoryScore,
-  RecentSearch,
-} from "../lib/types";
+import type { GeocodeLocation, LocationResult, RecentSearch, RequestState } from "../lib/types";
 
-function isGeocodePayload(value: Record<string, unknown>) {
-  const location = value.location;
-
-  return (
-    isJsonRecord(location) &&
-    typeof location.query === "string" &&
-    typeof location.formattedAddress === "string" &&
-    typeof location.placeId === "string" &&
-    typeof location.latitude === "number" &&
-    typeof location.longitude === "number" &&
-    typeof location.locationType === "string" &&
-    Array.isArray(location.types)
-  );
+function isLocation(value: unknown) {
+  return isJsonRecord(value) && typeof value.formattedAddress === "string" &&
+    typeof value.query === "string" && typeof value.placeId === "string" &&
+    typeof value.latitude === "number" && typeof value.longitude === "number" &&
+    typeof value.locationType === "string" && Array.isArray(value.types);
+}
+function isResult(value: Record<string, unknown>) {
+  return Array.isArray(value.groups) && typeof value.fetchedAt === "string" &&
+    typeof value.cached === "boolean" && (typeof value.propertyId === "string" || value.propertyId === null);
 }
 
-function isPlacesPayload(value: Record<string, unknown>) {
-  return (
-    Array.isArray(value.groups) &&
-    Array.isArray(value.scores) &&
-    typeof value.overallScore === "number" &&
-    (typeof value.propertyId === "string" || value.propertyId === null) &&
-    typeof value.cached === "boolean" &&
-    typeof value.fetchedAt === "string"
-  );
-}
+export function useLocationSearch(profile: WeightProfile) {
+  const router = useRouter();
+  const [navigating, startTransition] = useTransition();
+  const [result, setResult] = useState<LocationResult | null>(null);
+  const [state, setState] = useState<RequestState>("idle");
+  const [stage, setStage] = useState("");
+  const [error, setError] = useState("");
+  const autocomplete = useAutocomplete(state);
+  const controllerRef = useRef<AbortController | null>(null);
+  const cache = useRef(new Map<string, LocationResult>());
+  const cancelSearch = useCallback(() => { controllerRef.current?.abort(); }, []);
+  useEffect(() => cancelSearch, [cancelSearch]);
 
-type SearchResultState = {
-  status: RequestState;
-  location: GeocodeLocation | null;
-  error: string;
-};
-
-type PlacesResultState = {
-  status: RequestState;
-  groups: PlaceGroup[];
-  scores: CategoryScore[];
-  overallScore: number | null;
-  propertyId: string | null;
-  error: string;
-  fromCache: boolean;
-};
-
-const initialSearchResult: SearchResultState = {
-  status: "idle",
-  location: null,
-  error: "",
-};
-
-const emptyPlacesResult: PlacesResultState = {
-  status: "idle",
-  groups: [],
-  scores: [],
-  overallScore: null,
-  propertyId: null,
-  error: "",
-  fromCache: false,
-};
-
-export function useLocationSearch() {
-  const [searchResult, setSearchResult] = useState(initialSearchResult);
-  const [placesResult, setPlacesResult] = useState(emptyPlacesResult);
-  const autocomplete = useAutocomplete(searchResult.status);
-  const [profile, setProfile] = useState<WeightProfile>("carFree");
-  
-  const geocodeRequestId = useRef(0);
-  const placesRequestId = useRef(0);
-  const geocodeController = useRef<AbortController | null>(null);
-  const placesController = useRef<AbortController | null>(null);
-
-  function cancelGeocodeRequest() {
-    geocodeRequestId.current += 1;
-    geocodeController.current?.abort();
-    geocodeController.current = null;
-  }
-
-  function cancelPlacesRequest() {
-    placesRequestId.current += 1;
-    placesController.current?.abort();
-    placesController.current = null;
-  }
-
-  // Requests may still be active when navigating away. Invalidate their IDs
-  // as well as aborting them so a response already queued by the browser can
-  // never update state after this hook unmounts.
-  useEffect(() => {
-    return () => {
-      geocodeRequestId.current += 1;
-      placesRequestId.current += 1;
-      geocodeController.current?.abort();
-      placesController.current?.abort();
-    };
+  const openLocation = useCallback(async (id: string) => {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setState("loading"); setStage("Opening saved location…"); setError("");
+    try {
+      let next = cache.current.get(id);
+      if (!next) {
+        const response = await fetch('/api/locations/' + encodeURIComponent(id), { signal: controller.signal });
+        const data = await readApiResult<LocationResult>(response, value => isResult(value) && isLocation(value.location));
+        if (!response.ok || !data.ok) throw new Error(data.ok ? "Could not open this location." : data.error);
+        next = data;
+      }
+      if (controller.signal.aborted) return;
+      cache.current.set(id, next); setResult(next); setState("success");
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setError(error instanceof Error ? error.message : "Could not open this location."); setState("error");
+      }
+    }
   }, []);
 
-  async function loadNearbyPlaces(nextLocation: GeocodeLocation) {
-    cancelPlacesRequest();
-
-    const requestId = placesRequestId.current;
-    const controller = new AbortController();
-    placesController.current = controller;
-
-    setPlacesResult({ ...emptyPlacesResult, status: "loading" });
-
+  async function runSearch(query: string, knownLocation?: GeocodeLocation) {
+    controllerRef.current?.abort();
+    if (query.trim().length < 3) { setError("Enter at least 3 characters to search."); setState("error"); return; }
+    const controller = new AbortController(); controllerRef.current = controller;
+    autocomplete.selectQuery(query.trim());
+    setState("loading"); setError(""); setStage("Finding location…");
     try {
-      const placesUrl = new URLSearchParams({
-        lat: String(nextLocation.latitude),
-        lng: String(nextLocation.longitude),
-        query: nextLocation.query,
-        address: nextLocation.formattedAddress,
-        placeId: nextLocation.placeId,
-        locationType: nextLocation.locationType,
-        profile,
-      });
-      const response = await fetch(`/api/places?${placesUrl.toString()}`, {
-        signal: controller.signal,
-      });
-      const data = await readApiResult<{
-        groups: PlaceGroup[];
-        scores: CategoryScore[];
-        overallScore: number;
-        propertyId: string | null;
-        cached: boolean;
-        fetchedAt: string;
-      }>(response, isPlacesPayload);
-
-      if (
-        controller.signal.aborted ||
-        requestId !== placesRequestId.current
-      ) {
-        return;
+      let location = knownLocation;
+      if (!location) {
+        const response = await fetch('/api/geocode?query=' + encodeURIComponent(query.trim()), { signal: controller.signal });
+        const data = await readApiResult<{ location: GeocodeLocation }>(response, value => isLocation(value.location));
+        if (!response.ok || !data.ok) throw new Error(data.ok ? "Could not find this location." : data.error);
+        location = data.location;
       }
-
-      if (!response.ok || !data.ok) {
-        setPlacesResult({
-          ...emptyPlacesResult,
-          status: "error",
-          error: data.ok ? "Could not load nearby places." : data.error,
-        });
-        return;
-      }
-
-      setPlacesResult({
-        status: "success",
-        groups: data.groups,
-        scores: data.scores,
-        overallScore: data.overallScore,
-        propertyId: data.propertyId,
-        error: "",
-        fromCache: data.cached,
+      if (controller.signal.aborted) return;
+      setStage("Finding nearby places and calculating scores…");
+      const params = new URLSearchParams({ lat: String(location.latitude), lng: String(location.longitude), query: location.query,
+        address: location.formattedAddress, placeId: location.placeId, locationType: location.locationType, profile });
+      const response = await fetch('/api/places?' + params, { signal: controller.signal });
+      const data = await readApiResult<Omit<LocationResult, "location">>(response, isResult);
+      if (!response.ok || !data.ok) throw new Error(data.ok ? "Could not load nearby places." : data.error);
+      if (controller.signal.aborted) return;
+      const next = { ...data, location };
+      if (next.propertyId) cache.current.set(next.propertyId, next);
+      startTransition(() => {
+        setResult(next); setState("success");
+        router.push(next.propertyId ? '/locations/' + encodeURIComponent(next.propertyId) + '?profile=' + profile : '/?profile=' + profile);
       });
-    } catch {
-      if (
-        controller.signal.aborted ||
-        requestId !== placesRequestId.current
-      ) {
-        return;
-      }
-
-      setPlacesResult({
-        ...emptyPlacesResult,
-        status: "error",
-        error: "Nearby places failed to load. Try searching again.",
-      });
-    } finally {
-      if (requestId === placesRequestId.current) {
-        placesController.current = null;
-      }
+    } catch (error) {
+      if (!controller.signal.aborted) { setError(error instanceof Error ? error.message : "Search failed. Please try again."); setState("error"); }
     }
   }
-
-  async function handleSearch() {
-    autocomplete.closeSuggestions();
-    // A submitted search supersedes both an earlier geocode and any place
-    // result still loading for the previous location.
-    cancelGeocodeRequest();
-    cancelPlacesRequest();
-
-    const trimmedQuery = autocomplete.query.trim();
-
-    if (trimmedQuery.length < 3) {
-      setSearchResult((current) => ({
-        ...current,
-        status: "error",
-        error: "Enter at least 3 characters to search.",
-      }));
-      return;
-    }
-
-    const requestId = geocodeRequestId.current;
-    const controller = new AbortController();
-    geocodeController.current = controller;
-
-    setSearchResult((current) => ({
-      ...current,
-      status: "loading",
-      error: "",
-    }));
-    setPlacesResult(emptyPlacesResult);
-
-    try {
-      const response = await fetch(
-        `/api/geocode?query=${encodeURIComponent(trimmedQuery)}`,
-        { signal: controller.signal },
-      );
-      const data = await readApiResult<{ location: GeocodeLocation }>(
-        response,
-        isGeocodePayload,
-      );
-
-      if (
-        controller.signal.aborted ||
-        requestId !== geocodeRequestId.current
-      ) {
-        return;
-      }
-
-      if (!response.ok || !data.ok) {
-        setSearchResult((current) => ({
-          ...current,
-          status: "error",
-          error: data.ok ? "Could not geocode this location." : data.error,
-        }));
-        return;
-      }
-
-      setSearchResult({ status: "success", location: data.location, error: "" });
-      await loadNearbyPlaces(data.location);
-    } catch {
-      if (
-        controller.signal.aborted ||
-        requestId !== geocodeRequestId.current
-      ) {
-        return;
-      }
-
-      setSearchResult((current) => ({
-        ...current,
-        status: "error",
-        error: "Search failed. Check your connection and try again.",
-      }));
-    } finally {
-      if (requestId === geocodeRequestId.current) {
-        geocodeController.current = null;
-      }
-    }
-  }
-
-  function changeProfile(nextProfile: WeightProfile) {
-    setProfile(nextProfile);
-
-    // Profiles change only scoring. Reuse the existing amenity groups so the
-    // map keeps the same instance, markers, viewport, and open info window.
-    setPlacesResult((current) => {
-      if (current.status !== "success") {
-        return current;
-      }
-
-      const { scores, overallScore } = scorePlaceGroups(
-        current.groups,
-        nextProfile,
-      );
-
-      return { ...current, scores, overallScore };
-    });
-  }
-
-  function searchFromHistory(search: RecentSearch) {
-    // A history selection supersedes a typed search that may still be
-    // geocoding. loadNearbyPlaces cancels any older places request itself.
-    cancelGeocodeRequest();
-
-    const nextLocation: GeocodeLocation = {
-      query: search.query,
-      formattedAddress: search.formattedAddress,
-      placeId: search.placeId,
-      latitude: search.latitude,
-      longitude: search.longitude,
-      locationType: search.locationType,
-      types: [],
-    };
-
-    // The saved coordinates make geocoding unnecessary; setting the query as
-    // the selected suggestion also keeps autocomplete from reopening.
-    autocomplete.selectQuery(search.query);
-    setSearchResult({ status: "success", location: nextLocation, error: "" });
-    void loadNearbyPlaces(nextLocation);
-  }
-
+  const scored = scorePlaceGroups(result?.groups ?? [], profile);
   return {
-    autocomplete,
-    searchState: searchResult.status,
-    location: searchResult.location,
-    error: searchResult.error,
-    placesState: placesResult.status,
-    placeGroups: placesResult.groups,
-    categoryScores: placesResult.scores,
-    overallScore: placesResult.overallScore,
-    propertyId: placesResult.propertyId,
-    placesError: placesResult.error,
-    resultFromCache: placesResult.fromCache,
-    profile,
-    changeProfile,
-    handleSearch,
-    searchFromHistory,
+    autocomplete, result, searchState: state, busy: state === "loading" || navigating, stage,
+    location: result?.location ?? null, error,
+    placesState: (result ? "success" : state) as RequestState,
+    placeGroups: result?.groups ?? [], categoryScores: scored.scores,
+    overallScore: result ? scored.overallScore : null, propertyId: result?.propertyId ?? null,
+    fetchedAt: result?.fetchedAt ?? null, placesError: error, resultFromCache: result?.cached ?? false,
+    handleSearch: (query = autocomplete.query) => runSearch(query),
+    searchFromHistory: (search: RecentSearch) => runSearch(search.query, { ...search, types: [] }),
+    openLocation, cancelSearch,
   };
 }

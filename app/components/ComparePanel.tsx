@@ -1,8 +1,9 @@
 "use client";
+import { useConversation } from "./ConversationProvider";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { WeightProfile } from "../lib/categories";
-import { isJsonRecord, readApiResult, readTextStream } from "../lib/api";
+import { isJsonRecord, readApiResult } from "../lib/api";
 import type {
   ComparisonSide,
   RecentSearch,
@@ -17,11 +18,6 @@ type ComparePanelProps = {
   profile: WeightProfile;
 };
 
-type ChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-  profile: WeightProfile;
-};
 
 const suggestedComparisonQuestions = [
   "Which is easier without a car?",
@@ -90,79 +86,8 @@ function ComparisonAnalyst({
   locationB: ComparisonSide;
   profile: WeightProfile;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [question, setQuestion] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading">("idle");
-  const [error, setError] = useState("");
-  const controllerRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    return () => controllerRef.current?.abort();
-  }, []);
-
-  async function askQuestion(rawQuestion: string) {
-    const trimmedQuestion = rawQuestion.trim();
-
-    if (!trimmedQuestion || status === "loading") {
-      return;
-    }
-
-    const propertyIds = [locationA.id, locationB.id];
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    setMessages((current) => [
-      ...current,
-      { role: "user", content: trimmedQuestion, profile },
-    ]);
-    setQuestion("");
-    setError("");
-    setStatus("loading");
-    let assistantStarted = false;
-
-    try {
-      const response = await fetch("/api/locations/compare/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ propertyIds, question: trimmedQuestion, profile }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const data = await readApiResult<Record<string, never>>(
-          response,
-          () => true,
-        );
-        setError(data.ok ? "Could not compare these locations." : data.error);
-        return;
-      }
-
-      assistantStarted = true;
-      setMessages((current) => [
-        ...current,
-        { role: "assistant", content: "", profile },
-      ]);
-      await readTextStream(response, (answer) => {
-        setMessages((current) => [
-          ...current.slice(0, -1),
-          { role: "assistant", content: answer, profile },
-        ]);
-      });
-    } catch (requestError) {
-      if (requestError instanceof Error && requestError.name === "AbortError") {
-        return;
-      }
-
-      if (assistantStarted) {
-        setMessages((current) => current.slice(0, -1));
-      }
-      setError("The comparison analyst could not be reached. Please try again.");
-    } finally {
-      if (!controller.signal.aborted) {
-        setStatus("idle");
-        controllerRef.current = null;
-      }
-    }
-  }
+  const { messages, question, setQuestion, status, error, askQuestion, clearConversation } = useConversation(
+    "comparison:" + locationA.id + "|" + locationB.id, "/api/locations/compare/chat", profile, true, [locationA.id, locationB.id]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -183,7 +108,7 @@ function ComparisonAnalyst({
   }
 
   const awaitingFirstChunk =
-    status === "loading" && messages.at(-1)?.role !== "assistant";
+    status === "loading" && !messages.at(-1)?.content;
 
   return (
     <section className="mt-5 border-t border-line pt-4">
@@ -206,7 +131,7 @@ function ComparisonAnalyst({
           <div className="max-h-64 space-y-3 overflow-y-auto p-3" aria-live="polite">
             {messages.map((message, index) => (
               <div
-                key={`${message.role}-${index}`}
+                key={message.id}
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
@@ -222,6 +147,7 @@ function ComparisonAnalyst({
                     </p>
                   ) : null}
                   {message.content}
+                  {message.interrupted ? <p className="text-xs text-ink-muted">Answer interrupted. Please ask again.</p> : null}
                   {status === "loading" &&
                   message.role === "assistant" &&
                   index === messages.length - 1 ? (
@@ -268,6 +194,7 @@ function ComparisonAnalyst({
         </div>
       </form>
 
+      {messages.length ? <button type="button" onClick={clearConversation} className="mt-3 text-xs text-ink-muted underline">Clear conversation</button> : null}
       {error ? (
         <p
           role="alert"
