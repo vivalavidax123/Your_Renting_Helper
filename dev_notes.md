@@ -57,7 +57,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Persistent light and dark themes across the main and login views.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
-- Two-location score comparison from saved results, with an always-visible empty state before enough places are saved.
+- Two-location score comparison from saved results, with an empty state in the result view before enough places are saved.
 - Grounded AI analysis for a searched location and authenticated AI comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.
