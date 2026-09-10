@@ -532,7 +532,6 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 ### Immediate correctness and security
 
-- RentalInsights is keyed by location place ID, so its form and feedback reset for each searched location.
 - Public rent estimates currently reveal a median with only one or two reports. A one-report median is that contributor's exact submitted rent, and repeated nearby submissions from one account can influence an area estimate.
 - /api/compare does not authenticate the caller or verify that both location IDs belong to the caller's saved list.
 - The cache badge tooltip still says "within the last 24 hours" even though the current cache TTL is seven days.
