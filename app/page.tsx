@@ -139,7 +139,7 @@ export default function Home() {
           />
 
           <LocationAnalyst
-            key={`${propertyId ?? "no-location"}-${profile}`}
+            key={propertyId ?? "no-location"}
             propertyId={propertyId}
             profile={profile}
             placesState={placesState}

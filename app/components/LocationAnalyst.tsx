@@ -16,6 +16,7 @@ const suggestedQuestions = [
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  profile: WeightProfile;
 };
 
 export function LocationAnalyst({
@@ -49,7 +50,7 @@ export function LocationAnalyst({
     controllerRef.current = controller;
     setMessages((current) => [
       ...current,
-      { role: "user", content: trimmedQuestion },
+      { role: "user", content: trimmedQuestion, profile },
     ]);
     setQuestion("");
     setError("");
@@ -76,12 +77,12 @@ export function LocationAnalyst({
       assistantStarted = true;
       setMessages((current) => [
         ...current,
-        { role: "assistant", content: "" },
+        { role: "assistant", content: "", profile },
       ]);
       await readTextStream(response, (answer) => {
         setMessages((current) => [
           ...current.slice(0, -1),
-          { role: "assistant", content: answer },
+          { role: "assistant", content: answer, profile },
         ]);
       });
     } catch (requestError) {
@@ -160,6 +161,11 @@ export function LocationAnalyst({
                       : "border border-line bg-surface text-ink-soft"
                   }`}
                 >
+                  {message.role === "assistant" ? (
+                    <p className="mb-1 text-xs text-ink-muted">
+                      Answered using {message.profile === "carFree" ? "No car" : "Car owner"}
+                    </p>
+                  ) : null}
                   {message.content}
                   {status === "loading" &&
                   message.role === "assistant" &&

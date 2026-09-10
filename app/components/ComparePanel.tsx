@@ -20,6 +20,7 @@ type ComparePanelProps = {
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  profile: WeightProfile;
 };
 
 const suggestedComparisonQuestions = [
@@ -111,7 +112,7 @@ function ComparisonAnalyst({
     controllerRef.current = controller;
     setMessages((current) => [
       ...current,
-      { role: "user", content: trimmedQuestion },
+      { role: "user", content: trimmedQuestion, profile },
     ]);
     setQuestion("");
     setError("");
@@ -138,12 +139,12 @@ function ComparisonAnalyst({
       assistantStarted = true;
       setMessages((current) => [
         ...current,
-        { role: "assistant", content: "" },
+        { role: "assistant", content: "", profile },
       ]);
       await readTextStream(response, (answer) => {
         setMessages((current) => [
           ...current.slice(0, -1),
-          { role: "assistant", content: answer },
+          { role: "assistant", content: answer, profile },
         ]);
       });
     } catch (requestError) {
@@ -215,6 +216,11 @@ function ComparisonAnalyst({
                       : "border border-line bg-surface text-ink-soft"
                   }`}
                 >
+                  {message.role === "assistant" ? (
+                    <p className="mb-1 text-xs text-ink-muted">
+                      Answered using {message.profile === "carFree" ? "No car" : "Car owner"}
+                    </p>
+                  ) : null}
                   {message.content}
                   {status === "loading" &&
                   message.role === "assistant" &&
@@ -424,7 +430,7 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
           </tbody>
           </table>
           <ComparisonAnalyst
-            key={`${activeResult.a.id}|${activeResult.b.id}|${profile}`}
+            key={`${activeResult.a.id}|${activeResult.b.id}`}
             locationA={activeResult.a}
             locationB={activeResult.b}
             profile={profile}

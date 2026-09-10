@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-09-03.
+Status reviewed against committed `HEAD` on 2026-09-10.
 
 | Area | Current state |
 | --- | --- |
@@ -344,7 +344,7 @@ The result page includes a lightweight single-location chat panel, and the saved
 4. The server builds the same grounded context independently for each location and labels them Location A and Location B.
 5. The analyst explains meaningful differences, ties, trade-offs, and conditional recommendations without forcing a winner.
 
-The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, connect evidence to practical renter implications, and distinguish facts from interpretation. Requests use the environment-selected `OPENAI_MODEL`, medium reasoning effort, medium text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. Conversation messages live only in their current browser components. Single-location messages reset when the location or mobility profile changes; comparison messages reset when the selected pair or profile changes. Enter sends a question and Shift+Enter inserts a newline.
+The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, connect evidence to practical renter implications, and distinguish facts from interpretation. Requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. Conversation messages live only in their current browser components. Single-location messages reset when the location changes; comparison messages reset when the selected pair changes. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
 
 Current MVP boundaries: no RAG, web search, persistent conversation history, autonomous tools, or map actions.
 
@@ -528,7 +528,7 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 ### Immediate correctness and security
 
-- RentalInsights restores a saved or suggested property profile only for the first searched location in its component lifetime. Form values and feedback can carry into a later location until this state is scoped per location.
+- RentalInsights is keyed by location place ID, so its form and feedback reset for each searched location.
 - Public rent estimates currently reveal a median with only one or two reports. A one-report median is that contributor's exact submitted rent, and repeated nearby submissions from one account can influence an area estimate.
 - /api/compare does not authenticate the caller or verify that both location IDs belong to the caller's saved list.
 - The cache badge tooltip still says "within the last 24 hours" even though the current cache TTL is seven days.
@@ -553,7 +553,8 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 ### Testing
 
-- No browser end-to-end suite.
+- Browser regression checks are local-only by owner preference; no browser suite or test dependency is committed.
+- The committed analyst request test still expects medium reasoning/verbosity, although the service uses xhigh/high. Its expectation correction is local-only by owner request, so the committed suite retains this known failure.
 - No live database integration suite.
 - No complete authentication-flow tests.
 - No component or browser test covering rent-form state across multiple searched locations.
@@ -566,7 +567,6 @@ Priorities are intentionally ordered around current needs rather than speculativ
 
 ### 1. Correctness and route hardening
 
-- Reset RentalInsights state for each searched location.
 - Require a minimum number of distinct contributors before publishing a community rent median.
 - Update the cache badge tooltip from 24 hours to seven days.
 - Require a session in /api/compare and verify both locations are saved by that user.
