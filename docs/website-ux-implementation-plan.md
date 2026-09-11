@@ -1,6 +1,6 @@
 # Website usability and navigation implementation plan
 
-Status: implementation in progress. Chat profile preservation is the first verified chunk.
+Status: implementation in progress. Chat profile preservation, shared navigation state, the welcome screen, clickable category routes, and supporting-evidence routes are implemented and verified.
 Reviewed: 10 September 2026. Basis: supplied screenshot and current repository source, including installed Next.js 16.2.6 routing documentation. Runtime timings and browser behaviour have not been measured in this review.
 
 ## 1. Outcome and scope

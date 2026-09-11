@@ -14,6 +14,7 @@ function isHistoryPayload(value: Record<string, unknown>) {
 // userId is a dependency because both lists are user-relative: signing in
 // or out must refetch so stars and the saved row reflect the new viewer.
 export function useSavedSearches(placesState: RequestState, userId: string | null) {
+  const [savedError, setSavedError] = useState("");
   const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [saved, setSaved] = useState<RecentSearch[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -32,9 +33,11 @@ export function useSavedSearches(placesState: RequestState, userId: string | nul
       fetch("/api/history").then((response) =>
         readApiResult<{ searches: RecentSearch[] }>(response, isHistoryPayload),
       ),
-      fetch("/api/favourites").then((response) =>
-        readApiResult<{ searches: RecentSearch[] }>(response, isHistoryPayload),
-      ),
+      userId
+        ? fetch("/api/favourites").then((response) =>
+            readApiResult<{ searches: RecentSearch[] }>(response, isHistoryPayload),
+          )
+        : Promise.resolve({ ok: true as const, searches: [] }),
     ])
       .then(([historyData, favouritesData]) => {
         if (cancelled) {
@@ -59,8 +62,9 @@ export function useSavedSearches(placesState: RequestState, userId: string | nul
   const toggleSaved = useCallback(async (search: RecentSearch) => {
     const isSaved = search.savedAt !== null;
 
+    setSavedError("");
     try {
-      await fetch(
+      const response = await fetch(
         isSaved ? `/api/favourites?id=${search.id}` : "/api/favourites",
         isSaved
           ? { method: "DELETE" }
@@ -70,10 +74,14 @@ export function useSavedSearches(placesState: RequestState, userId: string | nul
               body: JSON.stringify({ locationId: search.id }),
             },
       );
+      const data = await readApiResult<Record<string, never>>(response, () => true);
+      if (!response.ok || !data.ok) throw new Error(data.ok ? "Could not update saved locations." : data.error);
+    } catch (error) {
+      setSavedError(error instanceof Error ? error.message : "Could not update saved locations.");
     } finally {
       setRefreshKey((key) => key + 1);
     }
   }, []);
 
-  return { recent, saved, toggleSaved };
+  return { recent, saved, toggleSaved, savedError };
 }

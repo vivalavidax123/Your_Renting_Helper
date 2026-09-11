@@ -1,206 +1,36 @@
 "use client";
-import { Welcome } from "./Welcome";
+import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
-
-import { useCallback, useState } from "react";
-import { ComparePanel } from "@/app/components/ComparePanel";
-import { LocationMap } from "@/app/components/LocationMap";
-import { SearchForm } from "@/app/components/SearchForm";
-import { ScoreBreakdown } from "@/app/components/ScoreBreakdown";
-import { NearbyPlacesList } from "@/app/components/NearbyPlacesList";
-import { AdditionalIndicators } from "@/app/components/AdditionalIndicators";
-import { RecentSearches } from "@/app/components/RecentSearches";
-import { CbdTravelCard } from "@/app/components/CbdTravelCard";
-import { RentalInsights } from "@/app/components/RentalInsights";
-import { LocationAnalyst } from "@/app/components/LocationAnalyst";
-
+import { Welcome } from "./Welcome";
+import { ResultHeading } from "./ResultHeading";
+import { LocationMap } from "./LocationMap";
+import { SearchForm } from "./SearchForm";
+import { ScoreBreakdown } from "./ScoreBreakdown";
+import { RecentSearches } from "./RecentSearches";
+import { LocationAnalyst } from "./LocationAnalyst";
+const noScroll = () => {};
 export function Home() {
-  const {
-    autocomplete,
-    searchState,
-    location,
-    error,
-    placesState,
-    placeGroups,
-    categoryScores,
-    overallScore,
-    propertyId,
-    placesError,
-    resultFromCache,
-    profile,
-    changeProfile,
-    handleSearch,
-    searchFromHistory,
-  recent, saved, toggleSaved, canSave, result, busy, stage,
-  } = useExplore();
-
-  // A fresh object lets repeated clicks on the same place retrigger the map.
-  const [selectedPlace, setSelectedPlace] = useState<{ placeId: string } | null>(
-    null,
-  );
-
-  // Shown only after the page actually auto-scrolled to the map, so the
-  // user has a one-tap way back to the row they were reading.
-  const [showReturnButton, setShowReturnButton] = useState(false);
-
-  const handleAutoScroll = useCallback(() => setShowReturnButton(true), []);
-
-  // A new search replaces the rows the button would return to, so drop the
-  // button as soon as results start reloading. Adjusting state during render
-  // (guarded by a previous-value check) avoids an extra effect pass:
-  // https://react.dev/learn/you-might-not-need-an-effect
-  const [prevPlacesState, setPrevPlacesState] = useState(placesState);
-
-  if (prevPlacesState !== placesState) {
-    setPrevPlacesState(placesState);
-
-    if (placesState !== "success") {
-      setShowReturnButton(false);
-    }
-  }
-
-  function returnToSelectedRow() {
-    if (selectedPlace) {
-      document
-        .getElementById(`place-row-${selectedPlace.placeId}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-
-    setShowReturnButton(false);
-  }
-
-  if (!result) return <Welcome />;
-
-  return (
-    <main className="min-h-screen bg-page px-4 py-5 text-ink sm:px-6 lg:px-8">
-      <section className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="rounded-lg border border-line bg-surface p-4 shadow-sm sm:p-5">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold leading-tight text-ink">
-                {location?.formattedAddress}
-              </h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
-                Choose a profile, explore category scores, or ask a question about this location.
-              </p>
-            </div>
-
-            <div className="grid w-full grid-cols-[auto_1fr] items-center gap-3 rounded-lg border border-accent-line bg-accent-soft px-4 py-3 text-left sm:w-52">
-              <div className="flex size-16 items-center justify-center rounded-full border-[6px] border-accent bg-surface">
-                <span className="text-2xl font-bold text-accent-ink">
-                  {placesState === "loading" ? "..." : overallScore ?? "--"}
-                </span>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-accent-ink">
-                  {placesState === "success" ? "Overall score" : "Ready to score"}
-                </p>
-                <p className="text-xs font-medium text-accent-ink">out of 100</p>
-              </div>
-            </div>
-          </div>
-
-          <SearchForm
-            autocomplete={autocomplete}
-            searchState={searchState}
-            placesState={placesState}
-            error={error}
-            onSearch={handleSearch}
-          />
-
-          {busy ? <p role="status" className="mt-4 text-sm text-accent-ink">{stage} The previous result is shown until the new search completes.</p> : null}
-          {searchState === "error" ? <p className="mt-2 text-xs text-ink-muted">The previous result is still shown.</p> : null}
-          <RecentSearches
-            recent={recent}
-            saved={saved}
-            disabled={busy}
-            canSave={canSave}
-            onSelect={searchFromHistory}
-            onToggleSaved={toggleSaved}
-          />
-
-          <ScoreBreakdown
-            placesState={placesState}
-            categoryScores={categoryScores}
-            placesError={placesError}
-            resultFromCache={resultFromCache}
-            profile={profile}
-            onProfileChange={changeProfile}
-          />
-
-          <LocationAnalyst
-            key={propertyId ?? "no-location"}
-            propertyId={propertyId}
-            profile={profile}
-            placesState={placesState}
-          />
-
-          <NearbyPlacesList
-            placesState={placesState}
-            placesError={placesError}
-            placeGroups={placeGroups}
-            selectedPlaceId={selectedPlace?.placeId ?? null}
-            onSelectPlace={(placeId) => setSelectedPlace({ placeId })}
-          />
-        </div>
-
-        <aside className="space-y-6">
-          <div className="rounded-lg border border-line bg-surface p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-ink">Location preview</h2>
-            <LocationMap
-              location={location}
-              placeGroups={placeGroups}
-              selectedPlace={selectedPlace}
-              onAutoScroll={handleAutoScroll}
-            />
-            <p className="mt-4 text-sm leading-6 text-ink-soft">
-              {location
-                ? `Matched as ${location.locationType.toLowerCase().replaceAll("_", " ")}. Map markers show the searched location and nearby amenities using each category radius.`
-                : "Search for a location to show nearby amenities on the map."}
-            </p>
-          </div>
-
-          <CbdTravelCard location={location} />
-
-          <RentalInsights
-            key={location?.placeId ?? "no-location"}
-            location={location}
-            canContribute={canSave}
-          />
-
-          <ComparePanel saved={saved} profile={profile} />
-
-          <AdditionalIndicators
-            placesState={placesState}
-            categoryScores={categoryScores}
-            placeGroups={placeGroups}
-          />
-        </aside>
+  const search = useExplore();
+  if (!search.result) return <Welcome />;
+  const base = '/locations/' + search.propertyId;
+  return <main className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+    <div className="mb-4"><SearchForm autocomplete={search.autocomplete} searchState={search.searchState} placesState={search.busy ? "loading" : search.placesState} error={search.error} onSearch={search.handleSearch} />
+      {search.canSave ? <details className="mt-2 text-xs text-ink-muted"><summary className="cursor-pointer">Saved and recent locations</summary><RecentSearches recent={search.recent} saved={search.saved} disabled={search.busy} canSave={search.canSave} onSelect={search.searchFromHistory} onToggleSaved={search.toggleSaved} /></details> : null}
+    </div>
+    {search.busy ? <p role="status" className="mb-3 rounded-lg bg-accent-soft p-3 text-sm text-accent-ink">{search.stage} Previous evidence stays visible until the new result is ready.</p> : null}
+    {search.searchState === 'error' ? <p className="mb-3 text-sm text-ink-muted">The previous result is still shown.</p> : null}
+    <div className="grid items-start gap-5 lg:grid-cols-[1.35fr_0.85fr]">
+      <section className="min-w-0 rounded-xl border border-line bg-surface p-5">
+        <ResultHeading />
+        <details className="mt-3 text-xs text-ink-muted"><summary className="cursor-pointer">How to use this result</summary><p className="mt-2 leading-5">Choose a mobility profile, open a category to explore nearby places, or ask about your daily routines. Save two locations to compare them.</p></details>
+        <div inert={search.busy}><ScoreBreakdown categoryScores={search.categoryScores} propertyId={search.propertyId} profile={search.profile} /></div>
+        {!search.propertyId ? <p className="mt-3 text-sm text-ink-muted">This result could not be saved. Search again to enable detail pages and AI analysis.</p> : null}
+        <LocationAnalyst key={search.propertyId ?? 'none'} propertyId={search.propertyId} profile={search.profile} placesState={search.busy ? 'loading' : search.placesState} />
       </section>
-
-      {showReturnButton ? (
-        <button
-          type="button"
-          onClick={returnToSelectedRow}
-          aria-label="Back to the amenity you were viewing"
-          title="Back to the amenity you were viewing"
-          className="fixed bottom-6 right-6 z-50 flex size-11 items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-lg transition hover:bg-surface-raised hover:text-ink"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="size-5"
-            aria-hidden="true"
-          >
-            <path d="M9 14 4 9l5-5" />
-            <path d="M4 9h10a6 6 0 0 1 6 6v5" />
-          </svg>
-        </button>
-      ) : null}
-    </main>
-  );
+      <aside className="min-w-0 space-y-4">
+        <section className="rounded-xl border border-line bg-surface p-5"><h2 className="text-base font-semibold text-ink">Location preview</h2><LocationMap location={search.location} placeGroups={search.placeGroups} selectedPlace={null} onAutoScroll={noScroll} /><p className="mt-3 text-xs leading-5 text-ink-muted">Matched as {search.location?.locationType.toLowerCase().replaceAll('_',' ')}. Category colours connect places to their scores.</p></section>
+        {search.propertyId ? <nav aria-label="Supporting evidence" className="grid gap-2 rounded-xl border border-line bg-surface p-4"><h2 className="mb-1 text-sm font-semibold text-ink">Explore more</h2>{[{anchor:'commute',label:'Melbourne CBD commute'},{anchor:'rent',label:'Community rent'},{anchor:'indicators',label:'Additional indicators'}].map(item=><Link key={item.anchor} href={base + '/details?profile=' + search.profile + '#' + item.anchor} className="rounded-md px-2 py-2 text-sm text-ink-soft hover:bg-hover">{item.label} <span className="float-right text-accent-ink">→</span></Link>)}<Link href={'/compare?profile=' + search.profile} className="rounded-md px-2 py-2 text-sm text-accent-ink hover:bg-hover">Compare saved locations →</Link></nav> : null}
+      </aside>
+    </div>
+  </main>;
 }

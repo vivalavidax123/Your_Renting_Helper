@@ -7,11 +7,11 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 ## What You Can Do
 
 - Start with a short usage guide and example suburbs, or search Australian addresses with autocomplete. No account is needed to search.
-- Review nearby groceries, food, health, fitness, shopping, services, fuel, and transport.
+- Open each category score to review its explanation, nearby places, and focused map.
 - Switch between no-car and car-owner views.
 - Explore category-coloured amenities on an interactive map.
 - Open the map in fullscreen and follow non-transport amenities into Google Maps.
-- View walkability, transit access, amenity density, daily convenience, and car-reliance indicators derived from the search result.
+- Open a separate evidence page for walkability, transit access, amenity density, daily convenience, car reliance, CBD travel, and community rent.
 - See direct distance, indicative driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - See like-for-like community rent medians and, when signed in, contribute a known weekly rent.
 - Ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting.

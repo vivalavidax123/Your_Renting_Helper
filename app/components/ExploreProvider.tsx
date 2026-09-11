@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { authClient } from "../lib/auth-client";
@@ -14,13 +14,7 @@ type Explore = ReturnType<typeof useLocationSearch> & ReturnType<typeof useSaved
 const Context = createContext<Explore | null>(null);
 export function ExploreProvider({ children }: { children: ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
-  const [owner, setOwner] = useState<string | null | undefined>(undefined);
-  const [generation, setGeneration] = useState(0);
-  if (!isPending && owner !== (session?.user.id ?? null)) {
-    if (owner !== undefined) setGeneration(generation + 1);
-    setOwner(session?.user.id ?? null);
-  }
-  return <ExploreSession key={generation} userId={session?.user.id ?? null} sessionPending={isPending}>{children}</ExploreSession>;
+  return <ExploreSession key={session?.user.id ?? "anonymous"} userId={session?.user.id ?? null} sessionPending={isPending}>{children}</ExploreSession>;
 }
 function ExploreSession({ children, userId, sessionPending }: { children: ReactNode; userId: string | null; sessionPending: boolean }) {
   const params = useSearchParams();

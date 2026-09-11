@@ -169,7 +169,7 @@ export function LocationMap({
   if (!apiKey) {
     return (
       <div className="mt-5 flex aspect-[4/3] items-center justify-center rounded-lg border border-line bg-surface-subtle p-5 text-center text-sm leading-6 text-ink-soft">
-        Add NEXT_PUBLIC_MAPS_API_KEY to show the live map.
+        The live map is unavailable. You can still explore scores and nearby places.
       </div>
     );
   }
@@ -184,7 +184,7 @@ export function LocationMap({
 
   return (
     <div className="mt-5 overflow-hidden rounded-lg border border-line bg-surface-raised">
-      <div ref={mapRef} className="aspect-[4/3] w-full scroll-mt-16" />
+      <div className="relative"><div ref={mapRef} className="aspect-[4/3] w-full scroll-mt-16" />{mapRevision === 0 && !mapError ? <p role="status" className="absolute inset-0 flex items-center justify-center text-sm text-ink-muted">Loading map…</p> : null}</div>
       {mapError ? (
         <p className="border-t border-danger-line bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">
           {mapError}

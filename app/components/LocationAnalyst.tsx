@@ -61,7 +61,7 @@ export function LocationAnalyst({
             Ask about this location
           </h2>
           <p className="text-xs leading-5 text-ink-muted">
-            (Answers use the score and nearby amenities shown here.)
+            Each answer uses this question and the location evidence. Earlier messages are not sent to the AI.
           </p>
         </div>
       </div>
@@ -125,7 +125,7 @@ export function LocationAnalyst({
             onChange={(event) => setQuestion(event.target.value)}
             onKeyDown={handleQuestionKeyDown}
             maxLength={1000}
-            rows={messages.length > 0 ? 2 : 5}
+            rows={2}
             disabled={!available || status === "loading"}
             placeholder={
               available
@@ -155,7 +155,7 @@ export function LocationAnalyst({
       ) : null}
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {suggestedQuestions.map((suggestion) => (
+        {suggestedQuestions.slice(0, 2).map((suggestion) => (
           <button
             key={suggestion}
             type="button"

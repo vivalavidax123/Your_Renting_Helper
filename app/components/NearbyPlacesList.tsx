@@ -16,6 +16,7 @@ type NearbyPlacesListProps = {
   placeGroups: PlaceGroup[];
   selectedPlaceId: string | null;
   onSelectPlace: (placeId: string) => void;
+  singleColumn?: boolean;
 };
 
 const collapsedRowCount = 3;
@@ -156,6 +157,7 @@ export function NearbyPlacesList({
   placeGroups,
   selectedPlaceId,
   onSelectPlace,
+  singleColumn = false,
 }: NearbyPlacesListProps) {
   const allPlaces = placeGroups.flatMap((group) => group.places);
   const closestPlace = allPlaces.reduce<(typeof allPlaces)[number] | null>(
@@ -201,7 +203,7 @@ export function NearbyPlacesList({
       ) : null}
 
       {placesState === "success" ? (
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className={`mt-4 grid gap-3 ${singleColumn ? "" : "lg:grid-cols-2"}`}>
           {placeGroups.map((group) => (
             <CategorySection
               key={group.id}

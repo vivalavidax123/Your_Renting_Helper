@@ -40,6 +40,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Guided welcome screen with example-suburb searches and an illustrative map preview; result panels stay hidden until a successful search.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
+- Clickable category scores with dedicated evidence routes, category navigation, nearby-place lists, and focused maps.
 - No-car and car-owner scoring profiles.
 - Seven-day shared result cache.
 - Interactive Google map with searched-location and amenity markers.
@@ -58,6 +59,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
 - Two-location score comparison from saved results, with an empty state in the result view before enough places are saved.
+- A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
 - Grounded AI analysis for a searched location and authenticated AI comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.
@@ -139,6 +141,9 @@ app/
   login/                  Sign-in and sign-up page
   layout.tsx              Metadata, fonts, analytics, and theme bootstrap
   (explore)/              Shared search workspace and direct location routes
+    compare/              Dedicated saved-location comparison page
+    locations/[propertyId]/categories/[categoryId]/  Category evidence
+    locations/[propertyId]/details/  Commute, rent, and derived indicators
   components/ExploreProvider.tsx  Search/session state retained across workspace pages
   components/ConversationProvider.tsx  In-memory location/pair transcripts
 prisma/
@@ -173,9 +178,10 @@ This structure is sufficient for the current project. Do not add repositories, d
 3. Submitting the form requests /api/geocode.
 4. useLocationSearch requests /api/places with coordinates and location metadata.
 5. The matched address and amenity groups are committed together. Persisted results navigate to /locations/[propertyId]?profile=...; direct visits read stored evidence through GET /api/locations/[propertyId] without a provider refresh.
-6. CbdTravelCard and RentalInsights independently request /api/cbd-travel and /api/rent-estimates for the committed location.
-7. The client validates each API envelope before updating result state.
-8. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
+6. The overview renders the address, overall and category scores, compact analyst, and map. Category links reuse the active groups and scoring profile without another provider or database request.
+7. CbdTravelCard and RentalInsights request /api/cbd-travel and /api/rent-estimates only after the supporting-evidence page opens.
+8. The client validates each API envelope before updating result state.
+9. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
 
 ### Places route flow
 
@@ -536,7 +542,6 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 - Public rent estimates currently reveal a median with only one or two reports. A one-report median is that contributor's exact submitted rent, and repeated nearby submissions from one account can influence an area estimate.
 - /api/compare does not authenticate the caller or verify that both location IDs belong to the caller's saved list.
-- The cache badge tooltip still says "within the last 24 hours" even though the current cache TTL is seven days.
 - Google OAuth remains visibly available when its credentials are absent.
 
 ### Reliability and operations
@@ -573,7 +578,6 @@ Priorities are intentionally ordered around current needs rather than speculativ
 ### 1. Correctness and route hardening
 
 - Require a minimum number of distinct contributors before publishing a community rent median.
-- Update the cache badge tooltip from 24 hours to seven days.
 - Require a session in /api/compare and verify both locations are saved by that user.
 - Hide or disable Google sign-in when OAuth is not configured.
 - Add lightweight rate limiting to provider-backed routes and rent contributions.
