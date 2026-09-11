@@ -22,13 +22,13 @@ export function Home() {
     <div className="grid items-start gap-5 lg:grid-cols-[1.35fr_0.85fr]">
       <section className="min-w-0 rounded-xl border border-line bg-surface p-5">
         <ResultHeading />
-        <details className="mt-3 text-xs text-ink-muted"><summary className="cursor-pointer">How to use this result</summary><p className="mt-2 leading-5">Choose a mobility profile, open a category to explore nearby places, or ask about your daily routines. Save two locations to compare them.</p></details>
+        <details className="mt-3 text-xs text-ink-muted"><summary className="cursor-pointer">How to use this result</summary><ul className="mt-2 list-disc space-y-1 pl-4 leading-5"><li>Choose a mobility profile.</li><li>Open a category to explore nearby places.</li><li>Ask about your daily routines.</li><li>Save two locations to compare them.</li></ul></details>
         <div inert={search.busy}><ScoreBreakdown categoryScores={search.categoryScores} propertyId={search.propertyId} profile={search.profile} /></div>
         {!search.propertyId ? <p className="mt-3 text-sm text-ink-muted">This result could not be saved. Search again to enable detail pages and AI analysis.</p> : null}
         <LocationAnalyst key={search.propertyId ?? 'none'} propertyId={search.propertyId} profile={search.profile} placesState={search.busy ? 'loading' : search.placesState} />
       </section>
       <aside className="min-w-0 space-y-4">
-        <section className="rounded-xl border border-line bg-surface p-5"><h2 className="text-base font-semibold text-ink">Location preview</h2><LocationMap location={search.location} placeGroups={search.placeGroups} selectedPlace={null} onAutoScroll={noScroll} /><p className="mt-3 text-xs leading-5 text-ink-muted">Matched as {search.location?.locationType.toLowerCase().replaceAll('_',' ')}. Category colours connect places to their scores.</p></section>
+        <section className="rounded-xl border border-line bg-surface p-5"><h2 className="text-base font-semibold text-ink">Location preview</h2><LocationMap location={search.location} placeGroups={search.placeGroups} selectedPlace={null} onAutoScroll={noScroll} /><ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-muted"><li>Matched as {search.location?.locationType.toLowerCase().replaceAll('_',' ')}.</li><li>Category colours connect places to their scores.</li></ul></section>
         {search.propertyId ? <nav aria-label="Supporting evidence" className="grid gap-2 rounded-xl border border-line bg-surface p-4"><h2 className="mb-1 text-sm font-semibold text-ink">Explore more</h2>{[{anchor:'commute',label:'Melbourne CBD commute'},{anchor:'rent',label:'Community rent'},{anchor:'indicators',label:'Additional indicators'}].map(item=><Link key={item.anchor} href={base + '/details?profile=' + search.profile + '#' + item.anchor} className="rounded-md px-2 py-2 text-sm text-ink-soft hover:bg-hover">{item.label} <span className="float-right text-accent-ink">→</span></Link>)}</nav> : null}
       </aside>
     </div>

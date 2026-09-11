@@ -64,6 +64,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Per-user recent searches and saved locations.
 - Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
+- Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
 - Grounded AI analysis for a searched location and authenticated AI comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.

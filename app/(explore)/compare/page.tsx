@@ -29,14 +29,7 @@ export default function ComparePage() {
       </Link>
 
       <div>
-        <p className="text-xs font-semibold tracking-wide text-accent uppercase">
-          Saved evidence
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-ink">Compare locations</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">
-          Put two saved locations side by side, then ask the analyst about the
-          practical trade-offs.
-        </p>
+        <h1 className="text-2xl font-bold text-ink">Compare locations</h1>
       </div>
 
       {sessionPending || (canSave && savedPending) ? (
@@ -45,7 +38,7 @@ export default function ComparePage() {
         </p>
       ) : canSave ? (
         <>
-          <MobilityProfile />
+          <MobilityProfile showDescription={false} />
           {savedError ? (
             <p
               role="alert"

@@ -60,9 +60,6 @@ export function LocationAnalyst({
           <h2 className="text-base font-semibold text-ink">
             Ask about this location
           </h2>
-          <p className="text-xs leading-5 text-ink-muted">
-            Each answer uses this question and the location evidence. Earlier messages are not sent to the AI.
-          </p>
         </div>
       </div>
 

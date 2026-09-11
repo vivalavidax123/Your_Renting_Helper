@@ -9,7 +9,7 @@ export function Welcome() {
     <section className="rounded-xl border border-line bg-surface p-5 sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">A little context before you rent</p>
       <h1 className="mt-3 max-w-lg text-3xl font-bold leading-tight tracking-tight text-ink sm:text-4xl">Find a location that fits your everyday life.</h1>
-      <p className="mt-3 text-sm leading-6 text-ink-muted">Explore the shops, transport and services around an Australian address. No account needed to search.</p>
+      <ul className="mt-3 list-disc space-y-1 pl-4 text-sm leading-6 text-ink-muted"><li>Explore the shops, transport and services around an Australian address.</li><li>No account needed to search.</li></ul>
       <ol className="my-6 space-y-3 text-sm text-ink-soft">
         <li className="flex gap-3"><span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent-ink">1</span><span><strong className="text-ink">Search an address or suburb.</strong> See what is nearby.</span></li>
         <li className="flex gap-3"><span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent-ink">2</span><span><strong className="text-ink">Choose No car or Car owner.</strong> Explore the category scores.</span></li>

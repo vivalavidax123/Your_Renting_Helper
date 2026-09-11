@@ -76,10 +76,13 @@ export function AdditionalIndicators({
         </div>
       ) : null}
 
-      <div className="mt-3 border-t border-line pt-3">
-        <p className="text-xs leading-5 text-ink-faint">
-          Planned: {plannedIndicators.join(" · ").toLowerCase()}
-        </p>
+      <div className="mt-3 border-t border-line pt-3 text-xs leading-5 text-ink-faint">
+        <p>Planned:</p>
+        <ul className="mt-1 list-disc space-y-0.5 pl-4">
+          {plannedIndicators.map((indicator) => (
+            <li key={indicator}>{indicator.toLowerCase()}</li>
+          ))}
+        </ul>
       </div>
     </div>
   );

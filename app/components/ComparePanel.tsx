@@ -160,10 +160,6 @@ function ComparisonAnalyst({
       <h2 className="text-base font-semibold text-ink">
         Ask about these locations
       </h2>
-      <p className="mt-1 text-xs leading-5 text-ink-muted">
-        Answers use the selected mobility profile and the saved evidence for A
-        and B. Earlier messages stay visible when the profile changes.
-      </p>
 
       <form
         onSubmit={handleSubmit}
@@ -386,10 +382,10 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
   return (
     <section className="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-6">
       <h2 className="text-lg font-semibold text-ink">Choose two locations</h2>
-      <p className="mt-1 text-sm leading-6 text-ink-soft">
-        The table recalculates both locations for the selected mobility profile
-        and highlights the higher score in each row.
-      </p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm leading-6 text-ink-soft">
+        <li>The table recalculates both locations for the selected mobility profile.</li>
+        <li>The higher score in each row is highlighted.</li>
+      </ul>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <LocationSelect
@@ -427,12 +423,10 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
       ) : null}
 
       {unavailableCount > 0 ? (
-        <p className="mt-3 text-xs leading-5 text-ink-muted">
-          {unavailableCount} saved{" "}
-          {unavailableCount === 1 ? "location has" : "locations have"} no
-          current score data. Search {unavailableCount === 1 ? "it" : "them"}{" "}
-          again to include {unavailableCount === 1 ? "it" : "them"} here.
-        </p>
+        <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-muted">
+          <li>{unavailableCount} saved {unavailableCount === 1 ? "location has" : "locations have"} no current score data.</li>
+          <li>Search {unavailableCount === 1 ? "it" : "them"} again to include {unavailableCount === 1 ? "it" : "them"} here.</li>
+        </ul>
       ) : null}
 
       {isLoading ? (

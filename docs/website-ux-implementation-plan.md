@@ -305,5 +305,6 @@ Recommended implementation order: fix chat/profile loss, establish persistent na
 1. Make the shared logo clear the active result and search field before returning to the welcome page; remove the duplicate Search navigation link. **Implemented.**
 2. Remove the duplicate comparison link from the overview and place Sign out inside an email-triggered account disclosure. **Implemented.**
 3. Keep the location profile selector on the overview, show read-only profile context on evidence pages, and retain the comparison page's required shared profile selector. **Implemented.**
+4. Present useful multi-point guidance, evidence notes, assumptions, and comparison-selection explanations as semantic bullet lists; omit redundant analyst and comparison-header descriptions. **Implemented.**
 
 Each item is verified and pushed separately. Local browser scripts and test dependencies remain uncommitted.

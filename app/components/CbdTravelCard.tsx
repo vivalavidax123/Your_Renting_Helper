@@ -131,15 +131,16 @@ export function CbdTravelCard({
               </dd>
             </div>
           </dl>
-          <p className="mt-3 text-xs leading-5 text-ink-faint">
-            Driving assumes free-flow traffic; both times are rounded to the
-            nearest 5 minutes. Public transport uses the usual weekday
-            timetable at 8:00 am Melbourne time. Actual trips vary.
-          </p>
+          <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-faint">
+            <li>Driving assumes free-flow traffic.</li>
+            <li>Both times are rounded to the nearest 5 minutes.</li>
+            <li>Public transport uses the usual weekday timetable at 8:00 am Melbourne time.</li>
+            <li>Actual trips vary.</li>
+          </ul>
           {travel.driveMinutes !== null || travel.transitMinutes !== null ? (
-            <p className="mt-2 text-xs font-normal text-ink-muted">
+            <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs font-normal text-ink-muted">
               {travel.driveMinutes !== null ? (
-                <>
+                <li>
                   Driving: Powered by{" "}
                   <a
                     href="https://www.geoapify.com/"
@@ -159,12 +160,12 @@ export function CbdTravelCard({
                     &copy; OpenStreetMap contributors
                   </a>
                   .
-                </>
-              ) : null}{" "}
+                </li>
+              ) : null}
               {travel.transitMinutes !== null
-                ? "Public transport: Google Maps."
+                ? <li>Public transport: Google Maps.</li>
                 : null}
-            </p>
+            </ul>
           ) : null}
           {travel.warning ? (
             <p className="mt-2 text-xs leading-5 text-ink-muted">
