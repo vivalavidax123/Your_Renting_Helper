@@ -3,6 +3,7 @@ import { isJsonRecord } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   compareLocations,
+  isLocationQuestionInScope,
   isLocationQuestionSafe,
   LocationAnalystError,
 } from "@/app/lib/services/locationAnalyst";
@@ -116,6 +117,19 @@ export async function POST(request: Request) {
     if (!(await isLocationQuestionSafe(question))) {
       return new Response(
         "I can’t help with that request. Ask about the selected locations or renting instead.",
+        {
+          headers: {
+            "Cache-Control": "no-cache",
+            "Content-Type": "text/plain; charset=utf-8",
+            "X-Content-Type-Options": "nosniff",
+          },
+        },
+      );
+    }
+
+    if (!(await isLocationQuestionInScope(question, "comparison"))) {
+      return new Response(
+        "I can only answer questions about the selected locations, nearby amenities, transport, rental evidence, and renting trade-offs.",
         {
           headers: {
             "Cache-Control": "no-cache",

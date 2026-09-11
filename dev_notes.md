@@ -65,7 +65,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
-- Authenticated, moderation-screened grounded AI analysis for a searched location and comparison of two saved locations.
+- Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.
 - Docker Compose deployment with local PostgreSQL and automatic migration application.
@@ -351,9 +351,10 @@ The result page includes a lightweight signed-in single-location chat panel, and
 2. The signed-in client sends that id, the current mobility profile, and one question to `POST /api/locations/[propertyId]/chat`.
 3. The route verifies the Better Auth session and returns 401 without calling the analyst when no session exists.
 4. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile.
-5. The question passes OpenAI moderation before answer generation; flagged input receives a fixed refusal without reaching the analyst model.
-6. The context builder keeps the score breakdown and up to five nearest amenities per category.
-7. The analyst requests a streamed OpenAI response, extracts `response.output_text.delta` events on the server, and forwards only the answer text as it arrives.
+5. The question passes OpenAI moderation before answer generation; flagged input receives a fixed refusal without reaching another model call.
+6. A structured scope classifier allows rental-location questions and returns a fixed refusal for unrelated requests without calling the analyst model.
+7. The context builder keeps the score breakdown and up to five nearest amenities per category.
+8. The analyst requests a streamed OpenAI response, extracts `response.output_text.delta` events on the server, and forwards only the answer text as it arrives.
 
 ### Saved-location comparison request flow
 
@@ -361,10 +362,12 @@ The result page includes a lightweight signed-in single-location chat panel, and
 2. The client sends both location IDs, the current profile, and one question to `POST /api/locations/compare/chat`.
 3. The route requires a session and verifies that both locations are saved by that user.
 4. The server builds the same grounded context independently for each location and labels them Location A and Location B.
-5. The question passes the same moderation check used by single-location analysis.
+5. The question passes the same moderation and comparison-aware scope checks used by single-location analysis.
 6. The analyst explains meaningful differences, ties, trade-offs, and conditional recommendations without forcing a winner.
 
-Questions are first sent to `omni-moderation-latest`. A flagged result returns a fixed plain-text refusal and skips answer generation. Moderation failures stop the request with a safe 502 or 504 response rather than bypassing the check. The system instruction requires answers to use supplied data, refuse unsupported claims, avoid promising external searches, connect evidence to practical renter implications, and distinguish facts from interpretation. Answer requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. ConversationProvider retains messages and drafts in memory per location or ordered comparison pair across workspace navigation. Confirmed account changes clear workspace state; initial session resolution does not erase anonymous work. Reloading or leaving the workspace starts fresh conversations. Route departure aborts active replies, preserves their text, and marks them interrupted. Clear conversation removes only the current transcript and draft. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
+Questions are first sent to `omni-moderation-latest`. A flagged result returns a fixed plain-text refusal and skips later model calls. Safe questions then use the environment-selected `OPENAI_MODEL` for a non-streaming structured scope decision with low reasoning, low verbosity, a 200-token ceiling, and `store: false`. The scope permits location scores, nearby amenities, transport, rent evidence, daily routines, renter priorities, trade-offs, and relevant facts to verify; it rejects unrelated general assistance, content generation, and instruction-override attempts. A rejected question receives a fixed plain-text refusal and skips answer generation. Screening failures stop the request with a safe 502 or 504 response rather than bypassing a check.
+
+The answer system instruction independently enforces the same rental-location boundary, requires answers to use supplied data, refuses unsupported claims, avoids promising external searches, connects evidence to practical renter implications, and distinguishes facts from interpretation. Answer requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. ConversationProvider retains messages and drafts in memory per location or ordered comparison pair across workspace navigation. Confirmed account changes clear workspace state; initial session resolution does not erase anonymous work. Reloading or leaving the workspace starts fresh conversations. Route departure aborts active replies, preserves their text, and marks them interrupted. Clear conversation removes only the current transcript and draft. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
 
 Current MVP boundaries: no RAG, web search, durable conversation storage, model memory of earlier questions, autonomous tools, or map actions. Each request still sends one question; visible transcript retention does not add model conversation memory.
 
