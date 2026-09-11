@@ -65,7 +65,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
-- Authenticated grounded AI analysis for a searched location and comparison of two saved locations.
+- Authenticated, moderation-screened grounded AI analysis for a searched location and comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.
 - Docker Compose deployment with local PostgreSQL and automatic migration application.
@@ -587,7 +587,7 @@ Priorities are intentionally ordered around current needs rather than speculativ
 
 - Require a minimum number of distinct contributors before publishing a community rent median.
 - Hide or disable Google sign-in when OAuth is not configured.
-- Add lightweight rate limiting to provider-backed routes and rent contributions.
+- Add lightweight rate limiting to provider-backed routes, AI analysis, and rent contributions.
 
 ### 2. Reliability and test coverage
 
