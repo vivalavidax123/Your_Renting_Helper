@@ -38,7 +38,8 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 ### Implemented
 
 - Guided welcome screen with example-suburb searches and an illustrative map preview; result panels stay hidden until a successful search.
-- Shared-header logo returns to a clean welcome state without starting a provider request; comparison remains available in the header.
+- Shared-header logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
+- Signed-in users open the account email menu to access Sign out; Escape and outside clicks close the menu.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
 - Clickable category scores with dedicated evidence routes, category navigation, nearby-place lists, and focused maps.
