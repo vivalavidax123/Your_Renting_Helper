@@ -1,9 +1,78 @@
 "use client";
+
 import Link from "next/link";
-import { useExplore } from "@/app/components/ExploreProvider";
 import { ComparePanel } from "@/app/components/ComparePanel";
+import { useExplore } from "@/app/components/ExploreProvider";
 import { MobilityProfile } from "@/app/components/MobilityProfile";
+
 export default function ComparePage() {
-  const { saved, profile, canSave, sessionPending, propertyId } = useExplore();
-  return <main className="mx-auto w-full max-w-5xl space-y-4 px-4 pb-8 sm:px-6"><Link href={propertyId ? '/locations/' + propertyId + '?profile=' + profile : '/'} className="text-sm text-accent-ink hover:underline">← Back to {propertyId ? 'overview' : 'search'}</Link><h1 className="text-2xl font-bold text-ink">Compare locations</h1>{sessionPending ? <p role="status">Checking sign-in…</p> : canSave ? <><MobilityProfile /><ComparePanel saved={saved} profile={profile} /></> : <section className="rounded-xl border border-line bg-surface p-6"><p className="text-ink-soft">Sign in to save two locations and compare their scores and nearby amenities.</p><Link href="/login" className="mt-4 inline-block text-accent-ink underline">Sign in to compare</Link></section>}</main>;
+  const {
+    saved,
+    savedError,
+    savedPending,
+    profile,
+    canSave,
+    sessionPending,
+    propertyId,
+  } = useExplore();
+  const returnHref = propertyId
+    ? `/locations/${propertyId}?profile=${profile}`
+    : "/";
+
+  return (
+    <main className="mx-auto w-full max-w-5xl space-y-5 px-4 pb-8 sm:px-6">
+      <Link
+        href={returnHref}
+        className="text-sm font-medium text-accent-ink hover:underline"
+      >
+        ← Back to {propertyId ? "overview" : "search"}
+      </Link>
+
+      <div>
+        <p className="text-xs font-semibold tracking-wide text-accent uppercase">
+          Saved evidence
+        </p>
+        <h1 className="mt-1 text-2xl font-bold text-ink">Compare locations</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">
+          Put two saved locations side by side, then ask the analyst about the
+          practical trade-offs.
+        </p>
+      </div>
+
+      {sessionPending || (canSave && savedPending) ? (
+        <p role="status" className="text-sm font-medium text-ink-soft">
+          Loading saved locations…
+        </p>
+      ) : canSave ? (
+        <>
+          <MobilityProfile />
+          {savedError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger-ink"
+            >
+              {savedError}
+            </p>
+          ) : null}
+          <ComparePanel saved={saved} profile={profile} />
+        </>
+      ) : (
+        <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-ink">
+            Sign in to compare saved locations
+          </h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-ink-soft">
+            Saving keeps locations tied to your account, which lets this page
+            load the correct evidence securely.
+          </p>
+          <Link
+            href="/login"
+            className="mt-4 inline-block rounded-md bg-action px-4 py-2 text-sm font-semibold text-action-ink hover:bg-action-hover"
+          >
+            Sign in to compare
+          </Link>
+        </section>
+      )}
+    </main>
+  );
 }

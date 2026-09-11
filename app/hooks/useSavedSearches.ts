@@ -15,6 +15,9 @@ function isHistoryPayload(value: Record<string, unknown>) {
 // or out must refetch so stars and the saved row reflect the new viewer.
 export function useSavedSearches(placesState: RequestState, userId: string | null) {
   const [savedError, setSavedError] = useState("");
+  const [loadedSavedForUser, setLoadedSavedForUser] = useState<string | null>(
+    null,
+  );
   const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [saved, setSaved] = useState<RecentSearch[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -48,11 +51,19 @@ export function useSavedSearches(placesState: RequestState, userId: string | nul
           setRecent(historyData.searches);
         }
 
-        // Signed-out visitors get 401 from /api/favourites; an empty list
-        // (not the previous user's list) is the correct rendering of that.
+        // Signed-out visitors skip /api/favourites; an empty list is the
+        // correct rendering and avoids an unnecessary 401 request.
         setSaved(favouritesData.ok ? favouritesData.searches : []);
+        if (userId) {
+          setLoadedSavedForUser(userId);
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled && userId) {
+          setSavedError("Could not load saved locations.");
+          setLoadedSavedForUser(userId);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -83,5 +94,7 @@ export function useSavedSearches(placesState: RequestState, userId: string | nul
     }
   }, []);
 
-  return { recent, saved, toggleSaved, savedError };
+  const savedPending = Boolean(userId && loadedSavedForUser !== userId);
+
+  return { recent, saved, toggleSaved, savedError, savedPending };
 }

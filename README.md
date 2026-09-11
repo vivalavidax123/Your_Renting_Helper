@@ -16,7 +16,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - See like-for-like community rent medians and, when signed in, contribute a known weekly rent.
 - Ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting.
 - Use a persistent light or dark theme.
-- Create an account to keep recent searches, save locations, compare two saved results, and ask AI-assisted comparison questions.
+- Create an account to keep recent searches, save locations, compare two results under one mobility profile, and ask AI-assisted comparison questions.
 
 ## Current Scope
 

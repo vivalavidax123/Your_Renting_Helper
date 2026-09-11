@@ -1,7 +1,7 @@
 # Website usability and navigation implementation plan
 
-Status: implementation in progress. Chat profile preservation, shared navigation state, the welcome screen, clickable category routes, and supporting-evidence routes are implemented and verified.
-Reviewed: 10 September 2026. Basis: supplied screenshot and current repository source, including installed Next.js 16.2.6 routing documentation. Runtime timings and browser behaviour have not been measured in this review.
+Status: implementation in progress. Chat and navigation state, the welcome screen, focused evidence routes, and the secured profile-consistent comparison page are implemented and verified.
+Reviewed: 11 September 2026. Basis: supplied screenshot, current repository source, installed Next.js 16.2.6 routing documentation, and local mocked-network browser checks at desktop and mobile widths.
 
 ## 1. Outcome and scope
 
@@ -30,7 +30,7 @@ Success criteria:
 7. A slow or failed optional service never prevents use of successful core results.
 8. Comparison numbers and AI context use the same selected profile, and access checks match the saved-location product behaviour.
 
-## 2. Findings from the current implementation
+## 2. Baseline findings that guided the implementation
 
 | Feedback | Evidence | Implication |
 | --- | --- | --- |

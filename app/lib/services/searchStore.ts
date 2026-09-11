@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/app/lib/db";
+import type { WeightProfile } from "@/app/lib/categories";
+import { scorePlaceGroups } from "@/app/lib/scoring";
 import type { CategoryScore, PlaceGroup, RecentSearch } from "@/app/lib/types";
 
 // Cached score results are reused for this long before Google is queried
@@ -224,9 +226,9 @@ export async function areLocationsSavedByUser(
   return savedCount === locationIds.length;
 }
 
-// Full category scores for one location, for the comparison view. Returns
-// null when the id is unknown or the location has no snapshot yet.
-export async function getComparisonSide(id: string) {
+// Full category scores for one location, recalculated from the newest stored
+// place groups for the comparison view's selected mobility profile.
+export async function getComparisonSide(id: string, profile: WeightProfile) {
   const location = await prisma.searchLocation.findUnique({
     where: { id },
     include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
@@ -238,12 +240,15 @@ export async function getComparisonSide(id: string) {
     return null;
   }
 
+  const groups = JSON.parse(snapshot.groupsJson) as PlaceGroup[];
+  const { overallScore, scores } = scorePlaceGroups(groups, profile);
+
   return {
     id: location.id,
     query: location.query,
     formattedAddress: location.formattedAddress,
-    overallScore: snapshot.overallScore,
-    scores: JSON.parse(snapshot.scoresJson) as CategoryScore[],
+    overallScore,
+    scores,
     fetchedAt: snapshot.createdAt.toISOString(),
   };
 }

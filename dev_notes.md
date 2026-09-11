@@ -58,7 +58,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Persistent light and dark themes across the main and login views.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
-- Dedicated two-location comparison page for saved results, with guidance before enough locations are available.
+- Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
 - Grounded AI analysis for a searched location and authenticated AI comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
@@ -205,7 +205,7 @@ Profile changes recalculate scores in the browser from the existing place groups
 | GET /api/favourites | Signed in | Current user's saved locations |
 | POST /api/favourites | Signed in | Save a known location |
 | DELETE /api/favourites | Signed in | Remove a saved location |
-| GET /api/compare | Public at route level | Return the newest stored score snapshots for two location IDs |
+| GET /api/compare | Signed in, saved-location ownership required | Recalculate two saved locations from stored evidence for one selected mobility profile |
 | GET /api/locations/[propertyId] | Public | Read stored location metadata, raw groups and timestamp without user history or paid refresh |
 | POST /api/locations/[propertyId]/chat | Public | Answer one grounded question about a stored location and selected mobility profile |
 | POST /api/locations/compare/chat | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations |
@@ -213,8 +213,6 @@ Profile changes recalculate scores in the browser from the existing place groups
 | GET /api/rent-estimates | Public | Like-for-like community median rent within an adaptive 1–10 km radius |
 | POST /api/rent-estimates | Signed in | Create or update the caller's rent report for a location/property combination |
 | /api/auth/[...all] | Better Auth | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks |
-
-The comparison UI only offers the signed-in user's saved locations, but /api/compare does not currently authenticate or verify ownership. Protecting that route is an outstanding hardening task.
 
 CBD driving calls use the server-only `GEOAPIFY_API_KEY`, request free-flow
 traffic, and round the result to the nearest five minutes. Public transport
@@ -350,7 +348,7 @@ The result page includes a lightweight single-location chat panel, and the saved
 
 ### Saved-location comparison request flow
 
-1. The comparison panel loads deterministic scores for two scored saved locations through `GET /api/compare`.
+1. The comparison panel sends its URL-backed location IDs and mobility profile to `GET /api/compare`; the route verifies the session and saved-location ownership before recalculating both score columns from stored place groups.
 2. The client sends both location IDs, the current profile, and one question to `POST /api/locations/compare/chat`.
 3. The route requires a session and verifies that both locations are saved by that user.
 4. The server builds the same grounded context independently for each location and labels them Location A and Location B.
@@ -541,7 +539,6 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 ### Immediate correctness and security
 
 - Public rent estimates currently reveal a median with only one or two reports. A one-report median is that contributor's exact submitted rent, and repeated nearby submissions from one account can influence an area estimate.
-- /api/compare does not authenticate the caller or verify that both location IDs belong to the caller's saved list.
 - Google OAuth remains visibly available when its credentials are absent.
 
 ### Reliability and operations
@@ -578,14 +575,13 @@ Priorities are intentionally ordered around current needs rather than speculativ
 ### 1. Correctness and route hardening
 
 - Require a minimum number of distinct contributors before publishing a community rent median.
-- Require a session in /api/compare and verify both locations are saved by that user.
 - Hide or disable Google sign-in when OAuth is not configured.
 - Add lightweight rate limiting to provider-backed routes and rent contributions.
 
 ### 2. Reliability and test coverage
 
 - Add focused tests for cache hits, expiry, persistence failure, and provider errors.
-- Add authentication-flow tests and, after protecting `GET /api/compare`, focused authorisation tests for that route.
+- Add authentication-flow tests and broader route authorisation coverage.
 - Add one browser smoke flow covering search, map selection, save, and comparison.
 - Add structured error reporting before broader usage.
 
