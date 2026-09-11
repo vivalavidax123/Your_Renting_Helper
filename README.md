@@ -22,7 +22,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 
 This is a working prototype, not an official property rating or valuation service. Amenity distances are straight-line estimates; CBD driving uses a rounded Geoapify estimate, while public transport currently uses a Google timetable estimate. Both can vary from an actual trip. The car-owner profile uses the same priorities as the no-car profile with more tolerance for distance, so it cannot lower the displayed category or overall scores.
 
-Community rent figures are user-reported evidence, not scraped market data or an official valuation. AI answers are grounded in the score, nearby amenities, and derived indicators supplied by the application; they do not perform external research. Population, school, safety, and planning datasets are not currently included.
+Community rent figures are user-reported evidence, not scraped market data or an official valuation. AI questions require sign-in and are screened for harmful content. Answers are grounded in the score, nearby amenities, and derived indicators supplied by the application; they do not perform external research. Population, school, safety, and planning datasets are not currently included.
 
 ## Run Locally
 

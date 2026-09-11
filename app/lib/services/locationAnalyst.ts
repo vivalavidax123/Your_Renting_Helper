@@ -4,6 +4,7 @@ import { isJsonRecord } from "@/app/lib/api";
 import type { LocationAnalysisContext } from "./locationAnalysis";
 
 const openAIResponsesUrl = "https://api.openai.com/v1/responses";
+const openAIModerationsUrl = "https://api.openai.com/v1/moderations";
 const requestTimeoutMs = 20_000;
 const maxOutputTokens = 1_200;
 
@@ -37,6 +38,75 @@ function getConfiguration() {
   }
 
   return { apiKey, model };
+}
+
+export async function isLocationQuestionSafe(question: string) {
+  const { apiKey } = getConfiguration();
+  let response: Response;
+
+  try {
+    response = await fetch(openAIModerationsUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "omni-moderation-latest",
+        input: question,
+      }),
+      signal: AbortSignal.timeout(requestTimeoutMs),
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.name === "AbortError" || error.name === "TimeoutError")
+    ) {
+      throw new LocationAnalystError(
+        "The AI safety check took too long. Please try again.",
+        504,
+      );
+    }
+
+    throw new LocationAnalystError(
+      "The AI safety check is temporarily unavailable. Please try again.",
+      502,
+    );
+  }
+
+  if (!response.ok) {
+    throw new LocationAnalystError(
+      "The AI safety check is temporarily unavailable. Please try again.",
+      502,
+    );
+  }
+
+  let value: unknown;
+
+  try {
+    value = await response.json();
+  } catch {
+    throw new LocationAnalystError(
+      "The AI safety check returned an invalid response. Please try again.",
+      502,
+    );
+  }
+
+  const result =
+    isJsonRecord(value) &&
+    Array.isArray(value.results) &&
+    isJsonRecord(value.results[0])
+      ? value.results[0]
+      : null;
+
+  if (!result || typeof result.flagged !== "boolean") {
+    throw new LocationAnalystError(
+      "The AI safety check returned an invalid response. Please try again.",
+      502,
+    );
+  }
+
+  return !result.flagged;
 }
 
 function createAnswerStream(body: ReadableStream<Uint8Array>) {

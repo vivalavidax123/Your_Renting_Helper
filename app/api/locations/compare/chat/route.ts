@@ -3,6 +3,7 @@ import { isJsonRecord } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   compareLocations,
+  isLocationQuestionSafe,
   LocationAnalystError,
 } from "@/app/lib/services/locationAnalyst";
 import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
@@ -109,6 +110,19 @@ export async function POST(request: Request) {
       return Response.json(
         { ok: false, error: "Location data was not found." },
         { status: 404 },
+      );
+    }
+
+    if (!(await isLocationQuestionSafe(question))) {
+      return new Response(
+        "I can’t help with that request. Ask about the selected locations or renting instead.",
+        {
+          headers: {
+            "Cache-Control": "no-cache",
+            "Content-Type": "text/plain; charset=utf-8",
+            "X-Content-Type-Options": "nosniff",
+          },
+        },
       );
     }
 
