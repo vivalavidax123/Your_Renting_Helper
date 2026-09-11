@@ -28,8 +28,8 @@ The core renter workflow is implemented:
 2. Geocode the query and retrieve nearby places.
 3. Calculate category and overall scores for a no-car or car-owner profile.
 4. Review amenities, derived indicators, CBD travel, community rent evidence, and the interactive map.
-5. Ask the grounded AI analyst what the supplied location evidence means for day-to-day renting.
-6. Sign in to keep history, save locations, compare two saved results with scores and AI analysis, and submit known weekly rents.
+5. Sign in to keep history, save locations, submit known weekly rents, and use the AI analyst.
+6. Ask what one location's evidence means for day-to-day renting or compare two saved results with scores and AI analysis.
 
 The product direction remains amenities-first. Scores are compact summaries; nearby places, map context, and practical indicators carry most of the decision detail.
 
@@ -65,7 +65,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
-- Grounded AI analysis for a searched location and authenticated AI comparison of two saved locations.
+- Authenticated grounded AI analysis for a searched location and comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.
 - Docker Compose deployment with local PostgreSQL and automatic migration application.
@@ -551,7 +551,7 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 ### Reliability and operations
 
-- No application-level rate limiting on provider-backed search/CBD routes or authenticated rent contributions.
+- No application-level rate limiting on provider-backed search, CBD, AI analyst, or authenticated rent-contribution routes.
 - /api/cbd-travel prevents response caching and can call both Geoapify and Google Routes on every request, creating a quota and cost-exposure risk.
 - No structured logging, monitoring dashboard, tracing, or error-tracking integration.
 - A database outage silently falls back to live Google calls and can increase quota usage.
@@ -570,6 +570,7 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 - Browser regression checks are local-only by owner preference; no browser suite or test dependency is committed.
 - The committed analyst request test still expects medium reasoning/verbosity, although the service uses xhigh/high. Its expectation correction is local-only by owner request, so the committed suite retains this known failure.
+- The committed single-location chat route test predates the sign-in requirement. Authentication coverage is local-only by owner request, so that committed test retains its old public-route expectation.
 - No live database integration suite.
 - No complete authentication-flow tests.
 - No component or browser test covering rent-form state across multiple searched locations.
