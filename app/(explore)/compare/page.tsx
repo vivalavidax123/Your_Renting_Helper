@@ -38,7 +38,7 @@ export default function ComparePage() {
         </p>
       ) : canSave ? (
         <>
-          <MobilityProfile showDescription={false} />
+          <MobilityProfile />
           {savedError ? (
             <p
               role="alert"
