@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-09-10.
+Status reviewed against committed `HEAD` on 2026-09-11.
 
 | Area | Current state |
 | --- | --- |
@@ -58,7 +58,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Persistent light and dark themes across the main and login views.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
-- Two-location score comparison from saved results, with an empty state in the result view before enough places are saved.
+- Dedicated two-location comparison page for saved results, with guidance before enough locations are available.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
 - Grounded AI analysis for a searched location and authenticated AI comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
