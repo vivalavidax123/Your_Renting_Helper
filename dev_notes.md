@@ -214,7 +214,7 @@ Profile changes recalculate scores in the browser from the existing place groups
 | DELETE /api/favourites | Signed in | Remove a saved location |
 | GET /api/compare | Signed in, saved-location ownership required | Recalculate two saved locations from stored evidence for one selected mobility profile |
 | GET /api/locations/[propertyId] | Public | Read stored location metadata, raw groups and timestamp without user history or paid refresh |
-| POST /api/locations/[propertyId]/chat | Public | Answer one grounded question about a stored location and selected mobility profile |
+| POST /api/locations/[propertyId]/chat | Signed in | Answer one grounded question about a stored location and selected mobility profile |
 | POST /api/locations/compare/chat | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations |
 | GET /api/cbd-travel | Public | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD |
 | GET /api/rent-estimates | Public | Like-for-like community median rent within an adaptive 1–10 km radius |
@@ -343,15 +343,16 @@ The visible planned list is not live data:
 
 ## AI Location Analyst
 
-The result page includes a lightweight single-location chat panel, and the saved-location comparison includes a second panel for comparing two locations. Both explain deterministic application data rather than replacing the scoring system.
+The result page includes a lightweight signed-in single-location chat panel, and the saved-location comparison includes a second panel for comparing two locations. Both explain deterministic application data rather than replacing the scoring system.
 
 ### Single-location request flow
 
 1. `/api/places` returns the persisted `SearchLocation` id with the score result.
-2. The client sends that id, the current mobility profile, and one question to `POST /api/locations/[propertyId]/chat`.
-3. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile.
-4. The context builder keeps the score breakdown and up to five nearest amenities per category.
-5. The analyst requests a streamed OpenAI response, extracts `response.output_text.delta` events on the server, and forwards only the answer text as it arrives.
+2. The signed-in client sends that id, the current mobility profile, and one question to `POST /api/locations/[propertyId]/chat`.
+3. The route verifies the Better Auth session and returns 401 without calling the analyst when no session exists.
+4. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile.
+5. The context builder keeps the score breakdown and up to five nearest amenities per category.
+6. The analyst requests a streamed OpenAI response, extracts `response.output_text.delta` events on the server, and forwards only the answer text as it arrives.
 
 ### Saved-location comparison request flow
 

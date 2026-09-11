@@ -1,5 +1,6 @@
 import type { WeightProfile } from "@/app/lib/categories";
 import { isJsonRecord } from "@/app/lib/api";
+import { auth } from "@/app/lib/auth";
 import {
   analyzeLocation,
   LocationAnalystError,
@@ -61,6 +62,15 @@ export async function POST(
   const profile = body.profile ?? "carFree";
 
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+
+    if (!session) {
+      return Response.json(
+        { ok: false, error: "Sign in to ask about this location." },
+        { status: 401 },
+      );
+    }
+
     const context = await buildLocationAnalysisContext(propertyId, profile);
 
     if (!context) {

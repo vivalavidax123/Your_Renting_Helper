@@ -25,7 +25,7 @@ export function Home() {
         <details className="mt-3 text-xs text-ink-muted"><summary className="cursor-pointer">How to use this result</summary><ul className="mt-2 list-disc space-y-1 pl-4 leading-5"><li>Choose a mobility profile.</li><li>Open a category to explore nearby places.</li><li>Ask about your daily routines.</li><li>Save two locations to compare them.</li></ul></details>
         <div inert={search.busy}><ScoreBreakdown categoryScores={search.categoryScores} propertyId={search.propertyId} profile={search.profile} /></div>
         {!search.propertyId ? <p className="mt-3 text-sm text-ink-muted">This result could not be saved. Search again to enable detail pages and AI analysis.</p> : null}
-        <LocationAnalyst key={search.propertyId ?? 'none'} propertyId={search.propertyId} profile={search.profile} placesState={search.busy ? 'loading' : search.placesState} />
+        <LocationAnalyst key={search.propertyId ?? 'none'} propertyId={search.propertyId} profile={search.profile} placesState={search.busy ? 'loading' : search.placesState} signedIn={search.canSave} sessionPending={search.sessionPending} />
       </section>
       <aside className="min-w-0 space-y-4">
         <section className="rounded-xl border border-line bg-surface p-5"><h2 className="text-base font-semibold text-ink">Location preview</h2><LocationMap location={search.location} placeGroups={search.placeGroups} selectedPlace={null} onAutoScroll={noScroll} /><ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-muted"><li>Matched as {search.location?.locationType.toLowerCase().replaceAll('_',' ')}.</li><li>Category colours connect places to their scores.</li></ul></section>

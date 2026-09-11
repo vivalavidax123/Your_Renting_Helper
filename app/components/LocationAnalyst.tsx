@@ -19,12 +19,20 @@ export function LocationAnalyst({
   propertyId,
   profile,
   placesState,
+  signedIn,
+  sessionPending,
 }: {
   propertyId: string | null;
   profile: WeightProfile;
   placesState: RequestState;
+  signedIn: boolean;
+  sessionPending: boolean;
 }) {
-  const available = placesState === "success" && propertyId !== null;
+  const available =
+    !sessionPending &&
+    signedIn &&
+    placesState === "success" &&
+    propertyId !== null;
   const { messages, question, setQuestion, status, error, askQuestion, clearConversation } = useConversation(
     "location:" + propertyId, "/api/locations/" + propertyId + "/chat", profile, available);
 
@@ -46,10 +54,13 @@ export function LocationAnalyst({
     }
   }
 
-  const unavailableMessage =
-    placesState === "success" && propertyId === null
-      ? "This result could not be saved, so grounded analysis is unavailable. Search again to retry."
-      : "Search for a location before asking the analyst.";
+  const unavailableMessage = sessionPending
+    ? "Checking sign-in status..."
+    : !signedIn
+      ? "Sign in to ask about this location."
+      : placesState === "success" && propertyId === null
+        ? "This result could not be saved, so grounded analysis is unavailable. Search again to retry."
+        : "Search for a location before asking the analyst.";
   const awaitingFirstChunk =
     status === "loading" && !messages.at(-1)?.content;
 

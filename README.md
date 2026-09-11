@@ -14,7 +14,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - Open a separate evidence page for walkability, transit access, amenity density, daily convenience, car reliance, CBD travel, and community rent.
 - See direct distance, indicative driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - See like-for-like community rent medians and, when signed in, contribute a known weekly rent.
-- Ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting.
+- When signed in, ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting.
 - Use a persistent light or dark theme.
 - Create an account to keep recent searches, save locations, compare two results under one mobility profile, and ask AI-assisted comparison questions.
 
