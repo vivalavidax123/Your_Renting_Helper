@@ -56,6 +56,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - The latest rent report for a signed-in user and searched location is returned so the form can restore it. RentalInsights is keyed by location place ID, resetting form and feedback for each searched location.
 - When a new location's default profile is empty, the strongest nearby property/bedroom group within 10 km is selected automatically.
 - Persistent light and dark themes across the main and login views.
+- Reduced-motion preferences shorten interface transitions and loading animations.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
 - Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available.

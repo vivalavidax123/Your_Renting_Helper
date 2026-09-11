@@ -1,7 +1,7 @@
 # Website usability and navigation implementation plan
 
-Status: implementation in progress. Chat and navigation state, the welcome screen, focused evidence routes, and the secured profile-consistent comparison page are implemented and verified.
-Reviewed: 11 September 2026. Basis: supplied screenshot, current repository source, installed Next.js 16.2.6 routing documentation, and local mocked-network browser checks at desktop and mobile widths.
+Status: implementation complete. Chat and navigation state, the welcome screen, focused evidence routes, and the secured profile-consistent comparison page are implemented and verified.
+Reviewed: 11 September 2026. Basis: supplied screenshot, current repository source, installed Next.js 16.2.6 routing documentation, and local mocked-network browser checks at desktop, mobile, approximate 200% zoom, light/dark theme, and reduced-motion settings.
 
 ## 1. Outcome and scope
 
@@ -244,7 +244,7 @@ Exit: table and AI agree under both profiles; direct requests cannot bypass save
 - Review light/dark themes, keyboard navigation, reduced motion, text zoom, mobile layout, long addresses, and long chat answers.
 - Confirm no paid fetches start just because category links are prefetched or the welcome screen opens.
 - Update `dev_notes.md` to describe actual routes, chat lifetime, loading, and comparison behaviour; update README for user-facing workflow changes.
-- If a push is later requested, follow the repository's full post-push documentation reconciliation rule. This planning task does not push or deploy.
+- After each requested push, apply the repository's full post-push documentation reconciliation rule.
 
 Exit: all success criteria pass or any genuine environment blocker is explicitly recorded with the unverified scenarios.
 
@@ -276,17 +276,17 @@ Exit: all success criteria pass or any genuine environment blocker is explicitly
 
 Add focused route tests for the new location GET and comparison authentication/profile behaviour. Add browser regression coverage for chat lifetime and cross-page navigation: these bugs involve component mounting and cannot be proved by scoring unit tests alone. The project currently has Vitest but no browser end-to-end suite; a local-only Playwright installation and narrow mocked-network checks cover these stateful flows. New test files, fixtures, configuration, and test dependencies are not committed, following the owner’s instruction. Keep provider calls mocked in repeatable tests, then perform a separate real-provider smoke check when credentials are available. Do not add a broad testing framework beyond this need.
 
-Commands at completion:
+Completion checks:
 
 ```text
-npm run lint           # Code/style checks
-npx tsc --noEmit        # Type compatibility across routes, props, and API payloads
-npm test               # Existing and added deterministic/route regressions
-npm run build          # Production compilation and route-generation checks
-npx playwright test    # Added focused browser navigation/chat regressions
+npm run lint            # Passed
+npx tsc --noEmit        # Passed
+npm test                # 90 local tests across 17 files passed
+npm run build           # Passed, including all new routes
+node <local check>.cjs  # Focused mocked-network browser checks passed
 ```
 
-These are planned checks, not reported passes. No tests were run for this documentation-only review.
+The two added route-test files, browser scripts, Playwright package changes, and the analyst expectation correction remain local-only by owner request. The committed suite remains 82 tests across 15 files and retains the documented analyst expectation mismatch.
 
 ## 9. Deferred work and tradeoffs
 

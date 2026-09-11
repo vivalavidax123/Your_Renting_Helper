@@ -111,10 +111,12 @@ function ComparisonAnalyst({
   locationA,
   locationB,
   profile,
+  available,
 }: {
   locationA: ComparisonSide;
   locationB: ComparisonSide;
   profile: WeightProfile;
+  available: boolean;
 }) {
   const {
     messages,
@@ -128,7 +130,7 @@ function ComparisonAnalyst({
     `comparison:${locationA.id}|${locationB.id}`,
     "/api/locations/compare/chat",
     profile,
-    true,
+    available,
     [locationA.id, locationB.id],
   );
 
@@ -234,13 +236,17 @@ function ComparisonAnalyst({
             onKeyDown={handleQuestionKeyDown}
             maxLength={1000}
             rows={2}
-            disabled={status === "loading"}
-            placeholder="Ask which location better fits your routines and priorities…"
+            disabled={status === "loading" || !available}
+            placeholder={
+              available
+                ? "Ask which location better fits your routines and priorities…"
+                : "Waiting for scores under this profile…"
+            }
             className="block w-full resize-none bg-transparent px-3 py-3 pr-24 text-sm leading-6 text-ink outline-none placeholder:text-ink-muted disabled:cursor-not-allowed disabled:opacity-70"
           />
           <button
             type="submit"
-            disabled={!question.trim() || status === "loading"}
+            disabled={!question.trim() || status === "loading" || !available}
             className="absolute right-3 bottom-3 rounded-md bg-action px-4 py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover disabled:cursor-not-allowed disabled:bg-action-disabled"
           >
             Send
@@ -273,7 +279,7 @@ function ComparisonAnalyst({
             key={suggestion}
             type="button"
             onClick={() => void askQuestion(suggestion)}
-            disabled={status === "loading"}
+            disabled={status === "loading" || !available}
             className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:border-line-strong hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {suggestion}
@@ -366,6 +372,12 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
   }, [effectiveAId, effectiveBId, profile, requestKey]);
 
   const activeResult = result?.key === requestKey ? result : null;
+  const retainedPairResult =
+    result &&
+    result.a.id === effectiveAId &&
+    result.b.id === effectiveBId
+      ? result
+      : null;
   const activeError =
     requestError?.key === requestKey ? requestError.message : "";
   const isLoading =
@@ -506,13 +518,17 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
             {new Date(activeResult.b.fetchedAt).toLocaleDateString()} for B.
           </p>
 
-          <ComparisonAnalyst
-            key={`${activeResult.a.id}|${activeResult.b.id}`}
-            locationA={activeResult.a}
-            locationB={activeResult.b}
-            profile={profile}
-          />
         </>
+      ) : null}
+
+      {retainedPairResult ? (
+        <ComparisonAnalyst
+          key={`${retainedPairResult.a.id}|${retainedPairResult.b.id}`}
+          locationA={retainedPairResult.a}
+          locationB={retainedPairResult.b}
+          profile={profile}
+          available={Boolean(activeResult)}
+        />
       ) : null}
     </section>
   );
