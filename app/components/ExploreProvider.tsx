@@ -23,8 +23,14 @@ function ExploreSession({ children, userId, sessionPending }: { children: ReactN
   const profile: WeightProfile = requestedProfile === "carOwner" ? "carOwner" : "carFree";
   const search = useLocationSearch(profile);
   const saved = useSavedSearches(search.busy ? "loading" : search.placesState, userId);
-  const { cancelSearch } = search;
-  useEffect(() => () => cancelSearch(), [pathname, cancelSearch]);
+  const { cancelSearch, finishWelcomeNavigation } = search;
+  useEffect(() => {
+    if (pathname === "/") {
+      finishWelcomeNavigation();
+    }
+
+    return cancelSearch;
+  }, [pathname, cancelSearch, finishWelcomeNavigation]);
   function changeProfile(next: WeightProfile) {
     const query = new URLSearchParams(params); query.set("profile", next);
     window.history.replaceState(null, "", pathname + "?" + query + window.location.hash);

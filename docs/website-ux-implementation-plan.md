@@ -1,6 +1,6 @@
 # Website usability and navigation implementation plan
 
-Status: implementation complete. Chat and navigation state, the welcome screen, focused evidence routes, and the secured profile-consistent comparison page are implemented and verified.
+Status: follow-up interface refinements in progress. The original navigation and evidence work is complete; the shared-header, account-control, and profile-placement adjustments below are being delivered in separate verified chunks.
 Reviewed: 11 September 2026. Basis: supplied screenshot, current repository source, installed Next.js 16.2.6 routing documentation, and local mocked-network browser checks at desktop, mobile, approximate 200% zoom, light/dark theme, and reduced-motion settings.
 
 ## 1. Outcome and scope
@@ -299,3 +299,11 @@ The two added route-test files, browser scripts, Playwright package changes, and
 - Full simultaneous reveal would make every successful feature wait for the slowest service. Coordinated core results plus stable independent panels is the recommended compromise.
 
 Recommended implementation order: fix chat/profile loss, establish persistent navigation/data ownership, simplify welcome/overview, add evidence pages, move and correct comparison, then verify the complete flow. Each checkpoint should leave a working application.
+
+## 10. Follow-up interface refinements
+
+1. Make the shared logo clear the active result and search field before returning to the welcome page; remove the duplicate Search navigation link. **Implemented.**
+2. Remove the duplicate comparison link from the overview and place Sign out inside an email-triggered account disclosure.
+3. Keep the location profile selector on the overview, show read-only profile context on evidence pages, and retain the comparison page's required shared profile selector.
+
+Each item is verified and pushed separately. Local browser scripts and test dependencies remain uncommitted.

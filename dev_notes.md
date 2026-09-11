@@ -38,6 +38,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 ### Implemented
 
 - Guided welcome screen with example-suburb searches and an illustrative map preview; result panels stay hidden until a successful search.
+- Shared-header logo returns to a clean welcome state without starting a provider request; comparison remains available in the header.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
 - Clickable category scores with dedicated evidence routes, category navigation, nearby-place lists, and focused maps.
@@ -183,6 +184,8 @@ This structure is sufficient for the current project. Do not add repositories, d
 7. CbdTravelCard and RentalInsights request /api/cbd-travel and /api/rent-estimates only after the supporting-evidence page opens.
 8. The client validates each API envelope before updating result state.
 9. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
+
+The shared-header logo cancels active search work, clears the active result and search field, and returns to `/`. Cached location evidence and in-memory conversations remain available for later navigation within the same session.
 
 ### Places route flow
 
