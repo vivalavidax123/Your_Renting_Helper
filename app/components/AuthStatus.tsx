@@ -60,7 +60,6 @@ export function AuthStatus() {
         title={session.user.email}
       >
         <span className="truncate">{session.user.email}</span>
-        <span aria-hidden="true" className="text-xs">⌄</span>
       </button>
       {menuOpen ? (
         <div role="menu" className="absolute right-0 z-20 mt-2 min-w-32 rounded-lg border border-line bg-surface p-1 shadow-lg">
