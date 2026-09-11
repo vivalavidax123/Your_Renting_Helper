@@ -44,6 +44,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Eight amenity categories with category-level filtering and deduplication.
 - Clickable category scores with dedicated evidence routes, category navigation, nearby-place lists, and focused maps.
 - No-car and car-owner scoring profiles.
+- Location overviews own the interactive profile selector; category and supporting-evidence pages show the active profile as read-only context. Comparison retains one shared selector because both locations must use the same profile.
 - Seven-day shared result cache.
 - Interactive Google map with searched-location and amenity markers.
 - Fullscreen map control.
