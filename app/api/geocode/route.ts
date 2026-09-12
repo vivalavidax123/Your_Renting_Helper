@@ -49,7 +49,9 @@ export async function GET(request: Request) {
     );
   }
 
-  const geocodeUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  const geocodeUrl = new URL(
+    "https://maps.googleapis.com/maps/api/geocode/json",
+  );
   geocodeUrl.searchParams.set("address", query);
   geocodeUrl.searchParams.set("region", "au");
   geocodeUrl.searchParams.set("key", apiKey);

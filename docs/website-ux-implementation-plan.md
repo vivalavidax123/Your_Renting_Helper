@@ -32,19 +32,19 @@ Success criteria:
 
 ## 2. Baseline findings that guided the implementation
 
-| Feedback | Evidence | Implication |
-| --- | --- | --- |
-| Title occupies useful card space | `app/page.tsx` places the h1 and overall score inside the large left card; theme/auth sit separately above | Extract a shared header and use the card opening for guidance |
-| First visit feels empty | All result components are mounted before search and each displays its own unavailable message | Introduce one welcome state rather than many repeated empty cards |
-| Content appears at different times | `useLocationSearch` geocodes before fetching amenities; CBD and rent fetch independently after location changes; map loads its browser library separately | This is a request dependency issue as well as a presentation issue; rendering performance remains unmeasured |
-| Chat disappears on profile change | `LocationAnalyst` key includes both property ID and profile; messages live in component state | Changing the key recreates the component and discards its state |
-| Comparison chat has the same risk | `ComparisonAnalyst` key includes A, B, and profile | Apply the conversation-state rule to both analysts |
-| Category scores cannot navigate | `ScoreBreakdown` renders each score as an article | Turn cards into real links with visible interaction cues |
-| Homepage is long | Amenity list, rent, commute, comparison, indicators, and chat share the homepage | Separate overview from detailed evidence |
-| New routes could lose state | Search currently belongs to `Home`; chat belongs to individual panels | Move state that must survive navigation above those pages |
-| Comparison can disagree with profile | `/api/compare` reads stored snapshot scores without a profile; comparison AI recomputes from groups with a profile | Rescore comparison from raw groups for the selected profile |
-| Comparison access is inconsistent | Comparison chat checks session and ownership; comparison GET currently does neither | Apply the same saved-location access checks to GET |
-| Freshness copy is stale | Score tooltip says 24 hours; store TTL is seven days | Use the actual fetched-at time and correct cache wording |
+| Feedback                             | Evidence                                                                                                                                                  | Implication                                                                                                  |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Title occupies useful card space     | `app/page.tsx` places the h1 and overall score inside the large left card; theme/auth sit separately above                                                | Extract a shared header and use the card opening for guidance                                                |
+| First visit feels empty              | All result components are mounted before search and each displays its own unavailable message                                                             | Introduce one welcome state rather than many repeated empty cards                                            |
+| Content appears at different times   | `useLocationSearch` geocodes before fetching amenities; CBD and rent fetch independently after location changes; map loads its browser library separately | This is a request dependency issue as well as a presentation issue; rendering performance remains unmeasured |
+| Chat disappears on profile change    | `LocationAnalyst` key includes both property ID and profile; messages live in component state                                                             | Changing the key recreates the component and discards its state                                              |
+| Comparison chat has the same risk    | `ComparisonAnalyst` key includes A, B, and profile                                                                                                        | Apply the conversation-state rule to both analysts                                                           |
+| Category scores cannot navigate      | `ScoreBreakdown` renders each score as an article                                                                                                         | Turn cards into real links with visible interaction cues                                                     |
+| Homepage is long                     | Amenity list, rent, commute, comparison, indicators, and chat share the homepage                                                                          | Separate overview from detailed evidence                                                                     |
+| New routes could lose state          | Search currently belongs to `Home`; chat belongs to individual panels                                                                                     | Move state that must survive navigation above those pages                                                    |
+| Comparison can disagree with profile | `/api/compare` reads stored snapshot scores without a profile; comparison AI recomputes from groups with a profile                                        | Rescore comparison from raw groups for the selected profile                                                  |
+| Comparison access is inconsistent    | Comparison chat checks session and ownership; comparison GET currently does neither                                                                       | Apply the same saved-location access checks to GET                                                           |
+| Freshness copy is stale              | Score tooltip says 24 hours; store TTL is seven days                                                                                                      | Use the actual fetched-at time and correct cache wording                                                     |
 
 The current chat API receives only the current question and profile. Keeping previous messages visible does not give the model conversational memory. This distinction must remain explicit in both implementation and UI wording.
 
@@ -123,14 +123,14 @@ Links from comparison rows can open each side's category evidence. Preserve the 
 
 Recommended route structure uses a `(explore)` route group. Parentheses organise files without changing public URLs:
 
-| File | Responsibility |
-| --- | --- |
-| `app/(explore)/layout.tsx` | Shared header and a small client provider that survives navigation |
-| `app/(explore)/page.tsx` | Welcome screen and active overview; replaces root page implementation |
-| `app/(explore)/locations/[propertyId]/page.tsx` | Direct-link location overview |
-| `app/(explore)/locations/[propertyId]/categories/[categoryId]/page.tsx` | Category evidence |
-| `app/(explore)/locations/[propertyId]/details/page.tsx` | Commute, rent, indicators |
-| `app/(explore)/compare/page.tsx` | Saved-location comparison |
+| File                                                                    | Responsibility                                                        |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `app/(explore)/layout.tsx`                                              | Shared header and a small client provider that survives navigation    |
+| `app/(explore)/page.tsx`                                                | Welcome screen and active overview; replaces root page implementation |
+| `app/(explore)/locations/[propertyId]/page.tsx`                         | Direct-link location overview                                         |
+| `app/(explore)/locations/[propertyId]/categories/[categoryId]/page.tsx` | Category evidence                                                     |
+| `app/(explore)/locations/[propertyId]/details/page.tsx`                 | Commute, rent, indicators                                             |
+| `app/(explore)/compare/page.tsx`                                        | Saved-location comparison                                             |
 
 Use ordinary Next.js links and supported route loading/error/not-found files. Await route `params` and server `searchParams` according to installed documentation. Keep the root layout, theme bootstrap, and authentication routes intact. Do not introduce parallel or intercepted routes for this straightforward page navigation.
 
@@ -250,29 +250,29 @@ Exit: all success criteria pass or any genuine environment blocker is explicitly
 
 ## 8. Verification matrix
 
-| Scenario | Expected result |
-| --- | --- |
-| Fresh signed-out visit | Clear instructions/examples; no repeated search-required boxes or provider-backed result calls |
-| Signed-in visit with history | Compact personal recent list; no automatic location opening |
-| Example query | Correct suburb submitted once through normal search flow |
-| Rapid searches A then B | No late A response replaces B or mixes their evidence |
-| Search fails after an existing result | Previous address remains explicitly labelled; error names the failed search |
-| Amenities succeed, map fails | Scores/category links remain usable; map reports its own failure |
-| Slow rent or commute | Core overview unaffected; independent evidence-card loading/errors |
-| Profile switch | Scores recalculate, groups remain unchanged, map does not reset solely for profile |
-| Profile switch during AI stream | Existing answer retains its submitted profile; next request uses new profile |
-| Category navigation and Back | Address/profile/result/chat remain available without another paid search |
-| Direct category URL and reload | Stored data loads; no dependency on previously mounted homepage |
-| Missing snapshot or unknown category | Recovery/not-found UI instead of crash or fabricated values |
-| Same location, different profiles | Both sets of historical chat messages remain distinguishable |
-| Different location/pair | Transcript isolated; switching back restores its completed transcript |
-| Account changes | Prior account's in-memory conversations and saved selections cleared |
-| Comparison GET with no session | 401 |
-| Comparison GET with unsaved IDs | 403 |
-| Comparison profile change | Both columns and subsequent AI context use the selected profile |
-| Zero/one/scoreless favourites | Next action explained; no unexplained disabled selectors |
-| Category keyboard activation | Enter follows a real link; focus and return navigation remain usable |
-| Phone/200% zoom | Readable controls, natural scrolling, no clipped critical content |
+| Scenario                              | Expected result                                                                                |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Fresh signed-out visit                | Clear instructions/examples; no repeated search-required boxes or provider-backed result calls |
+| Signed-in visit with history          | Compact personal recent list; no automatic location opening                                    |
+| Example query                         | Correct suburb submitted once through normal search flow                                       |
+| Rapid searches A then B               | No late A response replaces B or mixes their evidence                                          |
+| Search fails after an existing result | Previous address remains explicitly labelled; error names the failed search                    |
+| Amenities succeed, map fails          | Scores/category links remain usable; map reports its own failure                               |
+| Slow rent or commute                  | Core overview unaffected; independent evidence-card loading/errors                             |
+| Profile switch                        | Scores recalculate, groups remain unchanged, map does not reset solely for profile             |
+| Profile switch during AI stream       | Existing answer retains its submitted profile; next request uses new profile                   |
+| Category navigation and Back          | Address/profile/result/chat remain available without another paid search                       |
+| Direct category URL and reload        | Stored data loads; no dependency on previously mounted homepage                                |
+| Missing snapshot or unknown category  | Recovery/not-found UI instead of crash or fabricated values                                    |
+| Same location, different profiles     | Both sets of historical chat messages remain distinguishable                                   |
+| Different location/pair               | Transcript isolated; switching back restores its completed transcript                          |
+| Account changes                       | Prior account's in-memory conversations and saved selections cleared                           |
+| Comparison GET with no session        | 401                                                                                            |
+| Comparison GET with unsaved IDs       | 403                                                                                            |
+| Comparison profile change             | Both columns and subsequent AI context use the selected profile                                |
+| Zero/one/scoreless favourites         | Next action explained; no unexplained disabled selectors                                       |
+| Category keyboard activation          | Enter follows a real link; focus and return navigation remain usable                           |
+| Phone/200% zoom                       | Readable controls, natural scrolling, no clipped critical content                              |
 
 Add focused route tests for the new location GET and comparison authentication/profile behaviour. Add browser regression coverage for chat lifetime and cross-page navigation: these bugs involve component mounting and cannot be proved by scoring unit tests alone. The project currently has Vitest but no browser end-to-end suite; a local-only Playwright installation and narrow mocked-network checks cover these stateful flows. New test files, fixtures, configuration, and test dependencies are not committed, following the owner’s instruction. Keep provider calls mocked in repeatable tests, then perform a separate real-provider smoke check when credentials are available. Do not add a broad testing framework beyond this need.
 

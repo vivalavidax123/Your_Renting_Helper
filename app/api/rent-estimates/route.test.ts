@@ -59,11 +59,7 @@ describe("GET /api/rent-estimates", () => {
       propertyType: "house",
       bedrooms: 3,
     });
-    expect(latestReport).toHaveBeenCalledWith(
-      "user-1",
-      -37.8136,
-      144.9631,
-    );
+    expect(latestReport).toHaveBeenCalledWith("user-1", -37.8136, 144.9631);
   });
 
   it("keeps the public estimate anonymous when signed out", async () => {

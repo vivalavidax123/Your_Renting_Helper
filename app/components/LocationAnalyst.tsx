@@ -1,7 +1,6 @@
 "use client";
 import { useConversation } from "./ConversationProvider";
 
-
 import type { WeightProfile } from "@/app/lib/categories";
 
 import type { RequestState } from "@/app/lib/types";
@@ -13,7 +12,6 @@ const suggestedQuestions = [
   "What are the biggest trade-offs?",
   "What should I verify before renting here?",
 ];
-
 
 export function LocationAnalyst({
   propertyId,
@@ -33,8 +31,20 @@ export function LocationAnalyst({
     signedIn &&
     placesState === "success" &&
     propertyId !== null;
-  const { messages, question, setQuestion, status, error, askQuestion, clearConversation } = useConversation(
-    "location:" + propertyId, "/api/locations/" + propertyId + "/chat", profile, available);
+  const {
+    messages,
+    question,
+    setQuestion,
+    status,
+    error,
+    askQuestion,
+    clearConversation,
+  } = useConversation(
+    "location:" + propertyId,
+    "/api/locations/" + propertyId + "/chat",
+    profile,
+    available,
+  );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,8 +71,7 @@ export function LocationAnalyst({
       : placesState === "success" && propertyId === null
         ? "This result could not be saved, so grounded analysis is unavailable. Search again to retry."
         : "Search for a location before asking the analyst.";
-  const awaitingFirstChunk =
-    status === "loading" && !messages.at(-1)?.content;
+  const awaitingFirstChunk = status === "loading" && !messages.at(-1)?.content;
 
   return (
     <section className="mt-6 border-t border-line pt-5">
@@ -97,11 +106,16 @@ export function LocationAnalyst({
                 >
                   {message.role === "assistant" ? (
                     <p className="mb-1 text-xs text-ink-muted">
-                      Answered using {message.profile === "carFree" ? "No car" : "Car owner"}
+                      Answered using{" "}
+                      {message.profile === "carFree" ? "No car" : "Car owner"}
                     </p>
                   ) : null}
                   {message.content}
-                  {message.interrupted ? <p className="text-xs text-ink-muted">Answer interrupted. Please ask again.</p> : null}
+                  {message.interrupted ? (
+                    <p className="text-xs text-ink-muted">
+                      Answer interrupted. Please ask again.
+                    </p>
+                  ) : null}
                   {status === "loading" &&
                   message.role === "assistant" &&
                   index === messages.length - 1 ? (
@@ -152,7 +166,15 @@ export function LocationAnalyst({
         </div>
       </form>
 
-      {messages.length ? <button type="button" onClick={clearConversation} className="mt-3 text-xs text-ink-muted underline">Clear conversation</button> : null}
+      {messages.length ? (
+        <button
+          type="button"
+          onClick={clearConversation}
+          className="mt-3 text-xs text-ink-muted underline"
+        >
+          Clear conversation
+        </button>
+      ) : null}
       {error ? (
         <p
           role="alert"

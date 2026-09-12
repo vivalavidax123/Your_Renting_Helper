@@ -2,10 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { after } from "next/server";
 import { prisma } from "@/app/lib/db";
-import {
-  sendPasswordResetEmail,
-  sendVerificationEmail,
-} from "@/app/lib/email";
+import { sendPasswordResetEmail, sendVerificationEmail } from "@/app/lib/email";
 
 function queueAuthEmail(deliver: () => Promise<void>) {
   after(async () => {

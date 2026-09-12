@@ -17,7 +17,8 @@ export function formatReviewSummary(place: NearbyPlace) {
     return "No reviews";
   }
 
-  const rating = place.rating === null ? "" : `${place.rating.toFixed(1)} rating, `;
+  const rating =
+    place.rating === null ? "" : `${place.rating.toFixed(1)} rating, `;
   const reviewLabel = place.userRatingCount === 1 ? "review" : "reviews";
 
   return `${rating}${place.userRatingCount.toLocaleString()} ${reviewLabel}`;

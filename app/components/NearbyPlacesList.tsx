@@ -85,7 +85,9 @@ function PlaceRow({
                   to {service.destination}
                 </span>
                 {departureTime ? (
-                  <span className="shrink-0 text-ink-muted">{departureTime}</span>
+                  <span className="shrink-0 text-ink-muted">
+                    {departureTime}
+                  </span>
                 ) : null}
               </li>
             );
@@ -119,7 +121,9 @@ function CategorySection({
     <section className="rounded-lg border border-line bg-surface px-4 py-3">
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-sm font-semibold text-ink">{group.label}</h3>
-        <span className="text-xs text-ink-faint">{formatGroupScope(group)}</span>
+        <span className="text-xs text-ink-faint">
+          {formatGroupScope(group)}
+        </span>
       </div>
       {group.places.length > 0 ? (
         <>
@@ -179,7 +183,9 @@ export function NearbyPlacesList({
           {placesState === "success" ? (
             <p className="mt-1 text-sm text-ink-soft">
               {allPlaces.length} found
-              {closestPlace ? ` / nearest ${formatDistance(closestPlace.distanceMeters)}` : ""}
+              {closestPlace
+                ? ` / nearest ${formatDistance(closestPlace.distanceMeters)}`
+                : ""}
             </p>
           ) : null}
         </div>
@@ -203,7 +209,9 @@ export function NearbyPlacesList({
       ) : null}
 
       {placesState === "success" ? (
-        <div className={`mt-4 grid gap-3 ${singleColumn ? "" : "lg:grid-cols-2"}`}>
+        <div
+          className={`mt-4 grid gap-3 ${singleColumn ? "" : "lg:grid-cols-2"}`}
+        >
           {placeGroups.map((group) => (
             <CategorySection
               key={group.id}

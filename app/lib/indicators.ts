@@ -41,12 +41,13 @@ function formatWalkTime(distanceMeters: number | null) {
 }
 
 function getMajorGroceryBrand(placeName: string) {
-  return majorGroceryPatterns.find(({ pattern }) => pattern.test(placeName))?.brand;
+  return majorGroceryPatterns.find(({ pattern }) => pattern.test(placeName))
+    ?.brand;
 }
 
 function averageScores(scores: (CategoryScore | undefined)[]) {
-  const availableScores = scores.filter(
-    (score): score is CategoryScore => Boolean(score),
+  const availableScores = scores.filter((score): score is CategoryScore =>
+    Boolean(score),
   );
 
   if (availableScores.length === 0) return 0;
@@ -89,17 +90,15 @@ export function buildDerivedIndicators(
     "transport",
     (place) => place.primaryType === "bus_stop",
   );
-  const nearestGrocery = nearestPlace(
-    placeGroups,
-    "groceries",
-    (place) => Boolean(getMajorGroceryBrand(place.name)),
+  const nearestGrocery = nearestPlace(placeGroups, "groceries", (place) =>
+    Boolean(getMajorGroceryBrand(place.name)),
   );
   const nearestShoppingCentre = nearestPlace(placeGroups, "shopping_centres");
   const nearestBusDistance =
     nearestBus?.distanceMeters ?? transport?.closestDistanceMeters ?? null;
   const nearestBusLabel = nearestBus?.transportServices?.[0]?.routeNumber
     ? `Bus ${nearestBus.transportServices[0].routeNumber}`
-    : nearestBus?.name ?? "Bus stop";
+    : (nearestBus?.name ?? "Bus stop");
   const nearestGroceryLabel =
     nearestGrocery?.name ?? "No Coles/Woolworths/Aldi/IGA found";
   const nearestShoppingLabel =
@@ -107,7 +106,9 @@ export function buildDerivedIndicators(
   const walkDistances = [
     nearestBusDistance,
     nearestGrocery?.distanceMeters ?? groceries?.closestDistanceMeters ?? null,
-    nearestShoppingCentre?.distanceMeters ?? shopping?.closestDistanceMeters ?? null,
+    nearestShoppingCentre?.distanceMeters ??
+      shopping?.closestDistanceMeters ??
+      null,
   ];
   const availableWalkDistances = walkDistances.filter(
     (distance): distance is number => distance !== null,
@@ -175,7 +176,11 @@ export function buildDerivedIndicators(
     {
       label: "Amenity density",
       value:
-        allPlaces.length >= 60 ? "High" : allPlaces.length >= 30 ? "Medium" : "Light",
+        allPlaces.length >= 60
+          ? "High"
+          : allPlaces.length >= 30
+            ? "Medium"
+            : "Light",
       detail: `${allPlaces.length} amenities found across ${placeGroups.length} categories`,
     },
     {

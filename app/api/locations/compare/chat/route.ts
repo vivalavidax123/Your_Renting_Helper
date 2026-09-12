@@ -96,7 +96,10 @@ export async function POST(request: Request) {
 
     if (!saved) {
       return Response.json(
-        { ok: false, error: "Both locations must be saved before comparing them." },
+        {
+          ok: false,
+          error: "Both locations must be saved before comparing them.",
+        },
         { status: 403 },
       );
     }
@@ -140,11 +143,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const answerStream = await compareLocations(
-      locationA,
-      locationB,
-      question,
-    );
+    const answerStream = await compareLocations(locationA, locationB, question);
 
     return new Response(answerStream, {
       headers: {

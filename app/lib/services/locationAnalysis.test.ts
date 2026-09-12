@@ -71,8 +71,9 @@ describe("assembleLocationAnalysisContext", () => {
         expect.objectContaining({ label: "Car reliance" }),
       ]),
     );
-    expect(context.scoreBreakdown.find((score) => score.id === "groceries"))
-      .toMatchObject({ count: 6, weight: 22, closestDistanceMeters: 100 });
+    expect(
+      context.scoreBreakdown.find((score) => score.id === "groceries"),
+    ).toMatchObject({ count: 6, weight: 22, closestDistanceMeters: 100 });
     expect(
       context.nearbyAmenities.find(
         (category) => category.categoryId === "groceries",

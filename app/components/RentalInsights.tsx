@@ -67,15 +67,13 @@ export function RentalInsights({
 }) {
   const [state, setState] = useState<RequestState>("idle");
   const [estimate, setEstimate] = useState<RentalEstimate | null>(null);
-  const [ownReport, setOwnReport] =
-    useState<RentalReportSummary | null>(null);
+  const [ownReport, setOwnReport] = useState<RentalReportSummary | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [weeklyRent, setWeeklyRent] = useState("");
   const [propertyType, setPropertyType] =
     useState<RentalPropertyType>("apartment");
   const [bedrooms, setBedrooms] = useState("1");
-  const [submissionState, setSubmissionState] =
-    useState<RequestState>("idle");
+  const [submissionState, setSubmissionState] = useState<RequestState>("idle");
   const [message, setMessage] = useState("");
   const restoredInitialProfile = useRef(false);
 
@@ -103,10 +101,7 @@ export function RentalInsights({
           estimate: RentalEstimate;
           ownReport: RentalReportSummary | null;
           suggestedProfile: RentalPropertyProfile | null;
-        }>(
-          response,
-          isEstimatePayload,
-        );
+        }>(response, isEstimatePayload);
 
         if (controller.signal.aborted) return;
 
@@ -176,10 +171,7 @@ export function RentalInsights({
         estimate: RentalEstimate;
         ownReport: RentalReportSummary;
         suggestedProfile: null;
-      }>(
-        response,
-        isEstimatePayload,
-      );
+      }>(response, isEstimatePayload);
 
       if (!response.ok || !data.ok) {
         setSubmissionState("error");
@@ -229,8 +221,8 @@ export function RentalInsights({
         <div className="mt-4 rounded-lg border border-line bg-surface-subtle p-4">
           {estimate.medianWeeklyRent === null ? (
             <p className="text-sm leading-6 text-ink-soft">
-              No reports within 10 km yet. The first contribution will start
-              the local estimate.
+              No reports within 10 km yet. The first contribution will start the
+              local estimate.
             </p>
           ) : (
             <>
@@ -241,13 +233,19 @@ export function RentalInsights({
                 </strong>
               </div>
               <p className="mt-1 text-xs leading-5 text-ink-muted">
-                {estimate.reportCount} {estimate.reportCount === 1 ? "report" : "reports"} within {formatRadius(estimate.radiusMeters)}
+                {estimate.reportCount}{" "}
+                {estimate.reportCount === 1 ? "report" : "reports"} within{" "}
+                {formatRadius(estimate.radiusMeters)}
                 {estimate.confidence === "early"
                   ? " · early data, use with caution"
                   : " · smallest radius with at least 3 reports"}
               </p>
               <p className="mt-1 text-xs leading-5 text-ink-faint">
-                Comparing {bedrooms === "0" ? "studio" : `${bedrooms}-bedroom`} {propertyOptions.find((option) => option.value === propertyType)?.label.toLowerCase()} properties.
+                Comparing {bedrooms === "0" ? "studio" : `${bedrooms}-bedroom`}{" "}
+                {propertyOptions
+                  .find((option) => option.value === propertyType)
+                  ?.label.toLowerCase()}{" "}
+                properties.
               </p>
             </>
           )}
@@ -261,7 +259,8 @@ export function RentalInsights({
               Your report: ${ownReport.weeklyRent.toLocaleString()}/wk ·{" "}
               {ownReport.bedrooms === 0
                 ? "studio"
-                : `${ownReport.bedrooms}-bedroom`} {propertyOptions
+                : `${ownReport.bedrooms}-bedroom`}{" "}
+              {propertyOptions
                 .find((option) => option.value === ownReport.propertyType)
                 ?.label.toLowerCase()}
             </p>
@@ -288,7 +287,10 @@ export function RentalInsights({
               {isFormOpen ? (
                 <form onSubmit={submitReport} className="mt-4 space-y-3">
                   <div>
-                    <label htmlFor="weekly-rent" className="text-xs font-medium text-ink-soft">
+                    <label
+                      htmlFor="weekly-rent"
+                      className="text-xs font-medium text-ink-soft"
+                    >
                       Weekly rent (AUD)
                     </label>
                     <input
@@ -305,14 +307,19 @@ export function RentalInsights({
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor="property-type" className="text-xs font-medium text-ink-soft">
+                      <label
+                        htmlFor="property-type"
+                        className="text-xs font-medium text-ink-soft"
+                      >
                         Property type
                       </label>
                       <select
                         id="property-type"
                         value={propertyType}
                         onChange={(event) =>
-                          setPropertyType(event.target.value as RentalPropertyType)
+                          setPropertyType(
+                            event.target.value as RentalPropertyType,
+                          )
                         }
                         className="mt-1 w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none focus:border-accent"
                       >
@@ -324,7 +331,10 @@ export function RentalInsights({
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="bedrooms" className="text-xs font-medium text-ink-soft">
+                      <label
+                        htmlFor="bedrooms"
+                        className="text-xs font-medium text-ink-soft"
+                      >
                         Bedrooms
                       </label>
                       <select
@@ -347,14 +357,19 @@ export function RentalInsights({
                     disabled={submissionState === "loading"}
                     className="w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-action-ink hover:bg-action-hover disabled:bg-action-disabled"
                   >
-                    {submissionState === "loading" ? "Saving…" : "Submit report"}
+                    {submissionState === "loading"
+                      ? "Saving…"
+                      : "Submit report"}
                   </button>
                 </form>
               ) : null}
             </>
           ) : (
             <p className="text-sm leading-6 text-ink-soft">
-              <Link href="/login" className="font-semibold text-accent hover:text-accent-hover">
+              <Link
+                href="/login"
+                className="font-semibold text-accent hover:text-accent-hover"
+              >
                 Sign in
               </Link>{" "}
               to add a rent you know.

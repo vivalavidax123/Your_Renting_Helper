@@ -36,7 +36,10 @@ function groceriesAt(...distanceMeters: number[]): PlaceGroup[] {
   ];
 }
 
-function groceriesScore(groups: PlaceGroup[], profile?: "carFree" | "carOwner") {
+function groceriesScore(
+  groups: PlaceGroup[],
+  profile?: "carFree" | "carOwner",
+) {
   const { scores } = scorePlaceGroups(groups, profile);
   return scores.find((s) => s.id === "groceries")!.score;
 }
@@ -88,10 +91,12 @@ describe("scorePlaceGroups", () => {
 
   it("judges quality against the category baseline, neutral when unrated", () => {
     const rated = (rating: number | null) =>
-      groceriesScore(groceriesAt(100).map((group) => ({
-        ...group,
-        places: group.places.map((place) => ({ ...place, rating })),
-      })));
+      groceriesScore(
+        groceriesAt(100).map((group) => ({
+          ...group,
+          places: group.places.map((place) => ({ ...place, rating })),
+        })),
+      );
 
     // Groceries' typical rating is 4.2: well above it beats unrated (the
     // neutral midpoint), which beats well below it. Places with no rating
@@ -106,7 +111,9 @@ describe("scorePlaceGroups", () => {
         id: "fuel",
         label: "Fuel & Automotive",
         radiusMeters: 3000,
-        places: [makePlace({ distanceMeters: 100, primaryType: "gas_station" })],
+        places: [
+          makePlace({ distanceMeters: 100, primaryType: "gas_station" }),
+        ],
       },
     ];
 
@@ -135,7 +142,9 @@ describe("scorePlaceGroups", () => {
       const carFree = scorePlaceGroups(groups, "carFree");
       const carOwner = scorePlaceGroups(groups, "carOwner");
 
-      expect(carOwner.overallScore).toBeGreaterThanOrEqual(carFree.overallScore);
+      expect(carOwner.overallScore).toBeGreaterThanOrEqual(
+        carFree.overallScore,
+      );
 
       for (const carFreeCategory of carFree.scores) {
         const carOwnerCategory = carOwner.scores.find(
@@ -217,7 +226,10 @@ describe("getDistanceMeters", () => {
   it("matches the known length of one degree of latitude (~111.2 km)", () => {
     // Oracle test: compare against an independently known real-world value
     // rather than re-deriving the haversine formula in the test.
-    const oneDegreeNorth = { ...melbourneCbd, latitude: melbourneCbd.latitude + 1 };
+    const oneDegreeNorth = {
+      ...melbourneCbd,
+      latitude: melbourneCbd.latitude + 1,
+    };
     const distance = getDistanceMeters(melbourneCbd, oneDegreeNorth);
 
     expect(distance).toBeGreaterThan(111_000);

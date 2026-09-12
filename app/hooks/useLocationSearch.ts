@@ -4,17 +4,32 @@ import type { WeightProfile } from "../lib/categories";
 import { isJsonRecord, readApiResult } from "../lib/api";
 import { useAutocomplete } from "./useAutocomplete";
 import { scorePlaceGroups } from "../lib/scoring";
-import type { GeocodeLocation, LocationResult, RecentSearch, RequestState } from "../lib/types";
+import type {
+  GeocodeLocation,
+  LocationResult,
+  RecentSearch,
+  RequestState,
+} from "../lib/types";
 
 function isLocation(value: unknown) {
-  return isJsonRecord(value) && typeof value.formattedAddress === "string" &&
-    typeof value.query === "string" && typeof value.placeId === "string" &&
-    typeof value.latitude === "number" && typeof value.longitude === "number" &&
-    typeof value.locationType === "string" && Array.isArray(value.types);
+  return (
+    isJsonRecord(value) &&
+    typeof value.formattedAddress === "string" &&
+    typeof value.query === "string" &&
+    typeof value.placeId === "string" &&
+    typeof value.latitude === "number" &&
+    typeof value.longitude === "number" &&
+    typeof value.locationType === "string" &&
+    Array.isArray(value.types)
+  );
 }
 function isResult(value: Record<string, unknown>) {
-  return Array.isArray(value.groups) && typeof value.fetchedAt === "string" &&
-    typeof value.cached === "boolean" && (typeof value.propertyId === "string" || value.propertyId === null);
+  return (
+    Array.isArray(value.groups) &&
+    typeof value.fetchedAt === "string" &&
+    typeof value.cached === "boolean" &&
+    (typeof value.propertyId === "string" || value.propertyId === null)
+  );
 }
 
 export function useLocationSearch(profile: WeightProfile) {
@@ -28,7 +43,9 @@ export function useLocationSearch(profile: WeightProfile) {
   const controllerRef = useRef<AbortController | null>(null);
   const returningToWelcomeRef = useRef(false);
   const cache = useRef(new Map<string, LocationResult>());
-  const cancelSearch = useCallback(() => { controllerRef.current?.abort(); }, []);
+  const cancelSearch = useCallback(() => {
+    controllerRef.current?.abort();
+  }, []);
   useEffect(() => cancelSearch, [cancelSearch]);
 
   const openLocation = useCallback(async (id: string) => {
@@ -39,20 +56,38 @@ export function useLocationSearch(profile: WeightProfile) {
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
-    setState("loading"); setStage("Opening saved location…"); setError("");
+    setState("loading");
+    setStage("Opening saved location…");
+    setError("");
     try {
       let next = cache.current.get(id);
       if (!next) {
-        const response = await fetch('/api/locations/' + encodeURIComponent(id), { signal: controller.signal });
-        const data = await readApiResult<LocationResult>(response, value => isResult(value) && isLocation(value.location));
-        if (!response.ok || !data.ok) throw new Error(data.ok ? "Could not open this location." : data.error);
+        const response = await fetch(
+          "/api/locations/" + encodeURIComponent(id),
+          { signal: controller.signal },
+        );
+        const data = await readApiResult<LocationResult>(
+          response,
+          (value) => isResult(value) && isLocation(value.location),
+        );
+        if (!response.ok || !data.ok)
+          throw new Error(
+            data.ok ? "Could not open this location." : data.error,
+          );
         next = data;
       }
       if (controller.signal.aborted) return;
-      cache.current.set(id, next); setResult(next); setState("success");
+      cache.current.set(id, next);
+      setResult(next);
+      setState("success");
     } catch (error) {
       if (!controller.signal.aborted) {
-        setError(error instanceof Error ? error.message : "Could not open this location."); setState("error");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Could not open this location.",
+        );
+        setState("error");
       }
     }
   }, []);
@@ -60,34 +95,78 @@ export function useLocationSearch(profile: WeightProfile) {
   async function runSearch(query: string, knownLocation?: GeocodeLocation) {
     returningToWelcomeRef.current = false;
     controllerRef.current?.abort();
-    if (query.trim().length < 3) { setError("Enter at least 3 characters to search."); setState("error"); return; }
-    const controller = new AbortController(); controllerRef.current = controller;
+    if (query.trim().length < 3) {
+      setError("Enter at least 3 characters to search.");
+      setState("error");
+      return;
+    }
+    const controller = new AbortController();
+    controllerRef.current = controller;
     autocomplete.selectQuery(query.trim());
-    setState("loading"); setError(""); setStage("Finding location…");
+    setState("loading");
+    setError("");
+    setStage("Finding location…");
     try {
       let location = knownLocation;
       if (!location) {
-        const response = await fetch('/api/geocode?query=' + encodeURIComponent(query.trim()), { signal: controller.signal });
-        const data = await readApiResult<{ location: GeocodeLocation }>(response, value => isLocation(value.location));
-        if (!response.ok || !data.ok) throw new Error(data.ok ? "Could not find this location." : data.error);
+        const response = await fetch(
+          "/api/geocode?query=" + encodeURIComponent(query.trim()),
+          { signal: controller.signal },
+        );
+        const data = await readApiResult<{ location: GeocodeLocation }>(
+          response,
+          (value) => isLocation(value.location),
+        );
+        if (!response.ok || !data.ok)
+          throw new Error(
+            data.ok ? "Could not find this location." : data.error,
+          );
         location = data.location;
       }
       if (controller.signal.aborted) return;
       setStage("Finding nearby places and calculating scores…");
-      const params = new URLSearchParams({ lat: String(location.latitude), lng: String(location.longitude), query: location.query,
-        address: location.formattedAddress, placeId: location.placeId, locationType: location.locationType, profile });
-      const response = await fetch('/api/places?' + params, { signal: controller.signal });
-      const data = await readApiResult<Omit<LocationResult, "location">>(response, isResult);
-      if (!response.ok || !data.ok) throw new Error(data.ok ? "Could not load nearby places." : data.error);
+      const params = new URLSearchParams({
+        lat: String(location.latitude),
+        lng: String(location.longitude),
+        query: location.query,
+        address: location.formattedAddress,
+        placeId: location.placeId,
+        locationType: location.locationType,
+        profile,
+      });
+      const response = await fetch("/api/places?" + params, {
+        signal: controller.signal,
+      });
+      const data = await readApiResult<Omit<LocationResult, "location">>(
+        response,
+        isResult,
+      );
+      if (!response.ok || !data.ok)
+        throw new Error(data.ok ? "Could not load nearby places." : data.error);
       if (controller.signal.aborted) return;
       const next = { ...data, location };
       if (next.propertyId) cache.current.set(next.propertyId, next);
       startTransition(() => {
-        setResult(next); setState("success");
-        router.push(next.propertyId ? '/locations/' + encodeURIComponent(next.propertyId) + '?profile=' + profile : '/?profile=' + profile);
+        setResult(next);
+        setState("success");
+        router.push(
+          next.propertyId
+            ? "/locations/" +
+                encodeURIComponent(next.propertyId) +
+                "?profile=" +
+                profile
+            : "/?profile=" + profile,
+        );
       });
     } catch (error) {
-      if (!controller.signal.aborted) { setError(error instanceof Error ? error.message : "Search failed. Please try again."); setState("error"); }
+      if (!controller.signal.aborted) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Search failed. Please try again.",
+        );
+        setState("error");
+      }
     }
   }
 
@@ -108,14 +187,27 @@ export function useLocationSearch(profile: WeightProfile) {
 
   const scored = scorePlaceGroups(result?.groups ?? [], profile);
   return {
-    autocomplete, result, searchState: state, busy: state === "loading" || navigating, stage,
-    location: result?.location ?? null, error,
+    autocomplete,
+    result,
+    searchState: state,
+    busy: state === "loading" || navigating,
+    stage,
+    location: result?.location ?? null,
+    error,
     placesState: (result ? "success" : state) as RequestState,
-    placeGroups: result?.groups ?? [], categoryScores: scored.scores,
-    overallScore: result ? scored.overallScore : null, propertyId: result?.propertyId ?? null,
-    fetchedAt: result?.fetchedAt ?? null, placesError: error, resultFromCache: result?.cached ?? false,
+    placeGroups: result?.groups ?? [],
+    categoryScores: scored.scores,
+    overallScore: result ? scored.overallScore : null,
+    propertyId: result?.propertyId ?? null,
+    fetchedAt: result?.fetchedAt ?? null,
+    placesError: error,
+    resultFromCache: result?.cached ?? false,
     handleSearch: (query = autocomplete.query) => runSearch(query),
-    searchFromHistory: (search: RecentSearch) => runSearch(search.query, { ...search, types: [] }),
-    openLocation, cancelSearch, returnToWelcome, finishWelcomeNavigation,
+    searchFromHistory: (search: RecentSearch) =>
+      runSearch(search.query, { ...search, types: [] }),
+    openLocation,
+    cancelSearch,
+    returnToWelcome,
+    finishWelcomeNavigation,
   };
 }

@@ -53,7 +53,10 @@ export async function GET(request: Request) {
 
     if (!saved) {
       return Response.json(
-        { ok: false, error: "Both locations must be saved before comparing them." },
+        {
+          ok: false,
+          error: "Both locations must be saved before comparing them.",
+        },
         { status: 403 },
       );
     }

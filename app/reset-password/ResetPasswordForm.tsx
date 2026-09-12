@@ -9,10 +9,7 @@ type ResetPasswordFormProps = {
   invalid: boolean;
 };
 
-export function ResetPasswordForm({
-  token,
-  invalid,
-}: ResetPasswordFormProps) {
+export function ResetPasswordForm({ token, invalid }: ResetPasswordFormProps) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -24,8 +21,8 @@ export function ResetPasswordForm({
       <div className="text-center">
         <h1 className="text-xl font-bold">Reset link unavailable</h1>
         <p className="mt-3 text-sm leading-6 text-ink-muted">
-          This password-reset link is invalid or has expired. Request a new
-          link to continue.
+          This password-reset link is invalid or has expired. Request a new link
+          to continue.
         </p>
         <Link
           href="/forgot-password"

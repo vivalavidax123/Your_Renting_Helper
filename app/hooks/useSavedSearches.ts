@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { readApiResult } from "../lib/api";
-import type {
-  RequestState,
-  RecentSearch,
-} from "../lib/types";
+import type { RequestState, RecentSearch } from "../lib/types";
 
 function isHistoryPayload(value: Record<string, unknown>) {
   return Array.isArray(value.searches);
@@ -13,7 +10,10 @@ function isHistoryPayload(value: Record<string, unknown>) {
 // needs them (chips, comparison panel) reads the same single copy.
 // userId is a dependency because both lists are user-relative: signing in
 // or out must refetch so stars and the saved row reflect the new viewer.
-export function useSavedSearches(placesState: RequestState, userId: string | null) {
+export function useSavedSearches(
+  placesState: RequestState,
+  userId: string | null,
+) {
   const [savedError, setSavedError] = useState("");
   const [loadedSavedForUser, setLoadedSavedForUser] = useState<string | null>(
     null,
@@ -38,7 +38,10 @@ export function useSavedSearches(placesState: RequestState, userId: string | nul
       ),
       userId
         ? fetch("/api/favourites").then((response) =>
-            readApiResult<{ searches: RecentSearch[] }>(response, isHistoryPayload),
+            readApiResult<{ searches: RecentSearch[] }>(
+              response,
+              isHistoryPayload,
+            ),
           )
         : Promise.resolve({ ok: true as const, searches: [] }),
     ])
@@ -85,10 +88,20 @@ export function useSavedSearches(placesState: RequestState, userId: string | nul
               body: JSON.stringify({ locationId: search.id }),
             },
       );
-      const data = await readApiResult<Record<string, never>>(response, () => true);
-      if (!response.ok || !data.ok) throw new Error(data.ok ? "Could not update saved locations." : data.error);
+      const data = await readApiResult<Record<string, never>>(
+        response,
+        () => true,
+      );
+      if (!response.ok || !data.ok)
+        throw new Error(
+          data.ok ? "Could not update saved locations." : data.error,
+        );
     } catch (error) {
-      setSavedError(error instanceof Error ? error.message : "Could not update saved locations.");
+      setSavedError(
+        error instanceof Error
+          ? error.message
+          : "Could not update saved locations.",
+      );
     } finally {
       setRefreshKey((key) => key + 1);
     }

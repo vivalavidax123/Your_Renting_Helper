@@ -152,8 +152,7 @@ function ComparisonAnalyst({
     }
   }
 
-  const awaitingFirstChunk =
-    status === "loading" && !messages.at(-1)?.content;
+  const awaitingFirstChunk = status === "loading" && !messages.at(-1)?.content;
 
   return (
     <section className="mt-6 border-t border-line pt-5">
@@ -369,9 +368,7 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
 
   const activeResult = result?.key === requestKey ? result : null;
   const retainedPairResult =
-    result &&
-    result.a.id === effectiveAId &&
-    result.b.id === effectiveBId
+    result && result.a.id === effectiveAId && result.b.id === effectiveBId
       ? result
       : null;
   const activeError =
@@ -383,7 +380,10 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
     <section className="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-6">
       <h2 className="text-lg font-semibold text-ink">Choose two locations</h2>
       <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm leading-6 text-ink-soft">
-        <li>The table recalculates both locations for the selected mobility profile.</li>
+        <li>
+          The table recalculates both locations for the selected mobility
+          profile.
+        </li>
         <li>The higher score in each row is highlighted.</li>
       </ul>
 
@@ -411,7 +411,10 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
               ? "Save two scored locations to start a comparison."
               : "Save one more scored location to start a comparison."}
           </p>
-          <Link href="/" className="mt-2 inline-block font-semibold text-accent">
+          <Link
+            href="/"
+            className="mt-2 inline-block font-semibold text-accent"
+          >
             Search for a location
           </Link>
         </div>
@@ -424,8 +427,15 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
 
       {unavailableCount > 0 ? (
         <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-muted">
-          <li>{unavailableCount} saved {unavailableCount === 1 ? "location has" : "locations have"} no current score data.</li>
-          <li>Search {unavailableCount === 1 ? "it" : "them"} again to include {unavailableCount === 1 ? "it" : "them"} here.</li>
+          <li>
+            {unavailableCount} saved{" "}
+            {unavailableCount === 1 ? "location has" : "locations have"} no
+            current score data.
+          </li>
+          <li>
+            Search {unavailableCount === 1 ? "it" : "them"} again to include{" "}
+            {unavailableCount === 1 ? "it" : "them"} here.
+          </li>
         </ul>
       ) : null}
 
@@ -462,7 +472,9 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
               </caption>
               <thead>
                 <tr className="border-b border-line-strong bg-surface-subtle text-xs uppercase tracking-wide text-ink-muted">
-                  <th className="px-3 py-3 text-left font-semibold">Category</th>
+                  <th className="px-3 py-3 text-left font-semibold">
+                    Category
+                  </th>
                   <th className="max-w-56 px-3 py-3 text-right font-semibold">
                     {activeResult.a.formattedAddress}
                   </th>
@@ -493,7 +505,10 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
                   }
 
                   return (
-                    <tr key={scoreA.id} className="border-b border-line last:border-0">
+                    <tr
+                      key={scoreA.id}
+                      className="border-b border-line last:border-0"
+                    >
                       <td className="px-3 py-2.5 text-ink-soft">
                         {scoreA.label}
                       </td>
@@ -511,7 +526,6 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
             {new Date(activeResult.a.fetchedAt).toLocaleDateString()} for A and{" "}
             {new Date(activeResult.b.fetchedAt).toLocaleDateString()} for B.
           </p>
-
         </>
       ) : null}
 

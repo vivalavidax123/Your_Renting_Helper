@@ -16,30 +16,33 @@ export async function fetchPlacesForBrand({
   longitude: number;
   radiusMeters?: number;
 }) {
-  const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
-    method: "POST",
-    cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.rating,places.userRatingCount",
-    },
-    body: JSON.stringify({
-      textQuery: brandTerm,
-      pageSize: 3,
-      locationBias: {
-        circle: {
-          center: {
-            latitude,
-            longitude,
-          },
-          radius: radiusMeters,
-        },
+  const response = await fetch(
+    "https://places.googleapis.com/v1/places:searchText",
+    {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask":
+          "places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.rating,places.userRatingCount",
       },
-      regionCode: "AU",
-    }),
-  });
+      body: JSON.stringify({
+        textQuery: brandTerm,
+        pageSize: 3,
+        locationBias: {
+          circle: {
+            center: {
+              latitude,
+              longitude,
+            },
+            radius: radiusMeters,
+          },
+        },
+        regionCode: "AU",
+      }),
+    },
+  );
 
   const data = (await response.json()) as GooglePlacesResponse;
 
@@ -65,32 +68,35 @@ export async function fetchPlacesForTypes({
   longitude: number;
   radiusMeters?: number;
 }) {
-  const response = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
-    method: "POST",
-    cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.rating,places.userRatingCount",
-    },
-    body: JSON.stringify({
-      includedTypes: placeTypes,
-      // API maximum. Brand chains are tagged by name-matching these results
-      // locally (no per-brand text searches), so recall depends on this cap.
-      maxResultCount: 20,
-      locationRestriction: {
-        circle: {
-          center: {
-            latitude,
-            longitude,
-          },
-          radius: radiusMeters,
-        },
+  const response = await fetch(
+    "https://places.googleapis.com/v1/places:searchNearby",
+    {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask":
+          "places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.rating,places.userRatingCount",
       },
-      regionCode: "AU",
-    }),
-  });
+      body: JSON.stringify({
+        includedTypes: placeTypes,
+        // API maximum. Brand chains are tagged by name-matching these results
+        // locally (no per-brand text searches), so recall depends on this cap.
+        maxResultCount: 20,
+        locationRestriction: {
+          circle: {
+            center: {
+              latitude,
+              longitude,
+            },
+            radius: radiusMeters,
+          },
+        },
+        regionCode: "AU",
+      }),
+    },
+  );
 
   const data = (await response.json()) as GooglePlacesResponse;
 

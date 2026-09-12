@@ -57,9 +57,7 @@ export default function LoginPage() {
     if (mode === "signUp") {
       setPassword("");
       setVerificationEmail(email);
-      setNotice(
-        "Check your inbox for a verification link before signing in.",
-      );
+      setNotice("Check your inbox for a verification link before signing in.");
       return;
     }
 

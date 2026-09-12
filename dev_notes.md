@@ -10,16 +10,16 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 Status reviewed against committed `HEAD` on 2026-09-11.
 
-| Area | Current state |
-| --- | --- |
-| Product | Deployed functional prototype |
-| Public application | https://rent-score-prototype.vercel.app/ |
-| Primary branch | `main`; Vercel auto-deploys changes pushed to it |
-| Application shape | Full-stack Next.js application in one repository |
-| Persistence | PostgreSQL through Prisma |
-| Authentication | Email/password and Google OAuth through Better Auth |
-| Quality gates | ESLint, TypeScript, Vitest, and production build |
-| Automated tests | 82 tests across 15 test files |
+| Area                 | Current state                                         |
+| -------------------- | ----------------------------------------------------- |
+| Product              | Deployed functional prototype                         |
+| Public application   | https://rent-score-prototype.vercel.app/              |
+| Primary branch       | `main`; Vercel auto-deploys changes pushed to it      |
+| Application shape    | Full-stack Next.js application in one repository      |
+| Persistence          | PostgreSQL through Prisma                             |
+| Authentication       | Email/password and Google OAuth through Better Auth   |
+| Quality gates        | ESLint, TypeScript, Vitest, and production build      |
+| Automated tests      | 82 tests across 15 test files                         |
 | Production readiness | Not production-ready; hardening gaps are listed below |
 
 The core renter workflow is implemented:
@@ -96,24 +96,24 @@ It is not a production platform. The application still relies on synchronous req
 
 Versions are taken from the current package manifest and deployment files.
 
-| Layer | Current implementation |
-| --- | --- |
-| Framework | Next.js 16.2.6 App Router |
-| UI | React 19.2.4 |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS 4 plus semantic tokens in app/globals.css |
-| Fonts | Geist and Geist Mono through next/font |
-| Database | PostgreSQL |
-| ORM | Prisma 6.19.3 |
-| Authentication | Better Auth 1.6.23 with Prisma adapter |
-| Maps and places | Google Maps JavaScript API, Places API (New), and Geocoding API |
-| Transport enrichment | Transitland v2 REST API, optional |
-| Analytics | Vercel Analytics |
-| Tests | Vitest 4.1.10 |
-| Static checks | ESLint 9 and TypeScript |
-| Hosted deployment | Vercel with Neon PostgreSQL |
-| Container deployment | Node 22 slim application image and PostgreSQL 17 |
-| CI runtime | GitHub Actions with Node 20 |
+| Layer                | Current implementation                                          |
+| -------------------- | --------------------------------------------------------------- |
+| Framework            | Next.js 16.2.6 App Router                                       |
+| UI                   | React 19.2.4                                                    |
+| Language             | TypeScript 5                                                    |
+| Styling              | Tailwind CSS 4 plus semantic tokens in app/globals.css          |
+| Fonts                | Geist and Geist Mono through next/font                          |
+| Database             | PostgreSQL                                                      |
+| ORM                  | Prisma 6.19.3                                                   |
+| Authentication       | Better Auth 1.6.23 with Prisma adapter                          |
+| Maps and places      | Google Maps JavaScript API, Places API (New), and Geocoding API |
+| Transport enrichment | Transitland v2 REST API, optional                               |
+| Analytics            | Vercel Analytics                                                |
+| Tests                | Vitest 4.1.10                                                   |
+| Static checks        | ESLint 9 and TypeScript                                         |
+| Hosted deployment    | Vercel with Neon PostgreSQL                                     |
+| Container deployment | Node 22 slim application image and PostgreSQL 17                |
+| CI runtime           | GitHub Actions with Node 20                                     |
 
 Prisma 6 is intentional. There is no current need to add the Prisma 7 driver-adapter work to this personal project.
 
@@ -203,23 +203,23 @@ Profile changes recalculate scores in the browser from the existing place groups
 
 ## API Routes
 
-| Route | Access | Responsibility |
-| --- | --- | --- |
-| GET /api/autocomplete | Public | Australian Google Places suggestions |
-| GET /api/geocode | Public | Address geocoding and provider error mapping |
-| GET /api/places | Public, session-aware | Cache lookup, provider retrieval, scoring, snapshot save, optional history write |
-| GET /api/history | Public, session-aware | Current user's recent searches; signed-out users receive an empty list |
-| GET /api/favourites | Signed in | Current user's saved locations |
-| POST /api/favourites | Signed in | Save a known location |
-| DELETE /api/favourites | Signed in | Remove a saved location |
-| GET /api/compare | Signed in, saved-location ownership required | Recalculate two saved locations from stored evidence for one selected mobility profile |
-| GET /api/locations/[propertyId] | Public | Read stored location metadata, raw groups and timestamp without user history or paid refresh |
-| POST /api/locations/[propertyId]/chat | Signed in | Answer one grounded question about a stored location and selected mobility profile |
-| POST /api/locations/compare/chat | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations |
-| GET /api/cbd-travel | Public | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD |
-| GET /api/rent-estimates | Public | Like-for-like community median rent within an adaptive 1–10 km radius |
-| POST /api/rent-estimates | Signed in | Create or update the caller's rent report for a location/property combination |
-| /api/auth/[...all] | Better Auth | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks |
+| Route                                 | Access                                       | Responsibility                                                                               |
+| ------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| GET /api/autocomplete                 | Public                                       | Australian Google Places suggestions                                                         |
+| GET /api/geocode                      | Public                                       | Address geocoding and provider error mapping                                                 |
+| GET /api/places                       | Public, session-aware                        | Cache lookup, provider retrieval, scoring, snapshot save, optional history write             |
+| GET /api/history                      | Public, session-aware                        | Current user's recent searches; signed-out users receive an empty list                       |
+| GET /api/favourites                   | Signed in                                    | Current user's saved locations                                                               |
+| POST /api/favourites                  | Signed in                                    | Save a known location                                                                        |
+| DELETE /api/favourites                | Signed in                                    | Remove a saved location                                                                      |
+| GET /api/compare                      | Signed in, saved-location ownership required | Recalculate two saved locations from stored evidence for one selected mobility profile       |
+| GET /api/locations/[propertyId]       | Public                                       | Read stored location metadata, raw groups and timestamp without user history or paid refresh |
+| POST /api/locations/[propertyId]/chat | Signed in                                    | Answer one grounded question about a stored location and selected mobility profile           |
+| POST /api/locations/compare/chat      | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations                            |
+| GET /api/cbd-travel                   | Public                                       | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD    |
+| GET /api/rent-estimates               | Public                                       | Like-for-like community median rent within an adaptive 1–10 km radius                        |
+| POST /api/rent-estimates              | Signed in                                    | Create or update the caller's rent report for a location/property combination                |
+| /api/auth/[...all]                    | Better Auth                                  | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks                                    |
 
 CBD driving calls use the server-only `GEOAPIFY_API_KEY`, request free-flow
 traffic, and round the result to the nearest five minutes. Public transport
@@ -307,16 +307,16 @@ The formula is 30 x (1 - exp(-count / k)).
 
 Both profiles use the same fixed category priorities, which sum to 100. Car ownership changes only the proximity decay described above.
 
-| Category | Weight |
-| --- | ---: |
-| Shopping Centres | 8 |
-| Groceries | 22 |
-| Food & Cafes | 14 |
-| Transport | 28 |
-| Health | 15 |
-| Fitness & Recreation | 10 |
-| Fuel & Automotive | 0 |
-| Services | 3 |
+| Category             | Weight |
+| -------------------- | -----: |
+| Shopping Centres     |      8 |
+| Groceries            |     22 |
+| Food & Cafes         |     14 |
+| Transport            |     28 |
+| Health               |     15 |
+| Fitness & Recreation |     10 |
+| Fuel & Automotive    |      0 |
+| Services             |      3 |
 
 Using identical weights keeps the profiles directly comparable. The car-owner half-life is more distance-tolerant, so switching from no-car to car-owner can keep or improve every category score and cannot lower the overall score. Places within the 400 m walkable ring score equally for both profiles; farther amenities can score better for a car owner. Fuel remains visible context but does not affect either overall score.
 
@@ -375,17 +375,17 @@ Current MVP boundaries: no RAG, web search, durable conversation storage, model 
 
 The current Prisma schema contains nine models:
 
-| Model | Purpose |
-| --- | --- |
-| SearchLocation | Shared canonical searched location keyed by rounded coordinates |
-| ScoreSnapshot | Timestamped overall score, category scores, and place groups |
-| UserSearch | Per-user recent-search relationship |
-| UserSavedLocation | Per-user saved-location relationship |
-| RentalReport | Per-user known weekly rent evidence keyed by location and property profile |
-| User | Better Auth identity |
-| Session | Better Auth database session |
-| Account | Password or OAuth provider account |
-| Verification | Better Auth verification records |
+| Model             | Purpose                                                                    |
+| ----------------- | -------------------------------------------------------------------------- |
+| SearchLocation    | Shared canonical searched location keyed by rounded coordinates            |
+| ScoreSnapshot     | Timestamped overall score, category scores, and place groups               |
+| UserSearch        | Per-user recent-search relationship                                        |
+| UserSavedLocation | Per-user saved-location relationship                                       |
+| RentalReport      | Per-user known weekly rent evidence keyed by location and property profile |
+| User              | Better Auth identity                                                       |
+| Session           | Better Auth database session                                               |
+| Account           | Password or OAuth provider account                                         |
+| Verification      | Better Auth verification records                                           |
 
 Important behaviour:
 
@@ -443,21 +443,21 @@ The application uses semantic colour tokens for light and dark themes. Theme pre
 
 Application variables:
 
-| Variable | Required | Exposure and purpose |
-| --- | --- | --- |
-| DATABASE_URL | Yes | Server-only PostgreSQL connection |
-| GOOGLE_MAPS_API_KEY | Yes | Server-only autocomplete, geocoding, place retrieval, and temporary public-transport routing |
-| GEOAPIFY_API_KEY | Yes | Server-only indicative driving time to Melbourne CBD |
-| OPENAI_API_KEY | For AI analyst | Server-only OpenAI credential used by the grounded location chat |
-| OPENAI_MODEL | For AI analyst | Server-only model selected by the environment; the tracked Docker example defaults to `gpt-5-mini` |
-| NEXT_PUBLIC_MAPS_API_KEY | For live map | Browser-visible Maps JavaScript key |
-| BETTER_AUTH_SECRET | Yes | Server-only stable auth and token-encryption secret |
-| BETTER_AUTH_URL | Yes | Canonical application origin for auth |
-| RESEND_API_KEY | When auth email is enabled | Server-only Resend API key for verification and password-reset messages |
-| AUTH_EMAIL_FROM | When auth email is enabled | Verified sender identity used for authentication messages |
-| TRANSITLAND_API_KEY | No | Server-only bus-stop and service enrichment |
-| GOOGLE_CLIENT_ID | No | Google OAuth; email/password works without it |
-| GOOGLE_CLIENT_SECRET | No | Google OAuth; server-only |
+| Variable                 | Required                   | Exposure and purpose                                                                               |
+| ------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------- |
+| DATABASE_URL             | Yes                        | Server-only PostgreSQL connection                                                                  |
+| GOOGLE_MAPS_API_KEY      | Yes                        | Server-only autocomplete, geocoding, place retrieval, and temporary public-transport routing       |
+| GEOAPIFY_API_KEY         | Yes                        | Server-only indicative driving time to Melbourne CBD                                               |
+| OPENAI_API_KEY           | For AI analyst             | Server-only OpenAI credential used by the grounded location chat                                   |
+| OPENAI_MODEL             | For AI analyst             | Server-only model selected by the environment; the tracked Docker example defaults to `gpt-5-mini` |
+| NEXT_PUBLIC_MAPS_API_KEY | For live map               | Browser-visible Maps JavaScript key                                                                |
+| BETTER_AUTH_SECRET       | Yes                        | Server-only stable auth and token-encryption secret                                                |
+| BETTER_AUTH_URL          | Yes                        | Canonical application origin for auth                                                              |
+| RESEND_API_KEY           | When auth email is enabled | Server-only Resend API key for verification and password-reset messages                            |
+| AUTH_EMAIL_FROM          | When auth email is enabled | Verified sender identity used for authentication messages                                          |
+| TRANSITLAND_API_KEY      | No                         | Server-only bus-stop and service enrichment                                                        |
+| GOOGLE_CLIENT_ID         | No                         | Google OAuth; email/password works without it                                                      |
+| GOOGLE_CLIENT_SECRET     | No                         | Google OAuth; server-only                                                                          |
 
 NEXT_PUBLIC_MAPS_API_KEY is public by design. Restrict it by HTTP referrer and to the Maps JavaScript API. Restrict the server key to the required server APIs and do not apply browser-referrer restrictions to server calls.
 

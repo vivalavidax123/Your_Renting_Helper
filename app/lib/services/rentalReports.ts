@@ -30,10 +30,7 @@ function median(values: number[]) {
 
 function getBoundingBox(latitude: number, longitude: number) {
   const latitudeDelta = maximumEstimateRadiusMeters / 111_320;
-  const longitudeScale = Math.max(
-    Math.cos((latitude * Math.PI) / 180),
-    0.01,
-  );
+  const longitudeScale = Math.max(Math.cos((latitude * Math.PI) / 180), 0.01);
   const longitudeDelta =
     maximumEstimateRadiusMeters / (111_320 * longitudeScale);
 
@@ -122,7 +119,9 @@ export async function getSuggestedRentalProfile(
 
   for (const report of nearby) {
     if (
-      !rentalPropertyTypes.includes(report.propertyType as RentalPropertyType) ||
+      !rentalPropertyTypes.includes(
+        report.propertyType as RentalPropertyType,
+      ) ||
       !Number.isInteger(report.bedrooms) ||
       report.bedrooms < 0 ||
       report.bedrooms > 10
@@ -213,7 +212,10 @@ export async function getLatestRentalReport(
     select: { weeklyRent: true, propertyType: true, bedrooms: true },
   });
 
-  if (!report || !rentalPropertyTypes.includes(report.propertyType as RentalPropertyType)) {
+  if (
+    !report ||
+    !rentalPropertyTypes.includes(report.propertyType as RentalPropertyType)
+  ) {
     return null;
   }
 

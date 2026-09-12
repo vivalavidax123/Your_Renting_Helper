@@ -13,7 +13,9 @@ const transitlandDepartureWindowSeconds = 7200;
 const transitlandBaseUrl = "https://transit.land/api/v2/rest";
 
 function getTransitlandStopKey(stop: TransitlandStop) {
-  return stop.onestop_id ?? (typeof stop.id === "number" ? String(stop.id) : null);
+  return (
+    stop.onestop_id ?? (typeof stop.id === "number" ? String(stop.id) : null)
+  );
 }
 
 function getTransitlandRouteNumber(departure: TransitlandDeparture) {
@@ -187,7 +189,8 @@ export async function fetchTransitlandBusStops({
         place: {
           id: `transitland:${stopKey}`,
           name: stop.stop_name,
-          address: stop.stop_desc ?? stop.stop_code ?? "Stop details unavailable",
+          address:
+            stop.stop_desc ?? stop.stop_code ?? "Stop details unavailable",
           primaryType: "bus_stop",
           latitude: stopLatitude,
           longitude: stopLongitude,
@@ -200,12 +203,17 @@ export async function fetchTransitlandBusStops({
     ];
   });
 
-  const sortedStops = validStops.sort((a, b) => a.place.distanceMeters - b.place.distanceMeters).slice(0, maxTransportBusStops);
+  const sortedStops = validStops
+    .sort((a, b) => a.place.distanceMeters - b.place.distanceMeters)
+    .slice(0, maxTransportBusStops);
 
   return Promise.all(
     sortedStops.map(async ({ stop, place }) => {
-      const transportServices = await fetchTransitlandBusDepartures({ apiKey, stop });
+      const transportServices = await fetchTransitlandBusDepartures({
+        apiKey,
+        stop,
+      });
       return { ...place, transportServices };
-    })
+    }),
   );
 }

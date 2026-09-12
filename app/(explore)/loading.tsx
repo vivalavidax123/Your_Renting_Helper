@@ -1,1 +1,12 @@
-export default function Loading() { return <main className="mx-auto w-full max-w-7xl p-6"><p role="status" className="rounded-xl border border-line bg-surface p-6 text-ink-muted">Opening location workspace…</p></main>; }
+export default function Loading() {
+  return (
+    <main className="mx-auto w-full max-w-7xl p-6">
+      <p
+        role="status"
+        className="rounded-xl border border-line bg-surface p-6 text-ink-muted"
+      >
+        Opening location workspace…
+      </p>
+    </main>
+  );
+}

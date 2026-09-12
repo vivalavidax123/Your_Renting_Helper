@@ -9,6 +9,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:personal-project-simplicity-rules -->
+
 # Keep the project appropriately simple
 
 This is a personal project, not a workplace or enterprise codebase. Prefer the smallest clear implementation that solves the current requirement.
@@ -20,6 +21,7 @@ This is a personal project, not a workplace or enterprise codebase. Prefer the s
 <!-- END:personal-project-simplicity-rules -->
 
 <!-- BEGIN:owner-learning-preference -->
+
 # Teach while implementing
 
 The project owner is a beginner and wants to learn while changes are made.
@@ -32,6 +34,7 @@ The project owner is a beginner and wants to learn while changes are made.
 <!-- END:owner-learning-preference -->
 
 <!-- BEGIN:post-push-documentation-reconciliation -->
+
 # Reconcile project documentation after every push
 
 After every successful Git push, perform a documentation audit against the state that was pushed.
@@ -44,4 +47,5 @@ After every successful Git push, perform a documentation audit against the state
 - When an audit finds discrepancies, make a focused documentation follow-up commit and push. That documentation-only follow-up push does not require another audit unless it introduces a substantive documentation change beyond applying the audit.
 
 When a documentation impact is already known before a code push, update the relevant documentation in the same change; the post-push audit remains the final consistency check.
+
 <!-- END:post-push-documentation-reconciliation -->

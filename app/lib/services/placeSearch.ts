@@ -1,9 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import {
-  rentScoreCategories,
-  type RentScoreCategory,
-} from "../categories";
+import { rentScoreCategories, type RentScoreCategory } from "../categories";
 import { getDistanceMeters } from "../scoring";
 import type { GooglePlace, NearbyPlace, PlaceSource } from "../types";
 import { normalizeStationName, normalizeText } from "../utils";
@@ -135,7 +132,14 @@ function collectPlaces({
   const placesById = new Map<string, NearbyPlace>();
 
   for (const place of googlePlaces) {
-    addPlaceToMap({ placesById, place, origin, category, source, radiusMeters });
+    addPlaceToMap({
+      placesById,
+      place,
+      origin,
+      category,
+      source,
+      radiusMeters,
+    });
   }
 
   return Array.from(placesById.values());
@@ -262,7 +266,9 @@ async function fetchPlacesForTransportCategory({
   const isVlineStation = (place: NearbyPlace) =>
     vlineStationNames.has(normalizeStationName(place.name));
   const nearestVlineStation = vlineCandidatePlaces.find(isVlineStation);
-  const nearestMetroStation = railPlaces.find((place) => !isVlineStation(place));
+  const nearestMetroStation = railPlaces.find(
+    (place) => !isVlineStation(place),
+  );
   const placesById = new Map<string, NearbyPlace>();
 
   for (const place of [

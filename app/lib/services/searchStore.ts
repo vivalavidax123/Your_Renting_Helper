@@ -315,16 +315,24 @@ export async function setLocationSaved(
 // Read-only evidence access never triggers paid provider calls or records history.
 export async function getStoredLocation(id: string) {
   const location = await prisma.searchLocation.findUnique({
-    where: { id }, include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
+    where: { id },
+    include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
   });
   const snapshot = location?.snapshots[0];
   if (!location || !snapshot) return null;
   return {
     propertyId: location.id,
-    location: { query: location.query, formattedAddress: location.formattedAddress,
-      placeId: location.placeId, latitude: location.latitude, longitude: location.longitude,
-      locationType: location.locationType, types: [] },
+    location: {
+      query: location.query,
+      formattedAddress: location.formattedAddress,
+      placeId: location.placeId,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      locationType: location.locationType,
+      types: [],
+    },
     groups: JSON.parse(snapshot.groupsJson) as PlaceGroup[],
-    fetchedAt: snapshot.createdAt.toISOString(), cached: true,
+    fetchedAt: snapshot.createdAt.toISOString(),
+    cached: true,
   };
 }

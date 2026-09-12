@@ -91,8 +91,7 @@ export async function GET(request: Request) {
           placeId: prediction.placeId,
           text,
           mainText: prediction.structuredFormat?.mainText?.text ?? text,
-          secondaryText:
-            prediction.structuredFormat?.secondaryText?.text ?? "",
+          secondaryText: prediction.structuredFormat?.secondaryText?.text ?? "",
         };
       })
       .filter((suggestion) => suggestion !== null) ?? [];

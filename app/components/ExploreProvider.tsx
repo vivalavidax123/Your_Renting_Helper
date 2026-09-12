@@ -8,21 +8,45 @@ import { useLocationSearch } from "../hooks/useLocationSearch";
 import { useSavedSearches } from "../hooks/useSavedSearches";
 import { ConversationProvider } from "./ConversationProvider";
 
-type Explore = ReturnType<typeof useLocationSearch> & ReturnType<typeof useSavedSearches> & {
-  profile: WeightProfile; changeProfile: (profile: WeightProfile) => void; canSave: boolean; sessionPending: boolean;
-};
+type Explore = ReturnType<typeof useLocationSearch> &
+  ReturnType<typeof useSavedSearches> & {
+    profile: WeightProfile;
+    changeProfile: (profile: WeightProfile) => void;
+    canSave: boolean;
+    sessionPending: boolean;
+  };
 const Context = createContext<Explore | null>(null);
 export function ExploreProvider({ children }: { children: ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
-  return <ExploreSession key={session?.user.id ?? "anonymous"} userId={session?.user.id ?? null} sessionPending={isPending}>{children}</ExploreSession>;
+  return (
+    <ExploreSession
+      key={session?.user.id ?? "anonymous"}
+      userId={session?.user.id ?? null}
+      sessionPending={isPending}
+    >
+      {children}
+    </ExploreSession>
+  );
 }
-function ExploreSession({ children, userId, sessionPending }: { children: ReactNode; userId: string | null; sessionPending: boolean }) {
+function ExploreSession({
+  children,
+  userId,
+  sessionPending,
+}: {
+  children: ReactNode;
+  userId: string | null;
+  sessionPending: boolean;
+}) {
   const params = useSearchParams();
   const pathname = usePathname();
   const requestedProfile = params.get("profile");
-  const profile: WeightProfile = requestedProfile === "carOwner" ? "carOwner" : "carFree";
+  const profile: WeightProfile =
+    requestedProfile === "carOwner" ? "carOwner" : "carFree";
   const search = useLocationSearch(profile);
-  const saved = useSavedSearches(search.busy ? "loading" : search.placesState, userId);
+  const saved = useSavedSearches(
+    search.busy ? "loading" : search.placesState,
+    userId,
+  );
   const { cancelSearch, finishWelcomeNavigation } = search;
   useEffect(() => {
     if (pathname === "/") {
@@ -32,15 +56,44 @@ function ExploreSession({ children, userId, sessionPending }: { children: ReactN
     return cancelSearch;
   }, [pathname, cancelSearch, finishWelcomeNavigation]);
   function changeProfile(next: WeightProfile) {
-    const query = new URLSearchParams(params); query.set("profile", next);
-    window.history.replaceState(null, "", pathname + "?" + query + window.location.hash);
+    const query = new URLSearchParams(params);
+    query.set("profile", next);
+    window.history.replaceState(
+      null,
+      "",
+      pathname + "?" + query + window.location.hash,
+    );
   }
-  return <Context.Provider value={{ ...search, ...saved, profile, changeProfile, canSave: !!userId, sessionPending }}>
-    <ConversationProvider>
-      {requestedProfile && requestedProfile !== "carFree" && requestedProfile !== "carOwner" ?
-        <p role="alert" className="p-6">Unknown mobility profile. <button className="underline" onClick={() => changeProfile("carFree")}>Use No car</button></p> : children}
-    </ConversationProvider>
-  </Context.Provider>;
+  return (
+    <Context.Provider
+      value={{
+        ...search,
+        ...saved,
+        profile,
+        changeProfile,
+        canSave: !!userId,
+        sessionPending,
+      }}
+    >
+      <ConversationProvider>
+        {requestedProfile &&
+        requestedProfile !== "carFree" &&
+        requestedProfile !== "carOwner" ? (
+          <p role="alert" className="p-6">
+            Unknown mobility profile.{" "}
+            <button
+              className="underline"
+              onClick={() => changeProfile("carFree")}
+            >
+              Use No car
+            </button>
+          </p>
+        ) : (
+          children
+        )}
+      </ConversationProvider>
+    </Context.Provider>
+  );
 }
 export function useExplore() {
   const context = useContext(Context);

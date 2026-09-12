@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { buildDerivedIndicators } from "./indicators";
 import type { CategoryScore, NearbyPlace, PlaceGroup } from "./types";
 
-function score(id: string, value: number, distance: number | null): CategoryScore {
+function score(
+  id: string,
+  value: number,
+  distance: number | null,
+): CategoryScore {
   return {
     id,
     label: id,
@@ -17,7 +21,11 @@ function score(id: string, value: number, distance: number | null): CategoryScor
   };
 }
 
-function place(id: string, distanceMeters: number, primaryType = "place"): NearbyPlace {
+function place(
+  id: string,
+  distanceMeters: number,
+  primaryType = "place",
+): NearbyPlace {
   return {
     id,
     name: id,
@@ -59,7 +67,10 @@ describe("buildDerivedIndicators", () => {
       label: "Bus 10",
       value: "3 min",
     });
-    expect(groups[0].places.map(({ id }) => id)).toEqual(["Far bus", "Near bus"]);
+    expect(groups[0].places.map(({ id }) => id)).toEqual([
+      "Far bus",
+      "Near bus",
+    ]);
   });
 
   it("returns the five stable indicator categories", () => {

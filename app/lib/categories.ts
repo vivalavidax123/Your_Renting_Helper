@@ -25,7 +25,13 @@ export const rentScoreCategories: RentScoreCategory[] = [
     colorClass: "bg-teal-500",
     typicalRating: 4.2,
     detail: "Major shopping centres and retail hubs within a broader area",
-    brandTerms: ["Westfield", "Stockland", "DFO", "shopping centre", "shopping mall"],
+    brandTerms: [
+      "Westfield",
+      "Stockland",
+      "DFO",
+      "shopping centre",
+      "shopping mall",
+    ],
     placeTypes: ["shopping_mall"],
   },
   {
@@ -64,7 +70,12 @@ export const rentScoreCategories: RentScoreCategory[] = [
     detail:
       "Bus stops within 1 km, or closest bus stops if none are found nearby, plus the nearest metro/train and V/Line stations",
     brandTerms: ["Sydney Trains", "Metro station", "light rail station"],
-    placeTypes: ["train_station", "bus_station", "subway_station", "light_rail_station"],
+    placeTypes: [
+      "train_station",
+      "bus_station",
+      "subway_station",
+      "light_rail_station",
+    ],
   },
   {
     id: "health",
@@ -89,8 +100,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
     // Blended baseline: boutique gyms trend ~4.7 but public pools and
     // recreation centres trend ~4.2-4.4, so the mixed category sits lower.
     typicalRating: 4.5,
-    detail:
-      "Gyms, pools, and recreation facilities in the surrounding area",
+    detail: "Gyms, pools, and recreation facilities in the surrounding area",
     brandTerms: [
       "Anytime Fitness",
       "Fitness First",
@@ -134,7 +144,16 @@ export const rentScoreCategories: RentScoreCategory[] = [
     colorClass: "bg-orange-500",
     typicalRating: 4.0,
     detail: "Fuel stations and major automotive parts stores nearby",
-    brandTerms: ["Ampol", "BP", "Shell", "7-Eleven", "Repco", "Supercheap Auto", "Autobarn", "Burson Auto Parts"],
+    brandTerms: [
+      "Ampol",
+      "BP",
+      "Shell",
+      "7-Eleven",
+      "Repco",
+      "Supercheap Auto",
+      "Autobarn",
+      "Burson Auto Parts",
+    ],
     placeTypes: ["gas_station"],
   },
   {
@@ -144,7 +163,13 @@ export const rentScoreCategories: RentScoreCategory[] = [
     colorClass: "bg-indigo-500",
     typicalRating: 3.3,
     detail: "Banks, post offices, and practical services nearby",
-    brandTerms: ["Australia Post", "Commonwealth Bank", "ANZ", "NAB", "Westpac"],
+    brandTerms: [
+      "Australia Post",
+      "Commonwealth Bank",
+      "ANZ",
+      "NAB",
+      "Westpac",
+    ],
     placeTypes: ["post_office", "bank"],
   },
 ];

@@ -54,7 +54,9 @@ function SearchChip({
           type="button"
           onClick={() => onToggleSaved(search)}
           disabled={disabled}
-          aria-label={isSaved ? "Remove from saved locations" : "Save this location"}
+          aria-label={
+            isSaved ? "Remove from saved locations" : "Save this location"
+          }
           className="rounded-r-full py-1.5 pl-1 pr-2.5 text-sm leading-none hover:bg-warning-soft disabled:opacity-50"
         >
           <span className={isSaved ? "text-amber-500" : "text-ink-faint"}>
@@ -83,10 +85,7 @@ export function RecentSearches({
   if (!canSave) {
     return (
       <p className="mt-4 text-sm text-ink-muted">
-        <Link
-          href="/login"
-          className="font-medium text-accent hover:underline"
-        >
+        <Link href="/login" className="font-medium text-accent hover:underline">
           Sign in
         </Link>{" "}
         to save locations, keep your recent searches, and compare rentals side

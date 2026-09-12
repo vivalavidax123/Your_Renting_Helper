@@ -12,9 +12,7 @@ function openAIStream(...events: object[]) {
     new ReadableStream({
       start(controller) {
         for (const event of events) {
-          const message = encoder.encode(
-            `data: ${JSON.stringify(event)}\n\n`,
-          );
+          const message = encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
           const midpoint = Math.ceil(message.length / 2);
           controller.enqueue(message.slice(0, midpoint));
           controller.enqueue(message.slice(midpoint));
@@ -152,7 +150,8 @@ describe("analyzeLocation", () => {
       readAnswer(analyzeLocation(context, "Why this score?")),
     ).rejects.toEqual(
       expect.objectContaining({
-        message: "The AI service returned an incomplete answer. Please try again.",
+        message:
+          "The AI service returned an incomplete answer. Please try again.",
         status: 502,
       }),
     );
@@ -186,7 +185,9 @@ describe("compareLocations", () => {
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(String(init?.body));
 
-    expect(body.instructions).toContain("comparing exactly two rental locations");
+    expect(body.instructions).toContain(
+      "comparing exactly two rental locations",
+    );
     expect(body.instructions).toContain("conditional recommendation");
     expect(body.input).toContain("Location A data:");
     expect(body.input).toContain("1 Test Street, Melbourne VIC");

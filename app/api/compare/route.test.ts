@@ -35,7 +35,9 @@ beforeEach(() => {
 
 describe("GET /api/compare", () => {
   it("rejects an unsupported mobility profile", async () => {
-    const response = await GET(request("a=location-1&b=location-2&profile=fast"));
+    const response = await GET(
+      request("a=location-1&b=location-2&profile=fast"),
+    );
 
     expect(response.status).toBe(400);
     expect(getSession).not.toHaveBeenCalled();
@@ -65,8 +67,12 @@ describe("GET /api/compare", () => {
   });
 
   it("loads both sides with the same selected profile", async () => {
-    const sideA = { id: "location-1" } as Awaited<ReturnType<typeof getComparisonSide>>;
-    const sideB = { id: "location-2" } as Awaited<ReturnType<typeof getComparisonSide>>;
+    const sideA = { id: "location-1" } as Awaited<
+      ReturnType<typeof getComparisonSide>
+    >;
+    const sideB = { id: "location-2" } as Awaited<
+      ReturnType<typeof getComparisonSide>
+    >;
     getSession.mockResolvedValue(signedInAs("user-1"));
     checkSaved.mockResolvedValue(true);
     getSide.mockResolvedValueOnce(sideA).mockResolvedValueOnce(sideB);
