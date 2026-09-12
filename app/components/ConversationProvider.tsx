@@ -19,6 +19,29 @@ type Message = {
   interrupted?: boolean;
 };
 type Conversation = { messages: Message[]; question: string };
+
+export type UseConversationOptions = {
+  conversationKey: string;
+  endpoint: string;
+  profile: WeightProfile;
+  available: boolean;
+  locationIds?: string[];
+};
+
+export function buildConversationRequestBody({
+  question,
+  profile,
+  locationIds,
+}: Pick<UseConversationOptions, "profile" | "locationIds"> & {
+  question: string;
+}) {
+  return {
+    question,
+    profile,
+    ...(locationIds ? { locationIds } : {}),
+  };
+}
+
 const empty: Conversation = { messages: [], question: "" };
 const Context = createContext<{
   conversations: Record<string, Conversation>;
@@ -44,17 +67,17 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useConversation(
-  key: string,
-  endpoint: string,
-  profile: WeightProfile,
-  available: boolean,
-  locationIds?: string[],
-) {
+export function useConversation({
+  conversationKey,
+  endpoint,
+  profile,
+  available,
+  locationIds,
+}: UseConversationOptions) {
   const context = useContext(Context);
   if (!context) throw new Error("ConversationProvider is required.");
   const { conversations, update } = context;
-  const { messages, question } = conversations[key] ?? empty;
+  const { messages, question } = conversations[conversationKey] ?? empty;
   const [status, setStatus] = useState<"idle" | "loading">("idle");
   const [error, setError] = useState("");
   const active = useRef<{ controller: AbortController; id: string } | null>(
@@ -66,7 +89,7 @@ export function useConversation(
       if (request) {
         request.controller.abort();
         active.current = null;
-        update(key, (current) => ({
+        update(conversationKey, (current) => ({
           ...current,
           messages: current.messages.map((message) =>
             message.id === request.id
@@ -76,15 +99,15 @@ export function useConversation(
         }));
       }
     },
-    [key, update],
+    [conversationKey, update],
   );
   function setQuestion(question: string) {
-    update(key, (current) => ({ ...current, question }));
+    update(conversationKey, (current) => ({ ...current, question }));
   }
   function clearConversation() {
     active.current?.controller.abort();
     active.current = null;
-    update(key, () => empty);
+    update(conversationKey, () => empty);
     setStatus("idle");
     setError("");
   }
@@ -96,7 +119,7 @@ export function useConversation(
     active.current = { controller, id };
     setStatus("loading");
     setError("");
-    update(key, (current) => ({
+    update(conversationKey, (current) => ({
       question: "",
       messages: [
         ...current.messages,
@@ -108,11 +131,13 @@ export function useConversation(
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: text,
-          profile,
-          ...(locationIds ? { locationIds } : {}),
-        }),
+        body: JSON.stringify(
+          buildConversationRequestBody({
+            question: text,
+            profile,
+            locationIds,
+          }),
+        ),
         signal: controller.signal,
       });
       if (!response.ok) {
@@ -126,7 +151,7 @@ export function useConversation(
       }
       await readTextStream(response, (content) => {
         if (controller.signal.aborted) return;
-        update(key, (current) => ({
+        update(conversationKey, (current) => ({
           ...current,
           messages: current.messages.map((message) =>
             message.id === id ? { ...message, content } : message,
@@ -140,7 +165,7 @@ export function useConversation(
             ? error.message
             : "The analyst could not be reached. Please retry.",
         );
-        update(key, (current) => ({
+        update(conversationKey, (current) => ({
           ...current,
           messages: current.messages.map((message) =>
             message.id === id ? { ...message, interrupted: true } : message,
