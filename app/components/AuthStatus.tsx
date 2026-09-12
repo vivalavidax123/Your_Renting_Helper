@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { authClient } from "@/app/lib/auth-client";
+import { authClient } from "@/app/lib/authClient";
 
 // Slim session line for the page header: a sign-in link when logged out,
 // the account email plus sign-out when logged in. useSession is reactive,

@@ -123,77 +123,11 @@ export type ComparisonSide = {
   fetchedAt: string;
 };
 
-// Google Places API Types
-export type GooglePlace = {
-  id?: string;
-  displayName?: {
-    text?: string;
-  };
-  formattedAddress?: string;
-  location?: {
-    latitude?: number;
-    longitude?: number;
-  };
-  primaryType?: string;
-  rating?: number;
-  userRatingCount?: number;
-};
-
-export type GooglePlacesResponse = {
-  places?: GooglePlace[];
-  error?: {
-    message?: string;
-    status?: string;
-  };
-};
-
-// Transitland API Types
-export type TransitlandRoute = {
-  route_short_name?: string;
-  route_long_name?: string;
-  route_id?: string;
-};
-
-export type TransitlandTrip = {
-  trip_headsign?: string;
-  trip_short_name?: string;
-  route?: TransitlandRoute;
-};
-
-export type TransitlandStopTimeEvent = {
-  estimated?: string;
-  scheduled?: string;
-};
-
-export type TransitlandDeparture = {
-  stop_headsign?: string;
-  departure_time?: string;
-  departure?: TransitlandStopTimeEvent;
-  trip?: TransitlandTrip;
-};
-
-export type TransitlandStop = {
-  id?: number;
-  onestop_id?: string;
-  stop_id?: string;
-  stop_name?: string;
-  stop_desc?: string;
-  stop_code?: string;
-  geometry?: {
-    coordinates?: [number, number];
-  };
-  departures?: TransitlandDeparture[];
-};
-
-export type TransitlandStopsResponse = {
-  stops?: TransitlandStop[];
-};
-
 // One committed location result, reused by overview and evidence routes.
 export type LocationResult = {
   location: GeocodeLocation;
   groups: PlaceGroup[];
-  propertyId: string | null;
+  locationId: string | null;
   fetchedAt: string;
   cached: boolean;
 };

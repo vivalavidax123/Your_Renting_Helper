@@ -2,28 +2,28 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useExplore } from "./ExploreProvider";
-export function LocationBoundary({
-  propertyId,
+export function LocationLoader({
+  locationId,
   children,
 }: {
-  propertyId: string;
+  locationId: string;
   children: React.ReactNode;
 }) {
   const {
-    propertyId: activeId,
+    locationId: activeId,
     openLocation,
     cancelSearch,
     searchState,
     error,
   } = useExplore();
   useEffect(() => {
-    if (activeId !== propertyId) {
-      void openLocation(propertyId);
+    if (activeId !== locationId) {
+      void openLocation(locationId);
     }
 
     return cancelSearch;
-  }, [activeId, propertyId, openLocation, cancelSearch]);
-  if (activeId !== propertyId)
+  }, [activeId, locationId, openLocation, cancelSearch]);
+  if (activeId !== locationId)
     return (
       <main className="mx-auto max-w-7xl p-6">
         {searchState === "error" ? (
@@ -31,7 +31,7 @@ export function LocationBoundary({
             <p role="alert">{error}</p>
             <button
               className="mt-4 underline"
-              onClick={() => void openLocation(propertyId)}
+              onClick={() => void openLocation(locationId)}
             >
               Retry
             </button>

@@ -1,5 +1,27 @@
-import type { RentScoreCategory } from "../categories";
-import type { GooglePlacesResponse } from "../types";
+import type { RentScoreCategory } from "@/app/lib/categories";
+
+export type GooglePlace = {
+  id?: string;
+  displayName?: {
+    text?: string;
+  };
+  formattedAddress?: string;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+  };
+  primaryType?: string;
+  rating?: number;
+  userRatingCount?: number;
+};
+
+type GooglePlacesResponse = {
+  places?: GooglePlace[];
+  error?: {
+    message?: string;
+    status?: string;
+  };
+};
 
 export async function fetchPlacesForBrand({
   apiKey,

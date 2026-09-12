@@ -1,5 +1,5 @@
 import { ThemeToggle } from "@/app/components/ThemeToggle";
-import { ResetPasswordForm } from "@/app/reset-password/ResetPasswordForm";
+import { ResetPasswordForm } from "./ResetPasswordForm";
 
 type ResetPasswordPageProps = {
   searchParams: Promise<{

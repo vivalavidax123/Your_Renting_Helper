@@ -16,7 +16,7 @@ function isWeightProfile(value: unknown): value is WeightProfile {
   return value === "carFree" || value === "carOwner";
 }
 
-function readPropertyIds(value: unknown): [string, string] | null {
+function readLocationIds(value: unknown): [string, string] | null {
   if (
     !Array.isArray(value) ||
     value.length !== 2 ||
@@ -25,8 +25,8 @@ function readPropertyIds(value: unknown): [string, string] | null {
     return null;
   }
 
-  const propertyIds: [string, string] = [value[0].trim(), value[1].trim()];
-  return propertyIds[0] === propertyIds[1] ? null : propertyIds;
+  const locationIds: [string, string] = [value[0].trim(), value[1].trim()];
+  return locationIds[0] === locationIds[1] ? null : locationIds;
 }
 
 export async function POST(request: Request) {
@@ -48,9 +48,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const propertyIds = readPropertyIds(body.propertyIds);
+  const locationIds = readLocationIds(body.locationIds);
 
-  if (!propertyIds) {
+  if (!locationIds) {
     return Response.json(
       { ok: false, error: "Choose two different saved locations." },
       { status: 400 },
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const saved = await areLocationsSavedByUser(session.user.id, propertyIds);
+    const saved = await areLocationsSavedByUser(session.user.id, locationIds);
 
     if (!saved) {
       return Response.json(
@@ -105,8 +105,8 @@ export async function POST(request: Request) {
     }
 
     const [locationA, locationB] = await Promise.all(
-      propertyIds.map((propertyId) =>
-        buildLocationAnalysisContext(propertyId, profile),
+      locationIds.map((locationId) =>
+        buildLocationAnalysisContext(locationId, profile),
       ),
     );
 

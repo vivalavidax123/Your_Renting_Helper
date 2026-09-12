@@ -48,8 +48,8 @@ export async function GET(request: Request) {
       );
     }
 
-    const propertyIds: [string, string] = [aId, bId];
-    const saved = await areLocationsSavedByUser(session.user.id, propertyIds);
+    const locationIds: [string, string] = [aId, bId];
+    const saved = await areLocationsSavedByUser(session.user.id, locationIds);
 
     if (!saved) {
       return Response.json(

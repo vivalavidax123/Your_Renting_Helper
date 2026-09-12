@@ -17,7 +17,7 @@ function isWeightProfile(value: unknown): value is WeightProfile {
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ propertyId: string }> },
+  { params }: { params: Promise<{ locationId: string }> },
 ) {
   let body: unknown;
 
@@ -60,7 +60,7 @@ export async function POST(
     );
   }
 
-  const { propertyId } = await params;
+  const { locationId } = await params;
   const profile = body.profile ?? "carFree";
 
   try {
@@ -73,7 +73,7 @@ export async function POST(
       );
     }
 
-    const context = await buildLocationAnalysisContext(propertyId, profile);
+    const context = await buildLocationAnalysisContext(locationId, profile);
 
     if (!context) {
       return Response.json(

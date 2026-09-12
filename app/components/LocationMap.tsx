@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTheme } from "@/app/components/ThemeProvider";
+import { useTheme } from "./ThemeProvider";
 import {
   createPlaceMarker,
   loadGoogleMaps,
   type GoogleMapsApi,
   type MarkerEntry,
-} from "../lib/maps/googleMaps";
-import type { GeocodeLocation, PlaceGroup } from "../lib/types";
+} from "@/app/lib/maps/googleMaps";
+import type { GeocodeLocation, PlaceGroup } from "@/app/lib/types";
 
 type MapLocation = Pick<
   GeocodeLocation,

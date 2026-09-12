@@ -7,7 +7,7 @@ import { GET } from "./route";
 beforeEach(() => vi.clearAllMocks());
 const call = (id: string) =>
   GET(new Request("http://localhost/api/locations/" + id), {
-    params: Promise.resolve({ propertyId: id }),
+    params: Promise.resolve({ locationId: id }),
   });
 it("rejects invalid IDs before database access", async () => {
   expect((await call("bad.id")).status).toBe(400);
@@ -19,7 +19,7 @@ it("returns missing evidence distinctly", async () => {
 });
 it("returns stored groups without a provider request", async () => {
   const stored = {
-    propertyId: "a",
+    locationId: "a",
     location: {
       query: "A",
       formattedAddress: "A",

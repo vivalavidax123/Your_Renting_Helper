@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
-import { authClient } from "@/app/lib/auth-client";
+import { authClient } from "@/app/lib/authClient";
 
 const submittedMessage =
   "If an account exists for that email, we sent a password-reset link.";

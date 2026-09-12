@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import type { NearbyPlace, PlaceGroup, RequestState } from "../lib/types";
+import type { NearbyPlace, PlaceGroup, RequestState } from "@/app/lib/types";
 import {
   formatGroupScope,
   formatDistance,
   formatReviewSummary,
   formatPlaceType,
   formatDepartureTime,
-} from "../lib/utils";
+} from "@/app/lib/utils";
 
 type NearbyPlacesListProps = {
   placesState: RequestState;

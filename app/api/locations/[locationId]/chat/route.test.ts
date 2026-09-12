@@ -55,7 +55,7 @@ function request(body: string) {
 }
 
 const routeContext = {
-  params: Promise.resolve({ propertyId: "location-1" }),
+  params: Promise.resolve({ locationId: "location-1" }),
 };
 
 beforeEach(() => {
@@ -63,7 +63,7 @@ beforeEach(() => {
   getSession.mockResolvedValue(signedInAs("user-1"));
 });
 
-describe("POST /api/locations/[propertyId]/chat", () => {
+describe("POST /api/locations/[locationId]/chat", () => {
   it("rejects malformed JSON", async () => {
     const response = await POST(request("not json"), routeContext);
 
@@ -111,7 +111,7 @@ describe("POST /api/locations/[propertyId]/chat", () => {
   });
 
   it("builds the selected profile context and streams its answer", async () => {
-    const context = { propertyId: "location-1" } as Awaited<
+    const context = { locationId: "location-1" } as Awaited<
       ReturnType<typeof buildLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);
@@ -140,7 +140,7 @@ describe("POST /api/locations/[propertyId]/chat", () => {
   });
 
   it("returns the analyst service's useful failure status", async () => {
-    const context = { propertyId: "location-1" } as Awaited<
+    const context = { locationId: "location-1" } as Awaited<
       ReturnType<typeof buildLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);

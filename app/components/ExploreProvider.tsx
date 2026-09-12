@@ -2,10 +2,10 @@
 import { createContext, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { authClient } from "../lib/auth-client";
-import type { WeightProfile } from "../lib/categories";
-import { useLocationSearch } from "../hooks/useLocationSearch";
-import { useSavedSearches } from "../hooks/useSavedSearches";
+import { authClient } from "@/app/lib/authClient";
+import type { WeightProfile } from "@/app/lib/categories";
+import { useLocationSearch } from "@/app/hooks/useLocationSearch";
+import { useSavedSearches } from "@/app/hooks/useSavedSearches";
 import { ConversationProvider } from "./ConversationProvider";
 
 type Explore = ReturnType<typeof useLocationSearch> &

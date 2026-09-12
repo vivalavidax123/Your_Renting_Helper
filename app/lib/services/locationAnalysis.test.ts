@@ -53,14 +53,14 @@ beforeEach(() => {
 describe("assembleLocationAnalysisContext", () => {
   it("uses profile distance tolerance and keeps only the nearest amenities", () => {
     const context = assembleLocationAnalysisContext({
-      propertyId: "location-1",
+      locationId: "location-1",
       address: "1 Test Street, Melbourne VIC",
       groups: [groceries],
       profile: "carOwner",
       dataAsOf: "2026-08-30T00:00:00.000Z",
     });
 
-    expect(context.propertyId).toBe("location-1");
+    expect(context.locationId).toBe("location-1");
     expect(context.address).toBe("1 Test Street, Melbourne VIC");
     expect(context.suburb).toBeNull();
     expect(context.preferences.mobilityProfile).toBe("carOwner");
@@ -92,7 +92,7 @@ describe("assembleLocationAnalysisContext", () => {
 
   it("represents missing categories with empty amenity lists", () => {
     const context = assembleLocationAnalysisContext({
-      propertyId: "location-1",
+      locationId: "location-1",
       address: "1 Test Street, Melbourne VIC",
       groups: [],
       profile: "carFree",
@@ -128,7 +128,7 @@ describe("buildLocationAnalysisContext", () => {
 
     expect(locationSource).toHaveBeenCalledWith("location-1");
     expect(context).toMatchObject({
-      propertyId: "location-1",
+      locationId: "location-1",
       preferences: { mobilityProfile: "carOwner" },
       dataAsOf: "2026-08-30T00:00:00.000Z",
     });

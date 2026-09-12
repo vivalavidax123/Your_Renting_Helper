@@ -62,7 +62,7 @@ export async function GET(request: Request) {
 
       return Response.json({
         ok: true,
-        propertyId: cachedResult.locationId,
+        locationId: cachedResult.locationId,
         groups: cachedResult.groups,
         scores,
         overallScore,
@@ -82,10 +82,10 @@ export async function GET(request: Request) {
         ? { overallScore, scores }
         : scorePlaceGroups(groups, "carFree");
     const fallbackLabel = `${latitude}, ${longitude}`;
-    let propertyId: string | null = null;
+    let locationId: string | null = null;
 
     try {
-      propertyId = await saveSnapshot({
+      locationId = await saveSnapshot({
         cacheKey,
         locationInput: {
           query: searchParams.get("query") ?? fallbackLabel,
@@ -107,7 +107,7 @@ export async function GET(request: Request) {
 
     return Response.json({
       ok: true,
-      propertyId,
+      locationId,
       groups,
       scores,
       overallScore,

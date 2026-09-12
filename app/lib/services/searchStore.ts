@@ -321,7 +321,7 @@ export async function getStoredLocation(id: string) {
   const snapshot = location?.snapshots[0];
   if (!location || !snapshot) return null;
   return {
-    propertyId: location.id,
+    locationId: location.id,
     location: {
       query: location.query,
       formattedAddress: location.formattedAddress,

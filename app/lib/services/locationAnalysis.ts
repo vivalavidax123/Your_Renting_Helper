@@ -34,7 +34,7 @@ type AnalysisAmenity = Pick<
 };
 
 export type LocationAnalysisContext = {
-  propertyId: string;
+  locationId: string;
   address: string;
   suburb: string | null;
   overallScore: number;
@@ -66,13 +66,13 @@ function toAnalysisAmenity(place: NearbyPlace): AnalysisAmenity {
 }
 
 export function assembleLocationAnalysisContext({
-  propertyId,
+  locationId,
   address,
   groups,
   profile,
   dataAsOf,
 }: {
-  propertyId: string;
+  locationId: string;
   address: string;
   groups: PlaceGroup[];
   profile: WeightProfile;
@@ -82,7 +82,7 @@ export function assembleLocationAnalysisContext({
   const practicalIndicators = buildDerivedIndicators(scores, groups);
 
   return {
-    propertyId,
+    locationId,
     address,
     // The geocoder currently stores a formatted address, not a trustworthy
     // locality field. Keep this unavailable rather than guessing from text.
@@ -130,17 +130,17 @@ export function assembleLocationAnalysisContext({
 }
 
 export async function buildLocationAnalysisContext(
-  propertyId: string,
+  locationId: string,
   profile: WeightProfile = "carFree",
 ) {
-  const source = await getLocationAnalysisSource(propertyId);
+  const source = await getLocationAnalysisSource(locationId);
 
   if (!source) {
     return null;
   }
 
   return assembleLocationAnalysisContext({
-    propertyId: source.id,
+    locationId: source.id,
     address: source.formattedAddress,
     groups: source.groups,
     profile,

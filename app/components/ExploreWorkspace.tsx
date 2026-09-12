@@ -2,17 +2,17 @@
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
 import { Welcome } from "./Welcome";
-import { ResultHeading } from "./ResultHeading";
+import { LocationHeader } from "./LocationHeader";
 import { LocationMap } from "./LocationMap";
 import { SearchForm } from "./SearchForm";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { RecentSearches } from "./RecentSearches";
 import { LocationAnalyst } from "./LocationAnalyst";
 const noScroll = () => {};
-export function Home() {
+export function ExploreWorkspace() {
   const search = useExplore();
   if (!search.result) return <Welcome />;
-  const base = "/locations/" + search.propertyId;
+  const base = "/locations/" + search.locationId;
   return (
     <main className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
       <div className="mb-4">
@@ -55,7 +55,7 @@ export function Home() {
       ) : null}
       <div className="grid items-start gap-5 lg:grid-cols-[1.35fr_0.85fr]">
         <section className="min-w-0 rounded-xl border border-line bg-surface p-5">
-          <ResultHeading />
+          <LocationHeader />
           <details className="mt-3 text-xs text-ink-muted">
             <summary className="cursor-pointer">How to use this result</summary>
             <ul className="mt-2 list-disc space-y-1 pl-4 leading-5">
@@ -68,19 +68,19 @@ export function Home() {
           <div inert={search.busy}>
             <ScoreBreakdown
               categoryScores={search.categoryScores}
-              propertyId={search.propertyId}
+              locationId={search.locationId}
               profile={search.profile}
             />
           </div>
-          {!search.propertyId ? (
+          {!search.locationId ? (
             <p className="mt-3 text-sm text-ink-muted">
               This result could not be saved. Search again to enable detail
               pages and AI analysis.
             </p>
           ) : null}
           <LocationAnalyst
-            key={search.propertyId ?? "none"}
-            propertyId={search.propertyId}
+            key={search.locationId ?? "none"}
+            locationId={search.locationId}
             profile={search.profile}
             placesState={search.busy ? "loading" : search.placesState}
             signedIn={search.canSave}
@@ -109,7 +109,7 @@ export function Home() {
               <li>Category colours connect places to their scores.</li>
             </ul>
           </section>
-          {search.propertyId ? (
+          {search.locationId ? (
             <nav
               aria-label="Supporting evidence"
               className="grid gap-2 rounded-xl border border-line bg-surface p-4"

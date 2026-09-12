@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { readApiResult } from "../lib/api";
-import type { RequestState, RecentSearch } from "../lib/types";
+import { readApiResult } from "@/app/lib/api";
+import type { RequestState, RecentSearch } from "@/app/lib/types";
 
 function isHistoryPayload(value: Record<string, unknown>) {
   return Array.isArray(value.searches);

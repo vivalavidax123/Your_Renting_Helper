@@ -29,7 +29,7 @@ async function readAnswer(answer: Promise<ReadableStream<Uint8Array>>) {
 }
 
 const context: LocationAnalysisContext = {
-  propertyId: "location-1",
+  locationId: "location-1",
   address: "1 Test Street, Melbourne VIC",
   suburb: null,
   overallScore: 72,
@@ -162,7 +162,7 @@ describe("compareLocations", () => {
   it("labels both contexts and asks for a practical, conditional comparison", async () => {
     const secondContext: LocationAnalysisContext = {
       ...context,
-      propertyId: "location-2",
+      locationId: "location-2",
       address: "2 Example Road, Melbourne VIC",
       overallScore: 81,
     };

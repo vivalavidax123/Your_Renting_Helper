@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { RecentSearch } from "../lib/types";
+import type { RecentSearch } from "@/app/lib/types";
 
 // Purely presentational: the lists live in useSavedSearches and arrive as
 // props, so this component and the comparison panel can never disagree.

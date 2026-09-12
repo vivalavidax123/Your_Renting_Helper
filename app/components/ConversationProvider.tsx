@@ -8,8 +8,8 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
-import type { WeightProfile } from "../lib/categories";
-import { readApiResult, readTextStream } from "../lib/api";
+import type { WeightProfile } from "@/app/lib/categories";
+import { readApiResult, readTextStream } from "@/app/lib/api";
 
 type Message = {
   id: string;
@@ -49,7 +49,7 @@ export function useConversation(
   endpoint: string,
   profile: WeightProfile,
   available: boolean,
-  propertyIds?: string[],
+  locationIds?: string[],
 ) {
   const context = useContext(Context);
   if (!context) throw new Error("ConversationProvider is required.");
@@ -111,7 +111,7 @@ export function useConversation(
         body: JSON.stringify({
           question: text,
           profile,
-          ...(propertyIds ? { propertyIds } : {}),
+          ...(locationIds ? { locationIds } : {}),
         }),
         signal: controller.signal,
       });

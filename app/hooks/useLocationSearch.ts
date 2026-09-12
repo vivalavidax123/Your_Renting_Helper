@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { WeightProfile } from "../lib/categories";
-import { isJsonRecord, readApiResult } from "../lib/api";
+import type { WeightProfile } from "@/app/lib/categories";
+import { isJsonRecord, readApiResult } from "@/app/lib/api";
 import { useAutocomplete } from "./useAutocomplete";
-import { scorePlaceGroups } from "../lib/scoring";
+import { scorePlaceGroups } from "@/app/lib/scoring";
 import type {
   GeocodeLocation,
   LocationResult,
   RecentSearch,
   RequestState,
-} from "../lib/types";
+} from "@/app/lib/types";
 
 function isLocation(value: unknown) {
   return (
@@ -28,7 +28,7 @@ function isResult(value: Record<string, unknown>) {
     Array.isArray(value.groups) &&
     typeof value.fetchedAt === "string" &&
     typeof value.cached === "boolean" &&
-    (typeof value.propertyId === "string" || value.propertyId === null)
+    (typeof value.locationId === "string" || value.locationId === null)
   );
 }
 
@@ -145,14 +145,14 @@ export function useLocationSearch(profile: WeightProfile) {
         throw new Error(data.ok ? "Could not load nearby places." : data.error);
       if (controller.signal.aborted) return;
       const next = { ...data, location };
-      if (next.propertyId) cache.current.set(next.propertyId, next);
+      if (next.locationId) cache.current.set(next.locationId, next);
       startTransition(() => {
         setResult(next);
         setState("success");
         router.push(
-          next.propertyId
+          next.locationId
             ? "/locations/" +
-                encodeURIComponent(next.propertyId) +
+                encodeURIComponent(next.locationId) +
                 "?profile=" +
                 profile
             : "/?profile=" + profile,
@@ -198,7 +198,7 @@ export function useLocationSearch(profile: WeightProfile) {
     placeGroups: result?.groups ?? [],
     categoryScores: scored.scores,
     overallScore: result ? scored.overallScore : null,
-    propertyId: result?.propertyId ?? null,
+    locationId: result?.locationId ?? null,
     fetchedAt: result?.fetchedAt ?? null,
     placesError: error,
     resultFromCache: result?.cached ?? false,

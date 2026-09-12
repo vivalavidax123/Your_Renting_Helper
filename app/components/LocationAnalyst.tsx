@@ -14,13 +14,13 @@ const suggestedQuestions = [
 ];
 
 export function LocationAnalyst({
-  propertyId,
+  locationId,
   profile,
   placesState,
   signedIn,
   sessionPending,
 }: {
-  propertyId: string | null;
+  locationId: string | null;
   profile: WeightProfile;
   placesState: RequestState;
   signedIn: boolean;
@@ -30,7 +30,7 @@ export function LocationAnalyst({
     !sessionPending &&
     signedIn &&
     placesState === "success" &&
-    propertyId !== null;
+    locationId !== null;
   const {
     messages,
     question,
@@ -40,8 +40,8 @@ export function LocationAnalyst({
     askQuestion,
     clearConversation,
   } = useConversation(
-    "location:" + propertyId,
-    "/api/locations/" + propertyId + "/chat",
+    "location:" + locationId,
+    "/api/locations/" + locationId + "/chat",
     profile,
     available,
   );
@@ -68,7 +68,7 @@ export function LocationAnalyst({
     ? "Checking sign-in status..."
     : !signedIn
       ? "Sign in to ask about this location."
-      : placesState === "success" && propertyId === null
+      : placesState === "success" && locationId === null
         ? "This result could not be saved, so grounded analysis is unavailable. Search again to retry."
         : "Search for a location before asking the analyst.";
   const awaitingFirstChunk = status === "loading" && !messages.at(-1)?.content;

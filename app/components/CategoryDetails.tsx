@@ -2,17 +2,17 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { useExplore } from "./ExploreProvider";
-import { ResultHeading } from "./ResultHeading";
+import { LocationHeader } from "./LocationHeader";
 import { NearbyPlacesList } from "./NearbyPlacesList";
 import { LocationMap } from "./LocationMap";
-import { rentScoreCategories } from "../lib/categories";
-import { formatGroupScope } from "../lib/utils";
+import { rentScoreCategories } from "@/app/lib/categories";
+import { formatGroupScope } from "@/app/lib/utils";
 export function CategoryDetails({ categoryId }: { categoryId: string }) {
   const {
     categoryScores,
     placeGroups,
     location,
-    propertyId,
+    locationId,
     profile,
     fetchedAt,
     handleSearch,
@@ -35,7 +35,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
   return (
     <main className="mx-auto w-full max-w-7xl space-y-5 px-4 pb-8 sm:px-6 lg:px-8">
       <section className="rounded-xl border border-line bg-surface p-5">
-        <ResultHeading title={score.label} />
+        <LocationHeader title={score.label} />
         <nav aria-label="Categories" className="mt-4 flex flex-wrap gap-2">
           {rentScoreCategories.map((category) => (
             <Link
@@ -43,7 +43,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
               aria-current={category.id === categoryId ? "page" : undefined}
               href={
                 "/locations/" +
-                propertyId +
+                locationId +
                 "/categories/" +
                 category.id +
                 "?profile=" +

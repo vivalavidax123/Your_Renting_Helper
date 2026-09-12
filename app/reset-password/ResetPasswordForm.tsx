@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { authClient } from "@/app/lib/auth-client";
+import { authClient } from "@/app/lib/authClient";
 
 type ResetPasswordFormProps = {
   token: string | null;

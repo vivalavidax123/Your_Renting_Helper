@@ -1,7 +1,7 @@
 import "client-only";
-import type { Theme } from "../theme";
-import type { NearbyPlace, PlaceGroup } from "../types";
-import { formatDistance } from "../utils";
+import type { Theme } from "@/app/lib/theme";
+import type { NearbyPlace, PlaceGroup } from "@/app/lib/types";
+import { formatDistance } from "@/app/lib/utils";
 
 export type GoogleMapsApi = { maps: typeof google.maps };
 

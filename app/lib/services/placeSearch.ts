@@ -1,10 +1,17 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { rentScoreCategories, type RentScoreCategory } from "../categories";
-import { getDistanceMeters } from "../scoring";
-import type { GooglePlace, NearbyPlace, PlaceSource } from "../types";
-import { normalizeStationName, normalizeText } from "../utils";
-import { fetchPlacesForBrand, fetchPlacesForTypes } from "./googlePlaces";
+import {
+  rentScoreCategories,
+  type RentScoreCategory,
+} from "@/app/lib/categories";
+import { getDistanceMeters } from "@/app/lib/scoring";
+import type { NearbyPlace, PlaceSource } from "@/app/lib/types";
+import { normalizeStationName, normalizeText } from "@/app/lib/utils";
+import {
+  fetchPlacesForBrand,
+  fetchPlacesForTypes,
+  type GooglePlace,
+} from "./googlePlaces";
 import { fetchTransitlandBusStops } from "./transitland";
 
 const transportBusRadiusMeters = 1000;

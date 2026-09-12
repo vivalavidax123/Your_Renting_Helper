@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { WeightProfile } from "../lib/categories";
-import { isJsonRecord, readApiResult } from "../lib/api";
-import type { ComparisonSide, RecentSearch } from "../lib/types";
+import type { WeightProfile } from "@/app/lib/categories";
+import { isJsonRecord, readApiResult } from "@/app/lib/api";
+import type { ComparisonSide, RecentSearch } from "@/app/lib/types";
 import { useConversation } from "./ConversationProvider";
 
 function isComparisonSide(value: unknown): value is ComparisonSide {

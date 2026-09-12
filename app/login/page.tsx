@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { authClient } from "@/app/lib/auth-client";
+import { authClient } from "@/app/lib/authClient";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
 
 type Mode = "signIn" | "signUp";

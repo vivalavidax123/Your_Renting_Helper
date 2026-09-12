@@ -69,7 +69,7 @@ describe("POST /api/locations/compare/chat", () => {
     const duplicate = await POST(
       request(
         JSON.stringify({
-          propertyIds: ["location-1", "location-1"],
+          locationIds: ["location-1", "location-1"],
           question: "Which is better?",
         }),
       ),
@@ -84,7 +84,7 @@ describe("POST /api/locations/compare/chat", () => {
     const empty = await POST(
       request(
         JSON.stringify({
-          propertyIds: ["location-1", "location-2"],
+          locationIds: ["location-1", "location-2"],
           question: "  ",
         }),
       ),
@@ -92,7 +92,7 @@ describe("POST /api/locations/compare/chat", () => {
     const invalidProfile = await POST(
       request(
         JSON.stringify({
-          propertyIds: ["location-1", "location-2"],
+          locationIds: ["location-1", "location-2"],
           question: "Which is better?",
           profile: "cyclist",
         }),
@@ -110,7 +110,7 @@ describe("POST /api/locations/compare/chat", () => {
     const response = await POST(
       request(
         JSON.stringify({
-          propertyIds: ["location-1", "location-2"],
+          locationIds: ["location-1", "location-2"],
           question: "Which is better?",
         }),
       ),
@@ -127,7 +127,7 @@ describe("POST /api/locations/compare/chat", () => {
     const response = await POST(
       request(
         JSON.stringify({
-          propertyIds: ["location-1", "location-2"],
+          locationIds: ["location-1", "location-2"],
           question: "Which is better?",
         }),
       ),
@@ -142,10 +142,10 @@ describe("POST /api/locations/compare/chat", () => {
   });
 
   it("builds both contexts with the selected profile and streams the answer", async () => {
-    const contextA = { propertyId: "location-1" } as NonNullable<
+    const contextA = { locationId: "location-1" } as NonNullable<
       Awaited<ReturnType<typeof buildLocationAnalysisContext>>
     >;
-    const contextB = { propertyId: "location-2" } as NonNullable<
+    const contextB = { locationId: "location-2" } as NonNullable<
       Awaited<ReturnType<typeof buildLocationAnalysisContext>>
     >;
     getSession.mockResolvedValue(signedInAs("user-1"));
@@ -160,7 +160,7 @@ describe("POST /api/locations/compare/chat", () => {
     const response = await POST(
       request(
         JSON.stringify({
-          propertyIds: [" location-1 ", "location-2"],
+          locationIds: [" location-1 ", "location-2"],
           question: "  Which is easier without a car?  ",
           profile: "carFree",
         }),
@@ -183,7 +183,7 @@ describe("POST /api/locations/compare/chat", () => {
   });
 
   it("returns 404 when either location snapshot is unavailable", async () => {
-    const contextA = { propertyId: "location-1" } as NonNullable<
+    const contextA = { locationId: "location-1" } as NonNullable<
       Awaited<ReturnType<typeof buildLocationAnalysisContext>>
     >;
     getSession.mockResolvedValue(signedInAs("user-1"));
@@ -193,7 +193,7 @@ describe("POST /api/locations/compare/chat", () => {
     const response = await POST(
       request(
         JSON.stringify({
-          propertyIds: ["location-1", "location-2"],
+          locationIds: ["location-1", "location-2"],
           question: "Which is better?",
         }),
       ),
@@ -204,10 +204,10 @@ describe("POST /api/locations/compare/chat", () => {
   });
 
   it("preserves useful analyst service errors", async () => {
-    const contextA = { propertyId: "location-1" } as NonNullable<
+    const contextA = { locationId: "location-1" } as NonNullable<
       Awaited<ReturnType<typeof buildLocationAnalysisContext>>
     >;
-    const contextB = { propertyId: "location-2" } as NonNullable<
+    const contextB = { locationId: "location-2" } as NonNullable<
       Awaited<ReturnType<typeof buildLocationAnalysisContext>>
     >;
     getSession.mockResolvedValue(signedInAs("user-1"));
@@ -225,7 +225,7 @@ describe("POST /api/locations/compare/chat", () => {
     const response = await POST(
       request(
         JSON.stringify({
-          propertyIds: ["location-1", "location-2"],
+          locationIds: ["location-1", "location-2"],
           question: "Which is better?",
         }),
       ),

@@ -1,14 +1,14 @@
 import Link from "next/link";
-import type { CategoryScore } from "../lib/types";
-import type { WeightProfile } from "../lib/categories";
-import { formatDistance } from "../lib/utils";
+import type { CategoryScore } from "@/app/lib/types";
+import type { WeightProfile } from "@/app/lib/categories";
+import { formatDistance } from "@/app/lib/utils";
 export function ScoreBreakdown({
   categoryScores,
-  propertyId,
+  locationId,
   profile,
 }: {
   categoryScores: CategoryScore[];
-  propertyId: string | null;
+  locationId: string | null;
   profile: WeightProfile;
 }) {
   return (
@@ -53,12 +53,12 @@ export function ScoreBreakdown({
                 </p>
               </>
             );
-            return propertyId ? (
+            return locationId ? (
               <Link
                 key={category.id}
                 href={
                   "/locations/" +
-                  propertyId +
+                  locationId +
                   "/categories/" +
                   category.id +
                   "?profile=" +

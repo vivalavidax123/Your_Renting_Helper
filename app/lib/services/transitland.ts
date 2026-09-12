@@ -1,11 +1,47 @@
-import type { TransportService } from "../types";
-import { normalizeText } from "../utils";
-import { getDistanceMeters } from "../scoring";
-import type {
-  TransitlandStop,
-  TransitlandDeparture,
-  TransitlandStopsResponse,
-} from "../types";
+import type { TransportService } from "@/app/lib/types";
+import { normalizeText } from "@/app/lib/utils";
+import { getDistanceMeters } from "@/app/lib/scoring";
+
+type TransitlandRoute = {
+  route_short_name?: string;
+  route_long_name?: string;
+  route_id?: string;
+};
+
+type TransitlandTrip = {
+  trip_headsign?: string;
+  trip_short_name?: string;
+  route?: TransitlandRoute;
+};
+
+type TransitlandStopTimeEvent = {
+  estimated?: string;
+  scheduled?: string;
+};
+
+type TransitlandDeparture = {
+  stop_headsign?: string;
+  departure_time?: string;
+  departure?: TransitlandStopTimeEvent;
+  trip?: TransitlandTrip;
+};
+
+type TransitlandStop = {
+  id?: number;
+  onestop_id?: string;
+  stop_id?: string;
+  stop_name?: string;
+  stop_desc?: string;
+  stop_code?: string;
+  geometry?: {
+    coordinates?: [number, number];
+  };
+  departures?: TransitlandDeparture[];
+};
+
+type TransitlandStopsResponse = {
+  stops?: TransitlandStop[];
+};
 
 const maxTransportBusStops = 4;
 const maxTransportBusServicesPerStop = 4;

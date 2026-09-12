@@ -1,16 +1,16 @@
 import { getStoredLocation } from "@/app/lib/services/searchStore";
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ propertyId: string }> },
+  { params }: { params: Promise<{ locationId: string }> },
 ) {
-  const { propertyId } = await params;
-  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(propertyId))
+  const { locationId } = await params;
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(locationId))
     return Response.json(
       { ok: false, error: "Invalid location ID." },
       { status: 400 },
     );
   try {
-    const result = await getStoredLocation(propertyId);
+    const result = await getStoredLocation(locationId);
     if (!result)
       return Response.json(
         {

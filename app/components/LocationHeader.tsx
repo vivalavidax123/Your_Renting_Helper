@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
 import { MobilityProfile } from "./MobilityProfile";
-export function ResultHeading({ title }: { title?: string }) {
+export function LocationHeader({ title }: { title?: string }) {
   const {
     location,
-    propertyId,
+    locationId,
     profile,
     overallScore,
     fetchedAt,
@@ -17,13 +17,13 @@ export function ResultHeading({ title }: { title?: string }) {
     savedError,
   } = useExplore();
   if (!location) return null;
-  const favourite = saved.find((item) => item.id === propertyId);
+  const favourite = saved.find((item) => item.id === locationId);
   const profileLabel = profile === "carOwner" ? "Car owner" : "No car";
   return (
     <div className="space-y-4">
       {title ? (
         <Link
-          href={"/locations/" + propertyId + "?profile=" + profile}
+          href={"/locations/" + locationId + "?profile=" + profile}
           className="text-sm text-accent-ink hover:underline"
         >
           ← Back to overview
@@ -55,7 +55,7 @@ export function ResultHeading({ title }: { title?: string }) {
         ) : (
           <MobilityProfile />
         )}
-        {propertyId ? (
+        {locationId ? (
           canSave ? (
             <button
               disabled={busy}
@@ -64,7 +64,7 @@ export function ResultHeading({ title }: { title?: string }) {
                 void toggleSaved(
                   favourite ?? {
                     ...location,
-                    id: propertyId,
+                    id: locationId,
                     lastSearchedAt: fetchedAt ?? "",
                     savedAt: null,
                     overallScore,
