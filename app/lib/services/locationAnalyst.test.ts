@@ -88,8 +88,8 @@ describe("analyzeLocation", () => {
     expect(body).toMatchObject({
       model: "gpt-5.6-terra",
       max_output_tokens: 1200,
-      reasoning: { effort: "medium" },
-      text: { verbosity: "medium" },
+      reasoning: { effort: "xhigh" },
+      text: { verbosity: "high" },
       store: false,
       stream: true,
     });

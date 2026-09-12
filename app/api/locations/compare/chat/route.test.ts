@@ -15,7 +15,12 @@ vi.mock("@/app/lib/services/locationAnalyst", async () => {
     typeof import("@/app/lib/services/locationAnalyst")
   >("@/app/lib/services/locationAnalyst");
 
-  return { ...actual, compareLocations: vi.fn() };
+  return {
+    ...actual,
+    compareLocations: vi.fn(),
+    isLocationQuestionInScope: vi.fn().mockResolvedValue(true),
+    isLocationQuestionSafe: vi.fn().mockResolvedValue(true),
+  };
 });
 
 import { POST } from "./route";
