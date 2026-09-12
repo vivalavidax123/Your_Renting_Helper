@@ -1,7 +1,7 @@
 # Website usability and navigation implementation plan
 
-Status: follow-up interface refinements in progress. The original navigation and evidence work is complete; the shared-header, account-control, and profile-placement adjustments below are being delivered in separate verified chunks.
-Reviewed: 11 September 2026. Basis: supplied screenshot, current repository source, installed Next.js 16.2.6 routing documentation, and local mocked-network browser checks at desktop, mobile, approximate 200% zoom, light/dark theme, and reduced-motion settings.
+Status: implementation and follow-up interface refinements complete.
+Reviewed: 12 September 2026. Basis: supplied screenshot, current repository source, installed Next.js 16.3.5 routing documentation, and local mocked-network browser checks at desktop, mobile, approximate 200% zoom, light/dark theme, and reduced-motion settings.
 
 ## 1. Outcome and scope
 
@@ -16,7 +16,7 @@ Recommended first-release decisions:
 - Render the page structure immediately; reveal the core score result together. Let the map and optional evidence finish independently in reserved space.
 - Keep one visible conversation per location across mobility profiles; label answers with the profile used.
 - Preserve conversations during in-app navigation using shared client state. Reload and cross-device persistence are outside this release.
-- Keep search and single-location analysis available without sign-in. Keep saving and saved-location comparison account-based.
+- Keep search available without sign-in. Keep saving, single-location analysis, and saved-location comparison account-based.
 - Reuse existing scoring, category definitions, amenity groups, authentication, and database snapshots. No schema migration or new state-management dependency is planned.
 
 Success criteria:
@@ -37,11 +37,11 @@ Success criteria:
 | Title occupies useful card space     | `app/page.tsx` places the h1 and overall score inside the large left card; theme/auth sit separately above                                                | Extract a shared header and use the card opening for guidance                                                |
 | First visit feels empty              | All result components are mounted before search and each displays its own unavailable message                                                             | Introduce one welcome state rather than many repeated empty cards                                            |
 | Content appears at different times   | `useLocationSearch` geocodes before fetching amenities; CBD and rent fetch independently after location changes; map loads its browser library separately | This is a request dependency issue as well as a presentation issue; rendering performance remains unmeasured |
-| Chat disappears on profile change    | `LocationAnalyst` key includes both property ID and profile; messages live in component state                                                             | Changing the key recreates the component and discards its state                                              |
+| Chat disappears on profile change    | `LocationAnalyst` key includes both location ID and profile; messages live in component state                                                             | Changing the key recreates the component and discards its state                                              |
 | Comparison chat has the same risk    | `ComparisonAnalyst` key includes A, B, and profile                                                                                                        | Apply the conversation-state rule to both analysts                                                           |
 | Category scores cannot navigate      | `ScoreBreakdown` renders each score as an article                                                                                                         | Turn cards into real links with visible interaction cues                                                     |
 | Homepage is long                     | Amenity list, rent, commute, comparison, indicators, and chat share the homepage                                                                          | Separate overview from detailed evidence                                                                     |
-| New routes could lose state          | Search currently belongs to `Home`; chat belongs to individual panels                                                                                     | Move state that must survive navigation above those pages                                                    |
+| New routes could lose state          | Search originally belonged to the root workspace; chat belonged to individual panels                                                                      | Move state that must survive navigation above those pages                                                    |
 | Comparison can disagree with profile | `/api/compare` reads stored snapshot scores without a profile; comparison AI recomputes from groups with a profile                                        | Rescore comparison from raw groups for the selected profile                                                  |
 | Comparison access is inconsistent    | Comparison chat checks session and ownership; comparison GET currently does neither                                                                       | Apply the same saved-location access checks to GET                                                           |
 | Freshness copy is stale              | Score tooltip says 24 hours; store TTL is seven days                                                                                                      | Use the actual fetched-at time and correct cache wording                                                     |
@@ -91,7 +91,7 @@ Move the current long Nearby amenities list, full comparison panel, full rent fo
 
 ### Category page
 
-Route: `/locations/[propertyId]/categories/[categoryId]?profile=carFree`.
+Route: `/locations/[locationId]/categories/[categoryId]?profile=carFree`.
 
 Show an explicit Back to overview link, address, category navigation, selected mobility profile, category score and weight, existing deterministic explanation, retrieval radius, fetched-at date, and relevant amenity list beside a map filtered to this category. Use the category IDs from `rentScoreCategories`, not a second hard-coded list.
 
@@ -103,7 +103,7 @@ Invalid category or missing location gets a useful not-found page. A location wi
 
 ### Supporting evidence page
 
-Route: `/locations/[propertyId]/details?profile=carFree`.
+Route: `/locations/[locationId]/details?profile=carFree`.
 
 Reuse `CbdTravelCard`, `RentalInsights`, and `AdditionalIndicators`. Provide anchors for `#commute`, `#rent`, and `#indicators` so overview links open the intended section. Keep the current Melbourne CBD scope explicit; changing destination cities is a separate feature.
 
@@ -127,18 +127,18 @@ Recommended route structure uses a `(explore)` route group. Parentheses organise
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | `app/(explore)/layout.tsx`                                              | Shared header and a small client provider that survives navigation    |
 | `app/(explore)/page.tsx`                                                | Welcome screen and active overview; replaces root page implementation |
-| `app/(explore)/locations/[propertyId]/page.tsx`                         | Direct-link location overview                                         |
-| `app/(explore)/locations/[propertyId]/categories/[categoryId]/page.tsx` | Category evidence                                                     |
-| `app/(explore)/locations/[propertyId]/details/page.tsx`                 | Commute, rent, indicators                                             |
+| `app/(explore)/locations/[locationId]/page.tsx`                         | Direct-link location overview                                         |
+| `app/(explore)/locations/[locationId]/categories/[categoryId]/page.tsx` | Category evidence                                                     |
+| `app/(explore)/locations/[locationId]/details/page.tsx`                 | Commute, rent, indicators                                             |
 | `app/(explore)/compare/page.tsx`                                        | Saved-location comparison                                             |
 
 Use ordinary Next.js links and supported route loading/error/not-found files. Await route `params` and server `searchParams` according to installed documentation. Keep the root layout, theme bootstrap, and authentication routes intact. Do not introduce parallel or intercepted routes for this straightforward page navigation.
 
 The small shared provider owns the active search result, mobility profile, and in-memory conversations. Existing hooks and types remain authoritative. Do not add Redux or a general-purpose caching framework.
 
-For successful persisted searches, navigate to `/locations/[propertyId]?profile=...`. During navigation, reuse the result just fetched rather than issuing another paid search. If persistence fails and `/api/places` returns a null property ID, retain the usable overview at `/`; explain why persistent detail links and AI are unavailable and offer retry. Never create a fake route ID.
+For successful persisted searches, navigate to `/locations/[locationId]?profile=...`. During navigation, reuse the result just fetched rather than issuing another paid search. If persistence fails and `/api/places` returns a null location ID, retain the usable overview at `/`; explain why persistent detail links and AI are unavailable and offer retry. Never create a fake route ID.
 
-Direct links and reloads load stored location metadata and its latest snapshot through a focused read-only GET `/api/locations/[propertyId]`. Reuse/extend the existing store lookup to return `GeocodeLocation`, groups, fetched-at time, and profile-derived scores. This endpoint returns shared location evidence only, never user history, saved relationships, or chat. Validate profile and path input at this API boundary.
+Direct links and reloads load stored location metadata and its latest snapshot through a focused read-only GET `/api/locations/[locationId]`. Reuse/extend the existing store lookup to return `GeocodeLocation`, groups, fetched-at time, and profile-derived scores. This endpoint returns shared location evidence only, never user history, saved relationships, or chat. Validate profile and path input at this API boundary.
 
 Use one snapshot read for each result response, then derive every score from its groups. Existing in-memory results are reused while navigating, keeping overview and category evidence consistent. A new direct load may see a newer snapshot; show its timestamp. Expired snapshots are labelled as saved evidence with an explicit search-again action. Reading a detail URL must not silently trigger a paid provider refresh.
 
@@ -171,7 +171,7 @@ Do not wait for every provider and every map tile before showing useful results.
 1. Initial visit renders the welcome screen without amenities, CBD, rent, map-library, or AI requests. Session/history requests are separate account work.
 2. Search immediately changes its state to “Finding location…” with a reserved result skeleton. Skeleton means a placeholder matching the final layout's size.
 3. Successful geocoding starts amenities retrieval and changes status to “Finding nearby places and calculating scores…”. Do not invent percentage progress.
-4. Commit address, overall score, category scores, groups, and property ID as one coherent result. Do not pair location A's scores with location B's map or title.
+4. Commit address, overall score, category scores, groups, and location ID as one coherent result. Do not pair location A's scores with location B's map or title.
 5. Mount the map for the committed result. Its container is already sized; show a local loading message until ready. A map failure leaves scores, links, and chat usable.
 6. Supporting services begin on the evidence page and resolve independently within stable cards. A rent failure does not erase commute or scores.
 
@@ -274,19 +274,19 @@ Exit: all success criteria pass or any genuine environment blocker is explicitly
 | Category keyboard activation          | Enter follows a real link; focus and return navigation remain usable                           |
 | Phone/200% zoom                       | Readable controls, natural scrolling, no clipped critical content                              |
 
-Add focused route tests for the new location GET and comparison authentication/profile behaviour. Add browser regression coverage for chat lifetime and cross-page navigation: these bugs involve component mounting and cannot be proved by scoring unit tests alone. The project currently has Vitest but no browser end-to-end suite; a local-only Playwright installation and narrow mocked-network checks cover these stateful flows. New test files, fixtures, configuration, and test dependencies are not committed, following the owner’s instruction. Keep provider calls mocked in repeatable tests, then perform a separate real-provider smoke check when credentials are available. Do not add a broad testing framework beyond this need.
+Focused route tests cover the location GET and comparison authentication/profile behaviour. Browser regression coverage for chat lifetime and cross-page navigation remains a future need because those behaviours involve component mounting and cannot be proved by scoring unit tests alone. Keep provider calls mocked in repeatable tests, then perform a separate real-provider smoke check when credentials are available. Do not add a broad testing framework beyond this need.
 
 Completion checks:
 
 ```text
 npm run lint            # Passed
-npx tsc --noEmit        # Passed
-npm test                # 90 local tests across 17 files passed
+npm run typecheck       # Passed
+npm run test            # 96 tests across 19 files passed
 npm run build           # Passed, including all new routes
 node <local check>.cjs  # Focused mocked-network browser checks passed
 ```
 
-The two added route-test files, browser scripts, Playwright package changes, and the analyst expectation correction remain local-only by owner request. The committed suite remains 82 tests across 15 files and retains the documented analyst expectation mismatch.
+The focused route tests and analyst expectation correction are committed. Browser scripts and Playwright dependencies remain outside the repository.
 
 ## 9. Deferred work and tradeoffs
 

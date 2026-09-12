@@ -26,7 +26,7 @@ Community rent figures are user-reported evidence, not scraped market data or an
 
 ## Run Locally
 
-The recommended setup uses a separate Development configuration in the linked Vercel project.
+Use Node.js 22 (recorded in `.nvmrc`). The recommended setup uses a separate Development configuration in the linked Vercel project.
 
 ```bash
 git clone https://github.com/vivalavidax123/Your_Renting_Helper.git
@@ -60,16 +60,19 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 ## Useful Commands
 
-| Command                     | Purpose                                  |
-| --------------------------- | ---------------------------------------- |
-| `npm run dev`               | Start local development                  |
-| `npm run lint`              | Run ESLint                               |
-| `npx tsc --noEmit`          | Type-check the project                   |
-| `npm test`                  | Run the test suite                       |
-| `npm run build`             | Create a production build                |
-| `npm run db:migrate`        | Create and apply a development migration |
-| `npm run db:migrate:deploy` | Apply committed migrations               |
-| `npm run db:studio`         | Open Prisma Studio                       |
+| Command                     | Purpose                                       |
+| --------------------------- | --------------------------------------------- |
+| `npm run dev`               | Start local development                       |
+| `npm run format`            | Format supported files                        |
+| `npm run format:check`      | Check formatting without rewriting files      |
+| `npm run lint`              | Run ESLint                                    |
+| `npm run typecheck`         | Type-check the project                        |
+| `npm run test`              | Run the test suite                            |
+| `npm run build`             | Create a production build                     |
+| `npm run check`             | Run formatting, lint, types, tests, and build |
+| `npm run db:migrate`        | Create and apply a development migration      |
+| `npm run db:migrate:deploy` | Apply committed migrations                    |
+| `npm run db:studio`         | Open Prisma Studio                            |
 
 ## Disclaimer
 

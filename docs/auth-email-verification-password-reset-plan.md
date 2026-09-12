@@ -2,7 +2,7 @@
 
 Status: Parts 1-3 complete; Part 4 implemented with manual reset-flow check pending
 Prepared: 2026-08-08  
-Applies to: Better Auth 1.6.23, Next.js 16.2.6 App Router, Prisma 6.19.3, PostgreSQL
+Applies to: Better Auth 1.6.23, Next.js 16.3.5 App Router, Prisma 6.19.3, PostgreSQL
 
 ## Progress
 
@@ -259,7 +259,7 @@ Run the normal quality gates:
 
 ```bash
 npm run lint
-npx tsc --noEmit
+npm run typecheck
 npm test
 npm run build
 ```
