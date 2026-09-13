@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { authClient } from "@/app/lib/auth-client";
+import { authClient } from "@/app/lib/authClient";
 
 // Slim session line for the page header: a sign-in link when logged out,
 // the account email plus sign-out when logged in. useSession is reactive,
@@ -17,7 +17,8 @@ export function AuthStatus() {
     if (!menuOpen) return;
 
     const closeOnOutsideClick = (event: PointerEvent) => {
-      if (!accountRef.current?.contains(event.target as Node)) setMenuOpen(false);
+      if (!accountRef.current?.contains(event.target as Node))
+        setMenuOpen(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -34,7 +35,13 @@ export function AuthStatus() {
   }, [menuOpen]);
 
   if (isPending) {
-    return <span role="status" aria-label="Checking sign-in" className="h-5 w-16 rounded bg-surface-raised" />;
+    return (
+      <span
+        role="status"
+        aria-label="Checking sign-in"
+        className="h-5 w-16 rounded bg-surface-raised"
+      />
+    );
   }
 
   if (!session) {
@@ -62,7 +69,10 @@ export function AuthStatus() {
         <span className="truncate">{session.user.email}</span>
       </button>
       {menuOpen ? (
-        <div role="menu" className="absolute right-0 z-20 mt-2 min-w-32 rounded-lg border border-line bg-surface p-1 shadow-lg">
+        <div
+          role="menu"
+          className="absolute right-0 z-20 mt-2 min-w-32 rounded-lg border border-line bg-surface p-1 shadow-lg"
+        >
           <button
             type="button"
             role="menuitem"

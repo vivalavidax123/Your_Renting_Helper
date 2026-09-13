@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { readApiResult } from "../lib/api";
-import type { AddressSuggestion, RequestState } from "../lib/types";
+import { readApiResult } from "@/app/lib/api";
+import type { AddressSuggestion, RequestState } from "@/app/lib/types";
 
 function isAutocompletePayload(value: Record<string, unknown>) {
   return Array.isArray(value.suggestions);

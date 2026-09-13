@@ -1,10 +1,15 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:personal-project-simplicity-rules -->
+
 # Keep the project appropriately simple
 
 This is a personal project, not a workplace or enterprise codebase. Prefer the smallest clear implementation that solves the current requirement.
@@ -16,6 +21,7 @@ This is a personal project, not a workplace or enterprise codebase. Prefer the s
 <!-- END:personal-project-simplicity-rules -->
 
 <!-- BEGIN:owner-learning-preference -->
+
 # Teach while implementing
 
 The project owner is a beginner and wants to learn while changes are made.
@@ -28,6 +34,7 @@ The project owner is a beginner and wants to learn while changes are made.
 <!-- END:owner-learning-preference -->
 
 <!-- BEGIN:post-push-documentation-reconciliation -->
+
 # Reconcile project documentation after every push
 
 After every successful Git push, perform a documentation audit against the state that was pushed.
@@ -40,4 +47,5 @@ After every successful Git push, perform a documentation audit against the state
 - When an audit finds discrepancies, make a focused documentation follow-up commit and push. That documentation-only follow-up push does not require another audit unless it introduces a substantive documentation change beyond applying the audit.
 
 When a documentation impact is already known before a code push, update the relevant documentation in the same change; the post-push audit remains the final consistency check.
+
 <!-- END:post-push-documentation-reconciliation -->

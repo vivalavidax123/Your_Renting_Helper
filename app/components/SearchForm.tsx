@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
-import type { AutocompleteController } from "../hooks/useAutocomplete";
-import type { RequestState } from "../lib/types";
+import type { AutocompleteController } from "@/app/hooks/useAutocomplete";
+import type { RequestState } from "@/app/lib/types";
 
 type SearchFormProps = {
   autocomplete: AutocompleteController;

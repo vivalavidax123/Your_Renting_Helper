@@ -2,7 +2,7 @@
 
 Status: Parts 1-3 complete; Part 4 implemented with manual reset-flow check pending
 Prepared: 2026-08-08  
-Applies to: Better Auth 1.6.23, Next.js 16.2.6 App Router, Prisma 6.19.3, PostgreSQL
+Applies to: Better Auth 1.6.23, Next.js 16.3.5 App Router, Prisma 6.19.3, PostgreSQL
 
 ## Progress
 
@@ -41,15 +41,15 @@ Therefore, **no new auth provider and probably no Prisma migration are needed**.
 
 ## Technology Choices
 
-| Concern | Choice | Why this choice |
-| --- | --- | --- |
-| Authentication | Keep Better Auth 1.6.23 | The project already uses it, and it natively owns verification/reset tokens and endpoints. Replacing it with Clerk or Auth0 would add migration work without solving a current need. |
-| Token storage | Existing PostgreSQL `Verification` table | Better Auth creates, expires, validates, and consumes the tokens. The application should not invent its own token model. |
-| Email delivery | Resend Node SDK (`resend`) | Small API, good TypeScript support, useful delivery logs, and simple Vercel deployment. |
-| Email templates | Small HTML plus plain-text strings in one server-only helper | Two short transactional messages do not justify React Email or a template framework yet. |
-| Background sending | Next.js `after()` from `next/server` | Email delivery should continue after the auth response without making account existence easier to infer from response time. Next.js 16 supports `after()` on Vercel and with `next start`/Docker. |
-| UI | Existing React/Tailwind patterns | Keeps the experience consistent and avoids a new component library. |
-| Tests | Existing Vitest checks plus a focused manual auth-flow matrix | The repository does not currently have browser E2E infrastructure. Adding a whole E2E stack only for this change would be disproportionate; it can be added later with the broader auth test roadmap. |
+| Concern            | Choice                                                        | Why this choice                                                                                                                                                                                       |
+| ------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication     | Keep Better Auth 1.6.23                                       | The project already uses it, and it natively owns verification/reset tokens and endpoints. Replacing it with Clerk or Auth0 would add migration work without solving a current need.                  |
+| Token storage      | Existing PostgreSQL `Verification` table                      | Better Auth creates, expires, validates, and consumes the tokens. The application should not invent its own token model.                                                                              |
+| Email delivery     | Resend Node SDK (`resend`)                                    | Small API, good TypeScript support, useful delivery logs, and simple Vercel deployment.                                                                                                               |
+| Email templates    | Small HTML plus plain-text strings in one server-only helper  | Two short transactional messages do not justify React Email or a template framework yet.                                                                                                              |
+| Background sending | Next.js `after()` from `next/server`                          | Email delivery should continue after the auth response without making account existence easier to infer from response time. Next.js 16 supports `after()` on Vercel and with `next start`/Docker.     |
+| UI                 | Existing React/Tailwind patterns                              | Keeps the experience consistent and avoids a new component library.                                                                                                                                   |
+| Tests              | Existing Vitest checks plus a focused manual auth-flow matrix | The repository does not currently have browser E2E infrastructure. Adding a whole E2E stack only for this change would be disproportionate; it can be added later with the broader auth test roadmap. |
 
 ### Deliberately not chosen
 
@@ -259,29 +259,29 @@ Run the normal quality gates:
 
 ```bash
 npm run lint
-npx tsc --noEmit
+npm run typecheck
 npm test
 npm run build
 ```
 
 Then manually test against the development database and Resend logs:
 
-| Case | Expected result |
-| --- | --- |
-| New email sign-up | No session before verification; generic check-inbox message; one email sent. |
-| Verification link | `emailVerified` becomes true; user is signed in; link redirects safely. |
-| Reused or expired verification link | No session created; friendly invalid-link state. |
-| Resend verification | A new link is sent; repeated clicks are rate-limited. |
-| Existing pre-feature email user | Sign-in is blocked; a verification email is sent; account data remains intact. |
-| Verified email sign-in | Existing login flow and home redirect still work. |
-| Unknown reset email | Same browser message as a known email; no account information leaks. |
-| Known reset email | One reset message arrives with the correct origin and one-hour expiry. |
-| Valid reset link | New password works; old password fails. |
-| Reset-link replay/expiry | Reset is rejected with a safe error. |
-| Existing sessions after reset | Other sessions are invalidated. |
-| Google sign-in | Still succeeds and does not enter the email/password verification loop. |
-| Missing/invalid Resend configuration | Development exposes a useful server log; browser receives no secret/provider detail. |
-| Local and production links | Each email points to the correct `BETTER_AUTH_URL`, never a preview or localhost origin by mistake. |
+| Case                                 | Expected result                                                                                     |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| New email sign-up                    | No session before verification; generic check-inbox message; one email sent.                        |
+| Verification link                    | `emailVerified` becomes true; user is signed in; link redirects safely.                             |
+| Reused or expired verification link  | No session created; friendly invalid-link state.                                                    |
+| Resend verification                  | A new link is sent; repeated clicks are rate-limited.                                               |
+| Existing pre-feature email user      | Sign-in is blocked; a verification email is sent; account data remains intact.                      |
+| Verified email sign-in               | Existing login flow and home redirect still work.                                                   |
+| Unknown reset email                  | Same browser message as a known email; no account information leaks.                                |
+| Known reset email                    | One reset message arrives with the correct origin and one-hour expiry.                              |
+| Valid reset link                     | New password works; old password fails.                                                             |
+| Reset-link replay/expiry             | Reset is rejected with a safe error.                                                                |
+| Existing sessions after reset        | Other sessions are invalidated.                                                                     |
+| Google sign-in                       | Still succeeds and does not enter the email/password verification loop.                             |
+| Missing/invalid Resend configuration | Development exposes a useful server log; browser receives no secret/provider detail.                |
+| Local and production links           | Each email points to the correct `BETTER_AUTH_URL`, never a preview or localhost origin by mistake. |
 
 Inspect `User.emailVerified` and `Verification` with Prisma Studio while learning, but do not manually edit tokens or mark users verified during the real test.
 

@@ -12,9 +12,7 @@ function openAIStream(...events: object[]) {
     new ReadableStream({
       start(controller) {
         for (const event of events) {
-          const message = encoder.encode(
-            `data: ${JSON.stringify(event)}\n\n`,
-          );
+          const message = encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
           const midpoint = Math.ceil(message.length / 2);
           controller.enqueue(message.slice(0, midpoint));
           controller.enqueue(message.slice(midpoint));
@@ -31,7 +29,7 @@ async function readAnswer(answer: Promise<ReadableStream<Uint8Array>>) {
 }
 
 const context: LocationAnalysisContext = {
-  propertyId: "location-1",
+  locationId: "location-1",
   address: "1 Test Street, Melbourne VIC",
   suburb: null,
   overallScore: 72,
@@ -88,8 +86,8 @@ describe("analyzeLocation", () => {
     expect(body).toMatchObject({
       model: "gpt-5.6-terra",
       max_output_tokens: 1200,
-      reasoning: { effort: "medium" },
-      text: { verbosity: "medium" },
+      reasoning: { effort: "xhigh" },
+      text: { verbosity: "high" },
       store: false,
       stream: true,
     });
@@ -152,7 +150,8 @@ describe("analyzeLocation", () => {
       readAnswer(analyzeLocation(context, "Why this score?")),
     ).rejects.toEqual(
       expect.objectContaining({
-        message: "The AI service returned an incomplete answer. Please try again.",
+        message:
+          "The AI service returned an incomplete answer. Please try again.",
         status: 502,
       }),
     );
@@ -163,7 +162,7 @@ describe("compareLocations", () => {
   it("labels both contexts and asks for a practical, conditional comparison", async () => {
     const secondContext: LocationAnalysisContext = {
       ...context,
-      propertyId: "location-2",
+      locationId: "location-2",
       address: "2 Example Road, Melbourne VIC",
       overallScore: 81,
     };
@@ -186,7 +185,9 @@ describe("compareLocations", () => {
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(String(init?.body));
 
-    expect(body.instructions).toContain("comparing exactly two rental locations");
+    expect(body.instructions).toContain(
+      "comparing exactly two rental locations",
+    );
     expect(body.instructions).toContain("conditional recommendation");
     expect(body.input).toContain("Location A data:");
     expect(body.input).toContain("1 Test Street, Melbourne VIC");

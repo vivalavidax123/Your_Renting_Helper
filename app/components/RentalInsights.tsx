@@ -1,62 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { isJsonRecord, readApiResult } from "@/app/lib/api";
-import type {
-  GeocodeLocation,
-  RentalEstimate,
-  RentalPropertyProfile,
-  RentalPropertyType,
-  RentalReportSummary,
-  RequestState,
-} from "@/app/lib/types";
+import type { FormEvent } from "react";
+import {
+  rentalPropertyOptions as propertyOptions,
+  useRentalInsights,
+} from "@/app/hooks/useRentalInsights";
+import type { GeocodeLocation, RentalPropertyType } from "@/app/lib/types";
 import { formatRadius } from "@/app/lib/utils";
-
-const propertyOptions: Array<{
-  value: RentalPropertyType;
-  label: string;
-}> = [
-  { value: "apartment", label: "Apartment" },
-  { value: "house", label: "House" },
-  { value: "townhouse", label: "Townhouse" },
-  { value: "unit", label: "Unit" },
-  { value: "other", label: "Other" },
-];
-
-function isRentalEstimate(value: unknown): value is RentalEstimate {
-  return (
-    isJsonRecord(value) &&
-    (typeof value.medianWeeklyRent === "number" ||
-      value.medianWeeklyRent === null) &&
-    typeof value.reportCount === "number" &&
-    typeof value.radiusMeters === "number" &&
-    (value.confidence === "none" ||
-      value.confidence === "early" ||
-      value.confidence === "community")
-  );
-}
-
-function isEstimatePayload(value: Record<string, unknown>) {
-  const ownReport = value.ownReport;
-  const suggestedProfile = value.suggestedProfile;
-  const isProfile = (profile: unknown) =>
-    isJsonRecord(profile) &&
-    propertyOptions.some((option) => option.value === profile.propertyType) &&
-    typeof profile.bedrooms === "number";
-
-  return (
-    isRentalEstimate(value.estimate) &&
-    (ownReport === null ||
-      (isJsonRecord(ownReport) &&
-        typeof ownReport.weeklyRent === "number" &&
-        propertyOptions.some(
-          (option) => option.value === ownReport.propertyType,
-        ) &&
-        typeof ownReport.bedrooms === "number")) &&
-    (suggestedProfile === null || isProfile(suggestedProfile))
-  );
-}
 
 export function RentalInsights({
   location,
@@ -65,138 +16,26 @@ export function RentalInsights({
   location: GeocodeLocation | null;
   canContribute: boolean;
 }) {
-  const [state, setState] = useState<RequestState>("idle");
-  const [estimate, setEstimate] = useState<RentalEstimate | null>(null);
-  const [ownReport, setOwnReport] =
-    useState<RentalReportSummary | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [weeklyRent, setWeeklyRent] = useState("");
-  const [propertyType, setPropertyType] =
-    useState<RentalPropertyType>("apartment");
-  const [bedrooms, setBedrooms] = useState("1");
-  const [submissionState, setSubmissionState] =
-    useState<RequestState>("idle");
-  const [message, setMessage] = useState("");
-  const restoredInitialProfile = useRef(false);
+  const {
+    state,
+    estimate,
+    ownReport,
+    isFormOpen,
+    weeklyRent,
+    setWeeklyRent,
+    propertyType,
+    setPropertyType,
+    bedrooms,
+    setBedrooms,
+    submissionState,
+    message,
+    toggleForm,
+    submitReport,
+  } = useRentalInsights(location);
 
-  useEffect(() => {
-    if (!location) {
-      return;
-    }
-
-    const controller = new AbortController();
-
-    async function loadEstimate() {
-      setState("loading");
-
-      try {
-        const query = new URLSearchParams({
-          lat: String(location?.latitude),
-          lng: String(location?.longitude),
-          propertyType,
-          bedrooms,
-        });
-        const response = await fetch(`/api/rent-estimates?${query}`, {
-          signal: controller.signal,
-        });
-        const data = await readApiResult<{
-          estimate: RentalEstimate;
-          ownReport: RentalReportSummary | null;
-          suggestedProfile: RentalPropertyProfile | null;
-        }>(
-          response,
-          isEstimatePayload,
-        );
-
-        if (controller.signal.aborted) return;
-
-        if (!response.ok || !data.ok) {
-          setState("error");
-          setMessage(data.ok ? "Rental data is unavailable." : data.error);
-          return;
-        }
-
-        setOwnReport(data.ownReport);
-
-        if (!restoredInitialProfile.current) {
-          restoredInitialProfile.current = true;
-          const initialProfile = data.ownReport ?? data.suggestedProfile;
-
-          if (data.ownReport) {
-            setWeeklyRent(String(data.ownReport.weeklyRent));
-          }
-
-          if (
-            initialProfile &&
-            (initialProfile.propertyType !== propertyType ||
-              String(initialProfile.bedrooms) !== bedrooms)
-          ) {
-            setPropertyType(initialProfile.propertyType);
-            setBedrooms(String(initialProfile.bedrooms));
-            return;
-          }
-        }
-
-        setEstimate(data.estimate);
-        setState("success");
-      } catch {
-        if (!controller.signal.aborted) {
-          setState("error");
-          setMessage("Rental data is unavailable.");
-        }
-      }
-    }
-
-    void loadEstimate();
-    return () => controller.abort();
-  }, [location, propertyType, bedrooms]);
-
-  async function submitReport(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!location) return;
-
-    setSubmissionState("loading");
-    setMessage("");
-
-    try {
-      const response = await fetch("/api/rent-estimates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          formattedAddress: location.formattedAddress,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          weeklyRent: Number(weeklyRent),
-          propertyType,
-          bedrooms: Number(bedrooms),
-        }),
-      });
-      const data = await readApiResult<{
-        estimate: RentalEstimate;
-        ownReport: RentalReportSummary;
-        suggestedProfile: null;
-      }>(
-        response,
-        isEstimatePayload,
-      );
-
-      if (!response.ok || !data.ok) {
-        setSubmissionState("error");
-        setMessage(data.ok ? "Could not save the report." : data.error);
-        return;
-      }
-
-      setEstimate(data.estimate);
-      setOwnReport(data.ownReport);
-      setState("success");
-      setSubmissionState("success");
-      setMessage("Thanks — your report is now included in this area estimate.");
-      setWeeklyRent(String(data.ownReport.weeklyRent));
-    } catch {
-      setSubmissionState("error");
-      setMessage("Could not save the report. Try again.");
-    }
+    void submitReport();
   }
 
   return (
@@ -229,8 +68,8 @@ export function RentalInsights({
         <div className="mt-4 rounded-lg border border-line bg-surface-subtle p-4">
           {estimate.medianWeeklyRent === null ? (
             <p className="text-sm leading-6 text-ink-soft">
-              No reports within 10 km yet. The first contribution will start
-              the local estimate.
+              No reports within 10 km yet. The first contribution will start the
+              local estimate.
             </p>
           ) : (
             <>
@@ -241,13 +80,19 @@ export function RentalInsights({
                 </strong>
               </div>
               <p className="mt-1 text-xs leading-5 text-ink-muted">
-                {estimate.reportCount} {estimate.reportCount === 1 ? "report" : "reports"} within {formatRadius(estimate.radiusMeters)}
+                {estimate.reportCount}{" "}
+                {estimate.reportCount === 1 ? "report" : "reports"} within{" "}
+                {formatRadius(estimate.radiusMeters)}
                 {estimate.confidence === "early"
                   ? " · early data, use with caution"
                   : " · smallest radius with at least 3 reports"}
               </p>
               <p className="mt-1 text-xs leading-5 text-ink-faint">
-                Comparing {bedrooms === "0" ? "studio" : `${bedrooms}-bedroom`} {propertyOptions.find((option) => option.value === propertyType)?.label.toLowerCase()} properties.
+                Comparing {bedrooms === "0" ? "studio" : `${bedrooms}-bedroom`}{" "}
+                {propertyOptions
+                  .find((option) => option.value === propertyType)
+                  ?.label.toLowerCase()}{" "}
+                properties.
               </p>
             </>
           )}
@@ -261,7 +106,8 @@ export function RentalInsights({
               Your report: ${ownReport.weeklyRent.toLocaleString()}/wk ·{" "}
               {ownReport.bedrooms === 0
                 ? "studio"
-                : `${ownReport.bedrooms}-bedroom`} {propertyOptions
+                : `${ownReport.bedrooms}-bedroom`}{" "}
+              {propertyOptions
                 .find((option) => option.value === ownReport.propertyType)
                 ?.label.toLowerCase()}
             </p>
@@ -270,11 +116,7 @@ export function RentalInsights({
             <>
               <button
                 type="button"
-                onClick={() => {
-                  setIsFormOpen((open) => !open);
-                  setMessage("");
-                  setSubmissionState("idle");
-                }}
+                onClick={toggleForm}
                 aria-expanded={isFormOpen}
                 className="text-sm font-semibold text-accent hover:text-accent-hover"
               >
@@ -286,9 +128,12 @@ export function RentalInsights({
               </button>
 
               {isFormOpen ? (
-                <form onSubmit={submitReport} className="mt-4 space-y-3">
+                <form onSubmit={handleSubmit} className="mt-4 space-y-3">
                   <div>
-                    <label htmlFor="weekly-rent" className="text-xs font-medium text-ink-soft">
+                    <label
+                      htmlFor="weekly-rent"
+                      className="text-xs font-medium text-ink-soft"
+                    >
                       Weekly rent (AUD)
                     </label>
                     <input
@@ -305,14 +150,19 @@ export function RentalInsights({
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor="property-type" className="text-xs font-medium text-ink-soft">
+                      <label
+                        htmlFor="property-type"
+                        className="text-xs font-medium text-ink-soft"
+                      >
                         Property type
                       </label>
                       <select
                         id="property-type"
                         value={propertyType}
                         onChange={(event) =>
-                          setPropertyType(event.target.value as RentalPropertyType)
+                          setPropertyType(
+                            event.target.value as RentalPropertyType,
+                          )
                         }
                         className="mt-1 w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none focus:border-accent"
                       >
@@ -324,7 +174,10 @@ export function RentalInsights({
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="bedrooms" className="text-xs font-medium text-ink-soft">
+                      <label
+                        htmlFor="bedrooms"
+                        className="text-xs font-medium text-ink-soft"
+                      >
                         Bedrooms
                       </label>
                       <select
@@ -347,14 +200,19 @@ export function RentalInsights({
                     disabled={submissionState === "loading"}
                     className="w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-action-ink hover:bg-action-hover disabled:bg-action-disabled"
                   >
-                    {submissionState === "loading" ? "Saving…" : "Submit report"}
+                    {submissionState === "loading"
+                      ? "Saving…"
+                      : "Submit report"}
                   </button>
                 </form>
               ) : null}
             </>
           ) : (
             <p className="text-sm leading-6 text-ink-soft">
-              <Link href="/login" className="font-semibold text-accent hover:text-accent-hover">
+              <Link
+                href="/login"
+                className="font-semibold text-accent hover:text-accent-hover"
+              >
                 Sign in
               </Link>{" "}
               to add a rent you know.

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { authClient } from "@/app/lib/auth-client";
+import { authClient } from "@/app/lib/authClient";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
 
 type Mode = "signIn" | "signUp";
@@ -57,9 +57,7 @@ export default function LoginPage() {
     if (mode === "signUp") {
       setPassword("");
       setVerificationEmail(email);
-      setNotice(
-        "Check your inbox for a verification link before signing in.",
-      );
+      setNotice("Check your inbox for a verification link before signing in.");
       return;
     }
 

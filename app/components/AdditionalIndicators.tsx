@@ -1,8 +1,8 @@
 import {
   buildDerivedIndicators,
   plannedIndicators,
-} from "../lib/indicators";
-import type { CategoryScore, PlaceGroup, RequestState } from "../lib/types";
+} from "@/app/lib/indicators";
+import type { CategoryScore, PlaceGroup, RequestState } from "@/app/lib/types";
 
 type AdditionalIndicatorsProps = {
   placesState: RequestState;

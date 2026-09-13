@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTheme } from "@/app/components/ThemeProvider";
+import { useTheme } from "./ThemeProvider";
 import {
   createPlaceMarker,
   loadGoogleMaps,
   type GoogleMapsApi,
   type MarkerEntry,
-} from "../lib/maps/googleMaps";
-import type { GeocodeLocation, PlaceGroup } from "../lib/types";
+} from "@/app/lib/maps/googleMaps";
+import type { GeocodeLocation, PlaceGroup } from "@/app/lib/types";
 
 type MapLocation = Pick<
   GeocodeLocation,
@@ -102,7 +102,9 @@ export function LocationMap({
       } catch (error) {
         if (isMounted) {
           setMapError(
-            error instanceof Error ? error.message : "Google Maps failed to load.",
+            error instanceof Error
+              ? error.message
+              : "Google Maps failed to load.",
           );
         }
       }
@@ -169,7 +171,8 @@ export function LocationMap({
   if (!apiKey) {
     return (
       <div className="mt-5 flex aspect-[4/3] items-center justify-center rounded-lg border border-line bg-surface-subtle p-5 text-center text-sm leading-6 text-ink-soft">
-        The live map is unavailable. You can still explore scores and nearby places.
+        The live map is unavailable. You can still explore scores and nearby
+        places.
       </div>
     );
   }
@@ -184,7 +187,17 @@ export function LocationMap({
 
   return (
     <div className="mt-5 overflow-hidden rounded-lg border border-line bg-surface-raised">
-      <div className="relative"><div ref={mapRef} className="aspect-[4/3] w-full scroll-mt-16" />{mapRevision === 0 && !mapError ? <p role="status" className="absolute inset-0 flex items-center justify-center text-sm text-ink-muted">Loading map…</p> : null}</div>
+      <div className="relative">
+        <div ref={mapRef} className="aspect-[4/3] w-full scroll-mt-16" />
+        {mapRevision === 0 && !mapError ? (
+          <p
+            role="status"
+            className="absolute inset-0 flex items-center justify-center text-sm text-ink-muted"
+          >
+            Loading map…
+          </p>
+        ) : null}
+      </div>
       {mapError ? (
         <p className="border-t border-danger-line bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">
           {mapError}

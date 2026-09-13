@@ -47,7 +47,9 @@ describe("normalizeStationName", () => {
     // The V/Line list and Google Places label the same station differently;
     // both must normalize to the same key or regional stations mismatch.
     expect(normalizeStationName("Tarneit Railway Station")).toBe("tarneit");
-    expect(normalizeStationName("Southern Cross Station")).toBe("southern cross");
+    expect(normalizeStationName("Southern Cross Station")).toBe(
+      "southern cross",
+    );
     expect(normalizeStationName("tarneit")).toBe("tarneit");
   });
 });

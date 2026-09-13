@@ -13,10 +13,10 @@ export default function ComparePage() {
     profile,
     canSave,
     sessionPending,
-    propertyId,
+    locationId,
   } = useExplore();
-  const returnHref = propertyId
-    ? `/locations/${propertyId}?profile=${profile}`
+  const returnHref = locationId
+    ? `/locations/${locationId}?profile=${profile}`
     : "/";
 
   return (
@@ -25,7 +25,7 @@ export default function ComparePage() {
         href={returnHref}
         className="text-sm font-medium text-accent-ink hover:underline"
       >
-        ← Back to {propertyId ? "overview" : "search"}
+        ← Back to {locationId ? "overview" : "search"}
       </Link>
 
       <div>

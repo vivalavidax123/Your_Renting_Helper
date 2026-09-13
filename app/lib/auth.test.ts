@@ -76,12 +76,14 @@ describe("Better Auth email callbacks", () => {
     expect(options.emailAndPassword.requireEmailVerification).toBe(true);
     expect(options.emailAndPassword.resetPasswordTokenExpiresIn).toBe(60 * 60);
     expect(options.emailAndPassword.revokeSessionsOnPasswordReset).toBe(true);
-    expect(
-      options.rateLimit.customRules["/send-verification-email"],
-    ).toEqual({ window: 15 * 60, max: 3 });
-    expect(
-      options.rateLimit.customRules["/request-password-reset"],
-    ).toEqual({ window: 15 * 60, max: 3 });
+    expect(options.rateLimit.customRules["/send-verification-email"]).toEqual({
+      window: 15 * 60,
+      max: 3,
+    });
+    expect(options.rateLimit.customRules["/request-password-reset"]).toEqual({
+      window: 15 * 60,
+      max: 3,
+    });
   });
 
   it("queues the verification email after the auth response", async () => {
@@ -125,7 +127,9 @@ describe("Better Auth email callbacks", () => {
   });
 
   it("logs a safe error without failing the auth response", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     sendVerificationEmailMock.mockRejectedValue(
       new Error("Resend could not send the authentication email"),
     );

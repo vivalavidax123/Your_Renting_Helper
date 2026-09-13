@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/app/lib/auth", () => ({
+  auth: { api: { getSession: vi.fn() } },
+}));
 vi.mock("@/app/lib/services/locationAnalysis", () => ({
   buildLocationAnalysisContext: vi.fn(),
 }));
@@ -9,10 +12,16 @@ vi.mock("@/app/lib/services/locationAnalyst", async () => {
     typeof import("@/app/lib/services/locationAnalyst")
   >("@/app/lib/services/locationAnalyst");
 
-  return { ...actual, analyzeLocation: vi.fn() };
+  return {
+    ...actual,
+    analyzeLocation: vi.fn(),
+    isLocationQuestionInScope: vi.fn().mockResolvedValue(true),
+    isLocationQuestionSafe: vi.fn().mockResolvedValue(true),
+  };
 });
 
 import { POST } from "./route";
+import { auth } from "@/app/lib/auth";
 import {
   analyzeLocation,
   LocationAnalystError,
@@ -21,6 +30,13 @@ import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysi
 
 const buildContext = vi.mocked(buildLocationAnalysisContext);
 const analyze = vi.mocked(analyzeLocation);
+const getSession = vi.mocked(auth.api.getSession);
+
+type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
+
+function signedInAs(userId: string): Session {
+  return { user: { id: userId } } as unknown as Session;
+}
 
 function answerStream(answer: string) {
   return new ReadableStream({
@@ -39,14 +55,15 @@ function request(body: string) {
 }
 
 const routeContext = {
-  params: Promise.resolve({ propertyId: "location-1" }),
+  params: Promise.resolve({ locationId: "location-1" }),
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getSession.mockResolvedValue(signedInAs("user-1"));
 });
 
-describe("POST /api/locations/[propertyId]/chat", () => {
+describe("POST /api/locations/[locationId]/chat", () => {
   it("rejects malformed JSON", async () => {
     const response = await POST(request("not json"), routeContext);
 
@@ -69,6 +86,18 @@ describe("POST /api/locations/[propertyId]/chat", () => {
     expect(buildContext).not.toHaveBeenCalled();
   });
 
+  it("requires a signed-in user", async () => {
+    getSession.mockResolvedValue(null);
+
+    const response = await POST(
+      request(JSON.stringify({ question: "Why this score?" })),
+      routeContext,
+    );
+
+    expect(response.status).toBe(401);
+    expect(buildContext).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when stored location data is unavailable", async () => {
     buildContext.mockResolvedValue(null);
 
@@ -82,7 +111,7 @@ describe("POST /api/locations/[propertyId]/chat", () => {
   });
 
   it("builds the selected profile context and streams its answer", async () => {
-    const context = { propertyId: "location-1" } as Awaited<
+    const context = { locationId: "location-1" } as Awaited<
       ReturnType<typeof buildLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);
@@ -111,7 +140,7 @@ describe("POST /api/locations/[propertyId]/chat", () => {
   });
 
   it("returns the analyst service's useful failure status", async () => {
-    const context = { propertyId: "location-1" } as Awaited<
+    const context = { locationId: "location-1" } as Awaited<
       ReturnType<typeof buildLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);

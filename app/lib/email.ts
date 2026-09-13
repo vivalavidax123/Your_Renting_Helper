@@ -15,7 +15,9 @@ function requiredEnvironmentVariable(name: string) {
   const value = process.env[name]?.trim();
 
   if (!value) {
-    throw new Error(`${name} must be configured before auth emails can be sent.`);
+    throw new Error(
+      `${name} must be configured before auth emails can be sent.`,
+    );
   }
 
   return value;
@@ -61,7 +63,9 @@ async function sendAuthEmail({
   });
 
   if (error) {
-    throw new Error(`Resend could not send the authentication email: ${error.message}`);
+    throw new Error(
+      `Resend could not send the authentication email: ${error.message}`,
+    );
   }
 }
 

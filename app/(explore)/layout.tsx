@@ -1,7 +1,11 @@
 import { Suspense } from "react";
-import { ExploreProvider } from "../components/ExploreProvider";
-import { SiteHeader } from "../components/SiteHeader";
-export default function ExploreLayout({ children }: { children: React.ReactNode }) {
+import { ExploreProvider } from "@/app/components/ExploreProvider";
+import { SiteHeader } from "@/app/components/SiteHeader";
+export default function ExploreLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <Suspense
       fallback={

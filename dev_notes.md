@@ -8,19 +8,19 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-09-11.
+Status reviewed against the repository state on 2026-09-13.
 
-| Area | Current state |
-| --- | --- |
-| Product | Deployed functional prototype |
-| Public application | https://rent-score-prototype.vercel.app/ |
-| Primary branch | `main`; Vercel auto-deploys changes pushed to it |
-| Application shape | Full-stack Next.js application in one repository |
-| Persistence | PostgreSQL through Prisma |
-| Authentication | Email/password and Google OAuth through Better Auth |
-| Quality gates | ESLint, TypeScript, Vitest, and production build |
-| Automated tests | 82 tests across 15 test files |
-| Production readiness | Not production-ready; hardening gaps are listed below |
+| Area                 | Current state                                              |
+| -------------------- | ---------------------------------------------------------- |
+| Product              | Deployed functional prototype                              |
+| Public application   | https://rent-score-prototype.vercel.app/                   |
+| Primary branch       | `main`; Vercel auto-deploys changes pushed to it           |
+| Application shape    | Full-stack Next.js application in one repository           |
+| Persistence          | PostgreSQL through Prisma                                  |
+| Authentication       | Email/password and Google OAuth through Better Auth        |
+| Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
+| Automated tests      | 96 tests across 19 test files                              |
+| Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
 
@@ -56,7 +56,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Direct distance, rounded Geoapify driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - Radius-based community median rent estimates for matching property type and bedroom count.
 - Authenticated rent reporting with one updatable report per user/location/property combination.
-- The latest rent report for a signed-in user and searched location is returned so the form can restore it. RentalInsights is keyed by location place ID, resetting form and feedback for each searched location.
+- The latest rent report for a signed-in user and searched location is returned so the form can restore it. `RentalInsights` is keyed by location place ID, while `useRentalInsights` owns its request and form state.
 - When a new location's default profile is empty, the strongest nearby property/bedroom group within 10 km is selected automatically.
 - Persistent light and dark themes across the main and login views.
 - Reduced-motion preferences shorten interface transitions and loading animations.
@@ -96,24 +96,24 @@ It is not a production platform. The application still relies on synchronous req
 
 Versions are taken from the current package manifest and deployment files.
 
-| Layer | Current implementation |
-| --- | --- |
-| Framework | Next.js 16.2.6 App Router |
-| UI | React 19.2.4 |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS 4 plus semantic tokens in app/globals.css |
-| Fonts | Geist and Geist Mono through next/font |
-| Database | PostgreSQL |
-| ORM | Prisma 6.19.3 |
-| Authentication | Better Auth 1.6.23 with Prisma adapter |
-| Maps and places | Google Maps JavaScript API, Places API (New), and Geocoding API |
-| Transport enrichment | Transitland v2 REST API, optional |
-| Analytics | Vercel Analytics |
-| Tests | Vitest 4.1.10 |
-| Static checks | ESLint 9 and TypeScript |
-| Hosted deployment | Vercel with Neon PostgreSQL |
-| Container deployment | Node 22 slim application image and PostgreSQL 17 |
-| CI runtime | GitHub Actions with Node 20 |
+| Layer                | Current implementation                                          |
+| -------------------- | --------------------------------------------------------------- |
+| Framework            | Next.js 16.3.5 App Router                                       |
+| UI                   | React 19.2.4                                                    |
+| Language             | TypeScript 5                                                    |
+| Styling              | Tailwind CSS 4 plus semantic tokens in app/globals.css          |
+| Fonts                | Geist and Geist Mono through next/font                          |
+| Database             | PostgreSQL                                                      |
+| ORM                  | Prisma 6.19.3                                                   |
+| Authentication       | Better Auth 1.6.23 with Prisma adapter                          |
+| Maps and places      | Google Maps JavaScript API, Places API (New), and Geocoding API |
+| Transport enrichment | Transitland v2 REST API, optional                               |
+| Analytics            | Vercel Analytics                                                |
+| Tests                | Vitest 4.1.11                                                   |
+| Static checks        | ESLint 9 and TypeScript                                         |
+| Hosted deployment    | Vercel with Neon PostgreSQL                                     |
+| Container deployment | Node 22 slim application image and PostgreSQL 17                |
+| CI runtime           | GitHub Actions with Node 22                                     |
 
 Prisma 6 is intentional. There is no current need to add the Prisma 7 driver-adapter work to this personal project.
 
@@ -133,7 +133,7 @@ app/
     places/              Cache, providers, scoring, and persistence coordinator
     rent-estimates/       Community rent estimates and contributions
   components/            Dashboard, map, auth, theme, scores, and result views
-  hooks/                 Autocomplete, search, and saved-search controllers
+  hooks/                 Autocomplete, search, saved-search, and rental controllers
   lib/
     maps/                 Browser-only Google Maps integration
     services/             Google, Transitland, and persistence services
@@ -147,10 +147,11 @@ app/
   layout.tsx              Metadata, fonts, analytics, and theme bootstrap
   (explore)/              Shared search workspace and direct location routes
     compare/              Dedicated saved-location comparison page
-    locations/[propertyId]/categories/[categoryId]/  Category evidence
-    locations/[propertyId]/details/  Commute, rent, and derived indicators
+    locations/[locationId]/categories/[categoryId]/  Category evidence
+    locations/[locationId]/details/  Commute, rent, and derived indicators
   components/ExploreProvider.tsx  Search/session state retained across workspace pages
   components/ConversationProvider.tsx  In-memory location/pair transcripts
+  components/AnalystChat.tsx  Shared single-location and comparison chat interface
 prisma/
   migrations/             Committed PostgreSQL migrations
   schema.prisma           Application and Better Auth models
@@ -168,7 +169,7 @@ The project deliberately uses a small number of direct boundaries:
 - **Pure modules** own scoring, indicators, formatting, and shared calculations.
 - **Hooks** own browser request state, cancellation, and interaction workflows.
 - **Components** focus on rendering and user intent.
-- **app/lib/types.ts** owns shared domain contracts. Local component or hook state types remain local when no other module needs them.
+- **app/lib/types.ts** owns shared domain contracts. Provider wire types stay beside their Google or Transitland adapter; local component or hook state types remain local when no other module needs them.
 - **app/lib/api.ts** validates the common success/error envelope before API data enters UI state.
 - **app/lib/maps/googleMaps.ts** is marked client-only and owns SDK loading, marker construction, popup HTML escaping, and map-specific types.
 
@@ -182,7 +183,7 @@ This structure is sufficient for the current project. Do not add repositories, d
 2. useAutocomplete waits 250 ms after input, requests /api/autocomplete, and supports keyboard selection.
 3. Submitting the form requests /api/geocode.
 4. useLocationSearch requests /api/places with coordinates and location metadata.
-5. The matched address and amenity groups are committed together. Persisted results navigate to /locations/[propertyId]?profile=...; direct visits read stored evidence through GET /api/locations/[propertyId] without a provider refresh.
+5. The matched address and amenity groups are committed together. Persisted results navigate to /locations/[locationId]?profile=...; direct visits read stored evidence through GET /api/locations/[locationId] without a provider refresh.
 6. The overview renders the address, overall and category scores, compact analyst, and map. Category links reuse the active groups and scoring profile without another provider or database request.
 7. CbdTravelCard and RentalInsights request /api/cbd-travel and /api/rent-estimates only after the supporting-evidence page opens.
 8. The client validates each API envelope before updating result state.
@@ -203,23 +204,23 @@ Profile changes recalculate scores in the browser from the existing place groups
 
 ## API Routes
 
-| Route | Access | Responsibility |
-| --- | --- | --- |
-| GET /api/autocomplete | Public | Australian Google Places suggestions |
-| GET /api/geocode | Public | Address geocoding and provider error mapping |
-| GET /api/places | Public, session-aware | Cache lookup, provider retrieval, scoring, snapshot save, optional history write |
-| GET /api/history | Public, session-aware | Current user's recent searches; signed-out users receive an empty list |
-| GET /api/favourites | Signed in | Current user's saved locations |
-| POST /api/favourites | Signed in | Save a known location |
-| DELETE /api/favourites | Signed in | Remove a saved location |
-| GET /api/compare | Signed in, saved-location ownership required | Recalculate two saved locations from stored evidence for one selected mobility profile |
-| GET /api/locations/[propertyId] | Public | Read stored location metadata, raw groups and timestamp without user history or paid refresh |
-| POST /api/locations/[propertyId]/chat | Signed in | Answer one grounded question about a stored location and selected mobility profile |
-| POST /api/locations/compare/chat | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations |
-| GET /api/cbd-travel | Public | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD |
-| GET /api/rent-estimates | Public | Like-for-like community median rent within an adaptive 1–10 km radius |
-| POST /api/rent-estimates | Signed in | Create or update the caller's rent report for a location/property combination |
-| /api/auth/[...all] | Better Auth | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks |
+| Route                                 | Access                                       | Responsibility                                                                               |
+| ------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| GET /api/autocomplete                 | Public                                       | Australian Google Places suggestions                                                         |
+| GET /api/geocode                      | Public                                       | Address geocoding and provider error mapping                                                 |
+| GET /api/places                       | Public, session-aware                        | Cache lookup, provider retrieval, scoring, snapshot save, optional history write             |
+| GET /api/history                      | Public, session-aware                        | Current user's recent searches; signed-out users receive an empty list                       |
+| GET /api/favourites                   | Signed in                                    | Current user's saved locations                                                               |
+| POST /api/favourites                  | Signed in                                    | Save a known location                                                                        |
+| DELETE /api/favourites                | Signed in                                    | Remove a saved location                                                                      |
+| GET /api/compare                      | Signed in, saved-location ownership required | Recalculate two saved locations from stored evidence for one selected mobility profile       |
+| GET /api/locations/[locationId]       | Public                                       | Read stored location metadata, raw groups and timestamp without user history or paid refresh |
+| POST /api/locations/[locationId]/chat | Signed in                                    | Answer one grounded question about a stored location and selected mobility profile           |
+| POST /api/locations/compare/chat      | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations                            |
+| GET /api/cbd-travel                   | Public                                       | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD    |
+| GET /api/rent-estimates               | Public                                       | Like-for-like community median rent within an adaptive 1–10 km radius                        |
+| POST /api/rent-estimates              | Signed in                                    | Create or update the caller's rent report for a location/property combination                |
+| /api/auth/[...all]                    | Better Auth                                  | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks                                    |
 
 CBD driving calls use the server-only `GEOAPIFY_API_KEY`, request free-flow
 traffic, and round the result to the nearest five minutes. Public transport
@@ -307,16 +308,16 @@ The formula is 30 x (1 - exp(-count / k)).
 
 Both profiles use the same fixed category priorities, which sum to 100. Car ownership changes only the proximity decay described above.
 
-| Category | Weight |
-| --- | ---: |
-| Shopping Centres | 8 |
-| Groceries | 22 |
-| Food & Cafes | 14 |
-| Transport | 28 |
-| Health | 15 |
-| Fitness & Recreation | 10 |
-| Fuel & Automotive | 0 |
-| Services | 3 |
+| Category             | Weight |
+| -------------------- | -----: |
+| Shopping Centres     |      8 |
+| Groceries            |     22 |
+| Food & Cafes         |     14 |
+| Transport            |     28 |
+| Health               |     15 |
+| Fitness & Recreation |     10 |
+| Fuel & Automotive    |      0 |
+| Services             |      3 |
 
 Using identical weights keeps the profiles directly comparable. The car-owner half-life is more distance-tolerant, so switching from no-car to car-owner can keep or improve every category score and cannot lower the overall score. Places within the 400 m walkable ring score equally for both profiles; farther amenities can score better for a car owner. Fuel remains visible context but does not affect either overall score.
 
@@ -343,12 +344,12 @@ The visible planned list is not live data:
 
 ## AI Location Analyst
 
-The result page includes a lightweight signed-in single-location chat panel, and the saved-location comparison includes a second panel for comparing two locations. Both explain deterministic application data rather than replacing the scoring system.
+The result page includes a lightweight signed-in single-location chat panel, and the saved-location comparison includes a second panel for comparing two locations. Both reuse `AnalystChat` and `useConversation`, and explain deterministic application data rather than replacing the scoring system.
 
 ### Single-location request flow
 
 1. `/api/places` returns the persisted `SearchLocation` id with the score result.
-2. The signed-in client sends that id, the current mobility profile, and one question to `POST /api/locations/[propertyId]/chat`.
+2. The signed-in client sends that id, the current mobility profile, and one question to `POST /api/locations/[locationId]/chat`.
 3. The route verifies the Better Auth session and returns 401 without calling the analyst when no session exists.
 4. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile.
 5. The question passes OpenAI moderation before answer generation; flagged input receives a fixed refusal without reaching another model call.
@@ -375,17 +376,17 @@ Current MVP boundaries: no RAG, web search, durable conversation storage, model 
 
 The current Prisma schema contains nine models:
 
-| Model | Purpose |
-| --- | --- |
-| SearchLocation | Shared canonical searched location keyed by rounded coordinates |
-| ScoreSnapshot | Timestamped overall score, category scores, and place groups |
-| UserSearch | Per-user recent-search relationship |
-| UserSavedLocation | Per-user saved-location relationship |
-| RentalReport | Per-user known weekly rent evidence keyed by location and property profile |
-| User | Better Auth identity |
-| Session | Better Auth database session |
-| Account | Password or OAuth provider account |
-| Verification | Better Auth verification records |
+| Model             | Purpose                                                                    |
+| ----------------- | -------------------------------------------------------------------------- |
+| SearchLocation    | Shared canonical searched location keyed by rounded coordinates            |
+| ScoreSnapshot     | Timestamped overall score, category scores, and place groups               |
+| UserSearch        | Per-user recent-search relationship                                        |
+| UserSavedLocation | Per-user saved-location relationship                                       |
+| RentalReport      | Per-user known weekly rent evidence keyed by location and property profile |
+| User              | Better Auth identity                                                       |
+| Session           | Better Auth database session                                               |
+| Account           | Password or OAuth provider account                                         |
+| Verification      | Better Auth verification records                                           |
 
 Important behaviour:
 
@@ -443,21 +444,21 @@ The application uses semantic colour tokens for light and dark themes. Theme pre
 
 Application variables:
 
-| Variable | Required | Exposure and purpose |
-| --- | --- | --- |
-| DATABASE_URL | Yes | Server-only PostgreSQL connection |
-| GOOGLE_MAPS_API_KEY | Yes | Server-only autocomplete, geocoding, place retrieval, and temporary public-transport routing |
-| GEOAPIFY_API_KEY | Yes | Server-only indicative driving time to Melbourne CBD |
-| OPENAI_API_KEY | For AI analyst | Server-only OpenAI credential used by the grounded location chat |
-| OPENAI_MODEL | For AI analyst | Server-only model selected by the environment; the tracked Docker example defaults to `gpt-5-mini` |
-| NEXT_PUBLIC_MAPS_API_KEY | For live map | Browser-visible Maps JavaScript key |
-| BETTER_AUTH_SECRET | Yes | Server-only stable auth and token-encryption secret |
-| BETTER_AUTH_URL | Yes | Canonical application origin for auth |
-| RESEND_API_KEY | When auth email is enabled | Server-only Resend API key for verification and password-reset messages |
-| AUTH_EMAIL_FROM | When auth email is enabled | Verified sender identity used for authentication messages |
-| TRANSITLAND_API_KEY | No | Server-only bus-stop and service enrichment |
-| GOOGLE_CLIENT_ID | No | Google OAuth; email/password works without it |
-| GOOGLE_CLIENT_SECRET | No | Google OAuth; server-only |
+| Variable                 | Required                   | Exposure and purpose                                                                               |
+| ------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------- |
+| DATABASE_URL             | Yes                        | Server-only PostgreSQL connection                                                                  |
+| GOOGLE_MAPS_API_KEY      | Yes                        | Server-only autocomplete, geocoding, place retrieval, and temporary public-transport routing       |
+| GEOAPIFY_API_KEY         | Yes                        | Server-only indicative driving time to Melbourne CBD                                               |
+| OPENAI_API_KEY           | For AI analyst             | Server-only OpenAI credential used by the grounded location chat                                   |
+| OPENAI_MODEL             | For AI analyst             | Server-only model selected by the environment; the tracked Docker example defaults to `gpt-5-mini` |
+| NEXT_PUBLIC_MAPS_API_KEY | For live map               | Browser-visible Maps JavaScript key                                                                |
+| BETTER_AUTH_SECRET       | Yes                        | Server-only stable auth and token-encryption secret                                                |
+| BETTER_AUTH_URL          | Yes                        | Canonical application origin for auth                                                              |
+| RESEND_API_KEY           | When auth email is enabled | Server-only Resend API key for verification and password-reset messages                            |
+| AUTH_EMAIL_FROM          | When auth email is enabled | Verified sender identity used for authentication messages                                          |
+| TRANSITLAND_API_KEY      | No                         | Server-only bus-stop and service enrichment                                                        |
+| GOOGLE_CLIENT_ID         | No                         | Google OAuth; email/password works without it                                                      |
+| GOOGLE_CLIENT_SECRET     | No                         | Google OAuth; server-only                                                                          |
 
 NEXT_PUBLIC_MAPS_API_KEY is public by design. Restrict it by HTTP referrer and to the Maps JavaScript API. Restrict the server key to the required server APIs and do not apply browser-referrer restrictions to server calls.
 
@@ -526,12 +527,13 @@ The Docker image uses Node 22 slim and installs OpenSSL for Prisma. NEXT_PUBLIC_
 GitHub Actions runs on pushes to main and pull requests targeting main:
 
 1. npm ci
-2. npm run lint
-3. npx tsc --noEmit
-4. npm test
-5. npm run build with non-secret placeholder configuration
+2. npm run format:check
+3. npm run lint
+4. npm run typecheck
+5. npm run test
+6. npm run build with non-secret placeholder configuration
 
-The current 82-test suite across 15 files covers:
+The current 96-test suite across 19 files covers:
 
 - scoring behaviour and invariants;
 - formatting, coordinate parsing, distance, and time utilities;
@@ -543,6 +545,7 @@ The current 82-test suite across 15 files covers:
 - CBD driving/transit response parsing and Melbourne daylight-saving calculations;
 - grounded AI context construction, OpenAI request configuration, streamed response parsing, text-chunk accumulation, and failure mapping;
 - single-location and authenticated saved-location comparison chat routes;
+- analyst request payloads and rental hook API boundaries;
 - the invariant that the car-owner profile never lowers category or overall scores.
 
 The tests mock provider, auth, or database dependencies where appropriate. CI does not require a live database or external network calls.
@@ -573,9 +576,7 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 ### Testing
 
-- Browser regression checks are local-only by owner preference; no browser suite or test dependency is committed.
-- The committed analyst request test still expects medium reasoning/verbosity, although the service uses xhigh/high. Its expectation correction is local-only by owner request, so the committed suite retains this known failure.
-- The committed single-location chat route test predates the sign-in requirement. Authentication coverage is local-only by owner request, so that committed test retains its old public-route expectation.
+- No browser suite or browser-test dependency is committed.
 - No live database integration suite.
 - No complete authentication-flow tests.
 - No component or browser test covering rent-form state across multiple searched locations.
@@ -635,9 +636,10 @@ This repository is a personal project. Prefer the smallest clear implementation 
 ### Before committing application changes
 
 ```bash
+npm run format:check
 npm run lint
-npx tsc --noEmit
-npm test
+npm run typecheck
+npm run test
 npm run build
 ```
 

@@ -35,12 +35,7 @@ describe("getRentalEstimate", () => {
       { latitude: -37.84, longitude: 144.96, weeklyRent: 1200 },
     ] as never);
 
-    const estimate = await getRentalEstimate(
-      -37.81,
-      144.96,
-      "apartment",
-      1,
-    );
+    const estimate = await getRentalEstimate(-37.81, 144.96, "apartment", 1);
 
     expect(estimate).toEqual({
       medianWeeklyRent: 550,
@@ -50,7 +45,10 @@ describe("getRentalEstimate", () => {
     });
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ propertyType: "apartment", bedrooms: 1 }),
+        where: expect.objectContaining({
+          propertyType: "apartment",
+          bedrooms: 1,
+        }),
       }),
     );
   });
@@ -61,12 +59,7 @@ describe("getRentalEstimate", () => {
       { latitude: -37.82, longitude: 144.96, weeklyRent: 700 },
     ] as never);
 
-    const estimate = await getRentalEstimate(
-      -37.81,
-      144.96,
-      "house",
-      3,
-    );
+    const estimate = await getRentalEstimate(-37.81, 144.96, "house", 3);
 
     expect(estimate).toEqual({
       medianWeeklyRent: 600,
@@ -112,11 +105,7 @@ describe("getLatestRentalReport", () => {
       bedrooms: 3,
     } as never);
 
-    const report = await getLatestRentalReport(
-      "user-1",
-      -37.81361,
-      144.96305,
-    );
+    const report = await getLatestRentalReport("user-1", -37.81361, 144.96305);
 
     expect(report).toEqual({
       weeklyRent: 430,

@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  getCbdTravel,
-  getNextTypicalTransitDeparture,
-} from "./cbdTravel";
+import { getCbdTravel, getNextTypicalTransitDeparture } from "./cbdTravel";
 
 afterEach(() => {
   vi.unstubAllEnvs();

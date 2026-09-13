@@ -17,7 +17,10 @@ export function SiteHeader() {
         Your Renting Helper
       </Link>
       <nav aria-label="Main navigation" className="flex items-center gap-4">
-        <Link href="/compare" className="text-sm text-ink-muted hover:text-accent">
+        <Link
+          href="/compare"
+          className="text-sm text-ink-muted hover:text-accent"
+        >
           Compare
         </Link>
         <ThemeToggle />

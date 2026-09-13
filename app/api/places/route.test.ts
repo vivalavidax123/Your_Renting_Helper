@@ -57,7 +57,7 @@ describe("GET /api/places location identity", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.propertyId).toBe("location-cached");
+    expect(body.locationId).toBe("location-cached");
     expect(body.cached).toBe(true);
     expect(fetchGroups).not.toHaveBeenCalled();
   });
@@ -71,7 +71,7 @@ describe("GET /api/places location identity", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.propertyId).toBe("location-new");
+    expect(body.locationId).toBe("location-new");
     expect(body.cached).toBe(false);
   });
 
@@ -85,6 +85,6 @@ describe("GET /api/places location identity", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.propertyId).toBeNull();
+    expect(body.locationId).toBeNull();
   });
 });

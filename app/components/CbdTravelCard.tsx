@@ -134,7 +134,10 @@ export function CbdTravelCard({
           <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-faint">
             <li>Driving assumes free-flow traffic.</li>
             <li>Both times are rounded to the nearest 5 minutes.</li>
-            <li>Public transport uses the usual weekday timetable at 8:00 am Melbourne time.</li>
+            <li>
+              Public transport uses the usual weekday timetable at 8:00 am
+              Melbourne time.
+            </li>
             <li>Actual trips vary.</li>
           </ul>
           {travel.driveMinutes !== null || travel.transitMinutes !== null ? (
@@ -162,9 +165,9 @@ export function CbdTravelCard({
                   .
                 </li>
               ) : null}
-              {travel.transitMinutes !== null
-                ? <li>Public transport: Google Maps.</li>
-                : null}
+              {travel.transitMinutes !== null ? (
+                <li>Public transport: Google Maps.</li>
+              ) : null}
             </ul>
           ) : null}
           {travel.warning ? (

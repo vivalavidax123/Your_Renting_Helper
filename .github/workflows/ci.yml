@@ -17,11 +17,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      # Install Node 20 and cache npm downloads between runs for speed.
+      # Install the project's Node version and cache npm downloads between runs.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
 
       # Clean, reproducible install from package-lock.json. This also runs the
@@ -40,12 +40,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Lint
         run: npm run lint
 
       # Type-check without emitting output: fails on any TypeScript error.
       - name: Type-check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Run tests
         run: npm run test

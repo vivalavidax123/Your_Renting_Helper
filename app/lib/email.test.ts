@@ -9,10 +9,7 @@ vi.mock("resend", () => ({
   },
 }));
 
-import {
-  sendPasswordResetEmail,
-  sendVerificationEmail,
-} from "./email";
+import { sendPasswordResetEmail, sendVerificationEmail } from "./email";
 
 describe("auth email delivery", () => {
   beforeEach(() => {
@@ -30,7 +27,8 @@ describe("auth email delivery", () => {
   });
 
   it("sends a verification link in text and HTML", async () => {
-    const url = "https://example.com/api/auth/verify-email?token=abc&callbackURL=/";
+    const url =
+      "https://example.com/api/auth/verify-email?token=abc&callbackURL=/";
 
     await sendVerificationEmail("renter@example.com", url);
 

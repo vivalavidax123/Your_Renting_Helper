@@ -1,11 +1,47 @@
-import type { TransportService } from "../types";
-import { normalizeText } from "../utils";
-import { getDistanceMeters } from "../scoring";
-import type {
-  TransitlandStop,
-  TransitlandDeparture,
-  TransitlandStopsResponse,
-} from "../types";
+import type { TransportService } from "@/app/lib/types";
+import { normalizeText } from "@/app/lib/utils";
+import { getDistanceMeters } from "@/app/lib/scoring";
+
+type TransitlandRoute = {
+  route_short_name?: string;
+  route_long_name?: string;
+  route_id?: string;
+};
+
+type TransitlandTrip = {
+  trip_headsign?: string;
+  trip_short_name?: string;
+  route?: TransitlandRoute;
+};
+
+type TransitlandStopTimeEvent = {
+  estimated?: string;
+  scheduled?: string;
+};
+
+type TransitlandDeparture = {
+  stop_headsign?: string;
+  departure_time?: string;
+  departure?: TransitlandStopTimeEvent;
+  trip?: TransitlandTrip;
+};
+
+type TransitlandStop = {
+  id?: number;
+  onestop_id?: string;
+  stop_id?: string;
+  stop_name?: string;
+  stop_desc?: string;
+  stop_code?: string;
+  geometry?: {
+    coordinates?: [number, number];
+  };
+  departures?: TransitlandDeparture[];
+};
+
+type TransitlandStopsResponse = {
+  stops?: TransitlandStop[];
+};
 
 const maxTransportBusStops = 4;
 const maxTransportBusServicesPerStop = 4;
@@ -13,7 +49,9 @@ const transitlandDepartureWindowSeconds = 7200;
 const transitlandBaseUrl = "https://transit.land/api/v2/rest";
 
 function getTransitlandStopKey(stop: TransitlandStop) {
-  return stop.onestop_id ?? (typeof stop.id === "number" ? String(stop.id) : null);
+  return (
+    stop.onestop_id ?? (typeof stop.id === "number" ? String(stop.id) : null)
+  );
 }
 
 function getTransitlandRouteNumber(departure: TransitlandDeparture) {
@@ -187,7 +225,8 @@ export async function fetchTransitlandBusStops({
         place: {
           id: `transitland:${stopKey}`,
           name: stop.stop_name,
-          address: stop.stop_desc ?? stop.stop_code ?? "Stop details unavailable",
+          address:
+            stop.stop_desc ?? stop.stop_code ?? "Stop details unavailable",
           primaryType: "bus_stop",
           latitude: stopLatitude,
           longitude: stopLongitude,
@@ -200,12 +239,17 @@ export async function fetchTransitlandBusStops({
     ];
   });
 
-  const sortedStops = validStops.sort((a, b) => a.place.distanceMeters - b.place.distanceMeters).slice(0, maxTransportBusStops);
+  const sortedStops = validStops
+    .sort((a, b) => a.place.distanceMeters - b.place.distanceMeters)
+    .slice(0, maxTransportBusStops);
 
   return Promise.all(
     sortedStops.map(async ({ stop, place }) => {
-      const transportServices = await fetchTransitlandBusDepartures({ apiKey, stop });
+      const transportServices = await fetchTransitlandBusDepartures({
+        apiKey,
+        stop,
+      });
       return { ...place, transportServices };
-    })
+    }),
   );
 }

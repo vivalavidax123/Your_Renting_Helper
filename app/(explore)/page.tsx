@@ -1,1 +1,1 @@
-export { Home as default } from "../components/Home";
+export { ExploreWorkspace as default } from "@/app/components/ExploreWorkspace";

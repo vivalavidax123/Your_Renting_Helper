@@ -3,11 +3,15 @@ import path from "node:path";
 import {
   rentScoreCategories,
   type RentScoreCategory,
-} from "../categories";
-import { getDistanceMeters } from "../scoring";
-import type { GooglePlace, NearbyPlace, PlaceSource } from "../types";
-import { normalizeStationName, normalizeText } from "../utils";
-import { fetchPlacesForBrand, fetchPlacesForTypes } from "./googlePlaces";
+} from "@/app/lib/categories";
+import { getDistanceMeters } from "@/app/lib/scoring";
+import type { NearbyPlace, PlaceSource } from "@/app/lib/types";
+import { normalizeStationName, normalizeText } from "@/app/lib/utils";
+import {
+  fetchPlacesForBrand,
+  fetchPlacesForTypes,
+  type GooglePlace,
+} from "./googlePlaces";
 import { fetchTransitlandBusStops } from "./transitland";
 
 const transportBusRadiusMeters = 1000;
@@ -135,7 +139,14 @@ function collectPlaces({
   const placesById = new Map<string, NearbyPlace>();
 
   for (const place of googlePlaces) {
-    addPlaceToMap({ placesById, place, origin, category, source, radiusMeters });
+    addPlaceToMap({
+      placesById,
+      place,
+      origin,
+      category,
+      source,
+      radiusMeters,
+    });
   }
 
   return Array.from(placesById.values());
@@ -262,7 +273,9 @@ async function fetchPlacesForTransportCategory({
   const isVlineStation = (place: NearbyPlace) =>
     vlineStationNames.has(normalizeStationName(place.name));
   const nearestVlineStation = vlineCandidatePlaces.find(isVlineStation);
-  const nearestMetroStation = railPlaces.find((place) => !isVlineStation(place));
+  const nearestMetroStation = railPlaces.find(
+    (place) => !isVlineStation(place),
+  );
   const placesById = new Map<string, NearbyPlace>();
 
   for (const place of [

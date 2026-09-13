@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
-import { authClient } from "@/app/lib/auth-client";
+import { authClient } from "@/app/lib/authClient";
 
 const submittedMessage =
   "If an account exists for that email, we sent a password-reset link.";
@@ -86,7 +86,10 @@ export default function ForgotPasswordPage() {
         )}
 
         <p className="mt-5 text-center text-sm">
-          <Link href="/login" className="font-semibold text-accent hover:underline">
+          <Link
+            href="/login"
+            className="font-semibold text-accent hover:underline"
+          >
             Back to sign in
           </Link>
         </p>

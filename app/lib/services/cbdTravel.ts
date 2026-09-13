@@ -94,8 +94,7 @@ export function getNextTypicalTransitDeparture(now = new Date()) {
   }
 
   const offsetMinutes =
-    (offset[1] === "+" ? 1 : -1) *
-    (Number(offset[2]) * 60 + Number(offset[3]));
+    (offset[1] === "+" ? 1 : -1) * (Number(offset[2]) * 60 + Number(offset[3]));
 
   return new Date(localEightAsUtc - offsetMinutes * 60 * 1000);
 }
