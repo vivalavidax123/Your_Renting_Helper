@@ -9,13 +9,16 @@ export function SiteHeader() {
 
   return (
     <header className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
-      <Link
-        href="/"
-        onClick={returnToWelcome}
-        className="text-lg font-bold tracking-tight text-ink"
-      >
-        Your Renting Helper
-      </Link>
+      <div className="flex items-center gap-3">
+        <Link
+          href="/"
+          onClick={returnToWelcome}
+          className="text-lg font-bold tracking-tight text-ink"
+        >
+          Your Renting Helper
+        </Link>
+        <ThemeToggle />
+      </div>
       <nav aria-label="Main navigation" className="flex items-center gap-4">
         <Link
           href="/compare"
@@ -23,7 +26,6 @@ export function SiteHeader() {
         >
           Compare
         </Link>
-        <ThemeToggle />
         <AuthStatus />
       </nav>
     </header>

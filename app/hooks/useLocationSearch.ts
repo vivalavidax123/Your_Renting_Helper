@@ -40,6 +40,7 @@ export function useLocationSearch(profile: WeightProfile) {
   const [stage, setStage] = useState("");
   const [error, setError] = useState("");
   const autocomplete = useAutocomplete(state);
+  const { selectQuery } = autocomplete;
   const controllerRef = useRef<AbortController | null>(null);
   const returningToWelcomeRef = useRef(false);
   const cache = useRef(new Map<string, LocationResult>());
@@ -78,6 +79,7 @@ export function useLocationSearch(profile: WeightProfile) {
       }
       if (controller.signal.aborted) return;
       cache.current.set(id, next);
+      selectQuery(next.location.formattedAddress);
       setResult(next);
       setState("success");
     } catch (error) {
@@ -90,7 +92,7 @@ export function useLocationSearch(profile: WeightProfile) {
         setState("error");
       }
     }
-  }, []);
+  }, [selectQuery]);
 
   async function runSearch(query: string, knownLocation?: GeocodeLocation) {
     returningToWelcomeRef.current = false;
@@ -102,7 +104,7 @@ export function useLocationSearch(profile: WeightProfile) {
     }
     const controller = new AbortController();
     controllerRef.current = controller;
-    autocomplete.selectQuery(query.trim());
+    selectQuery(query.trim());
     setState("loading");
     setError("");
     setStage("Finding location…");
@@ -146,6 +148,7 @@ export function useLocationSearch(profile: WeightProfile) {
       if (controller.signal.aborted) return;
       const next = { ...data, location };
       if (next.locationId) cache.current.set(next.locationId, next);
+      selectQuery(location.formattedAddress);
       startTransition(() => {
         setResult(next);
         setState("success");

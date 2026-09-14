@@ -8,6 +8,7 @@ type SearchFormProps = {
   placesState: RequestState;
   error: string;
   onSearch: () => void;
+  compact?: boolean;
 };
 
 export function SearchForm({
@@ -16,6 +17,7 @@ export function SearchForm({
   placesState,
   error,
   onSearch,
+  compact = false,
 }: SearchFormProps) {
   const {
     query,
@@ -40,77 +42,81 @@ export function SearchForm({
       className="rounded-lg border border-line bg-surface-subtle p-3 shadow-inner"
       onSubmit={handleSubmit}
     >
-      <label
-        htmlFor="location"
-        className="mb-2 block text-sm font-semibold text-ink"
-      >
-        Address or suburb
-      </label>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <input
-            id="location"
-            type="text"
-            value={query}
-            onChange={(event) => changeQuery(event.target.value)}
-            onFocus={openSuggestions}
-            onBlur={() => {
-              window.setTimeout(closeSuggestions, 120);
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Try: South Yarra VIC"
-            autoComplete="off"
-            aria-autocomplete="list"
-            aria-controls="location-suggestions"
-            className="min-h-12 w-full rounded-md border border-line-strong bg-control px-4 text-base text-ink outline-none transition placeholder:text-ink-faint focus:border-accent focus:ring-4 focus:ring-accent-ring"
-          />
-          {showSuggestions ? (
-            <div className="absolute left-0 right-0 top-[calc(100%+0.375rem)] z-20 overflow-hidden rounded-md border border-line bg-surface shadow-lg">
-              <ul id="location-suggestions" role="listbox" className="py-1">
-                {suggestions.map((suggestion, index) => (
-                  <li
-                    key={suggestion.placeId}
-                    role="option"
-                    aria-selected={index === activeSuggestionIndex}
-                  >
-                    <button
-                      type="button"
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        selectSuggestion(suggestion);
-                      }}
-                      onMouseEnter={() => activateSuggestion(index)}
-                      className={`w-full px-4 py-2.5 text-left transition ${
-                        index === activeSuggestionIndex
-                          ? "bg-accent-soft"
-                          : "bg-surface hover:bg-hover"
-                      }`}
-                    >
-                      <span className="block truncate text-sm font-semibold text-ink">
-                        {suggestion.mainText}
-                      </span>
-                      {suggestion.secondaryText ? (
-                        <span className="mt-0.5 block truncate text-xs text-ink-muted">
-                          {suggestion.secondaryText}
-                        </span>
-                      ) : null}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <div className="border-t border-line-soft px-4 py-1.5 text-right text-[11px] font-medium text-ink-faint">
-                Powered by Google
-              </div>
+      <div>
+        <div>
+          <label
+            htmlFor="location"
+            className={`${compact ? "mb-1" : "mb-2"} block text-sm font-semibold text-ink`}
+          >
+            Address or suburb
+          </label>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative min-w-0 flex-1">
+              <input
+                id="location"
+                type="text"
+                value={query}
+                onChange={(event) => changeQuery(event.target.value)}
+                onFocus={openSuggestions}
+                onBlur={() => {
+                  window.setTimeout(closeSuggestions, 120);
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Try: South Yarra VIC"
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-controls="location-suggestions"
+                className={`${compact ? "min-h-10" : "min-h-12"} w-full rounded-md border border-line-strong bg-control px-4 text-base text-ink outline-none transition placeholder:text-ink-faint focus:border-accent focus:ring-4 focus:ring-accent-ring`}
+              />
+              {showSuggestions ? (
+                <div className="absolute left-0 right-0 top-[calc(100%+0.375rem)] z-20 overflow-hidden rounded-md border border-line bg-surface shadow-lg">
+                  <ul id="location-suggestions" role="listbox" className="py-1">
+                    {suggestions.map((suggestion, index) => (
+                      <li
+                        key={suggestion.placeId}
+                        role="option"
+                        aria-selected={index === activeSuggestionIndex}
+                      >
+                        <button
+                          type="button"
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            selectSuggestion(suggestion);
+                          }}
+                          onMouseEnter={() => activateSuggestion(index)}
+                          className={`w-full px-4 py-2.5 text-left transition ${
+                            index === activeSuggestionIndex
+                              ? "bg-accent-soft"
+                              : "bg-surface hover:bg-hover"
+                          }`}
+                        >
+                          <span className="block truncate text-sm font-semibold text-ink">
+                            {suggestion.mainText}
+                          </span>
+                          {suggestion.secondaryText ? (
+                            <span className="mt-0.5 block truncate text-xs text-ink-muted">
+                              {suggestion.secondaryText}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="border-t border-line-soft px-4 py-1.5 text-right text-[11px] font-medium text-ink-faint">
+                    Powered by Google
+                  </div>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+            <button
+              type="submit"
+              disabled={searchState === "loading" || placesState === "loading"}
+              className={`${compact ? "min-h-10 px-5 text-sm" : "min-h-12 px-6 text-base"} rounded-md bg-action font-medium text-action-ink transition hover:bg-action-hover focus:outline-none focus:ring-4 focus:ring-accent-ring disabled:cursor-not-allowed disabled:bg-action-disabled`}
+            >
+              {searchState === "loading" ? "Searching..." : "Search"}
+            </button>
+          </div>
         </div>
-        <button
-          type="submit"
-          disabled={searchState === "loading" || placesState === "loading"}
-          className="min-h-12 rounded-md bg-action px-6 text-base font-medium text-action-ink transition hover:bg-action-hover focus:outline-none focus:ring-4 focus:ring-accent-ring disabled:cursor-not-allowed disabled:bg-action-disabled"
-        >
-          {searchState === "loading" ? "Searching..." : "Search"}
-        </button>
       </div>
       {searchState === "error" ? (
         <p className="mt-3 rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm font-medium text-danger-ink">

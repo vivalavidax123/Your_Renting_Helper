@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { readApiResult } from "@/app/lib/api";
 import type { AddressSuggestion, RequestState } from "@/app/lib/types";
 
@@ -81,13 +81,13 @@ export function useAutocomplete(searchState: RequestState) {
     }
   }
 
-  function selectQuery(nextQuery: string) {
+  const selectQuery = useCallback((nextQuery: string) => {
     setQuery(nextQuery);
     setSelectedSuggestionText(nextQuery);
     setSuggestions([]);
     setShowSuggestions(false);
     setActiveSuggestionIndex(-1);
-  }
+  }, []);
 
   function selectSuggestion(suggestion: AddressSuggestion) {
     selectQuery(suggestion.text);
