@@ -49,50 +49,53 @@ export function useLocationSearch(profile: WeightProfile) {
   }, []);
   useEffect(() => cancelSearch, [cancelSearch]);
 
-  const openLocation = useCallback(async (id: string) => {
-    if (returningToWelcomeRef.current) {
-      return;
-    }
+  const openLocation = useCallback(
+    async (id: string) => {
+      if (returningToWelcomeRef.current) {
+        return;
+      }
 
-    controllerRef.current?.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    setState("loading");
-    setStage("Opening saved location…");
-    setError("");
-    try {
-      let next = cache.current.get(id);
-      if (!next) {
-        const response = await fetch(
-          "/api/locations/" + encodeURIComponent(id),
-          { signal: controller.signal },
-        );
-        const data = await readApiResult<LocationResult>(
-          response,
-          (value) => isResult(value) && isLocation(value.location),
-        );
-        if (!response.ok || !data.ok)
-          throw new Error(
-            data.ok ? "Could not open this location." : data.error,
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      setState("loading");
+      setStage("Opening saved location…");
+      setError("");
+      try {
+        let next = cache.current.get(id);
+        if (!next) {
+          const response = await fetch(
+            "/api/locations/" + encodeURIComponent(id),
+            { signal: controller.signal },
           );
-        next = data;
+          const data = await readApiResult<LocationResult>(
+            response,
+            (value) => isResult(value) && isLocation(value.location),
+          );
+          if (!response.ok || !data.ok)
+            throw new Error(
+              data.ok ? "Could not open this location." : data.error,
+            );
+          next = data;
+        }
+        if (controller.signal.aborted) return;
+        cache.current.set(id, next);
+        selectQuery(next.location.formattedAddress);
+        setResult(next);
+        setState("success");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setError(
+            error instanceof Error
+              ? error.message
+              : "Could not open this location.",
+          );
+          setState("error");
+        }
       }
-      if (controller.signal.aborted) return;
-      cache.current.set(id, next);
-      selectQuery(next.location.formattedAddress);
-      setResult(next);
-      setState("success");
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Could not open this location.",
-        );
-        setState("error");
-      }
-    }
-  }, [selectQuery]);
+    },
+    [selectQuery],
+  );
 
   async function runSearch(query: string, knownLocation?: GeocodeLocation) {
     returningToWelcomeRef.current = false;

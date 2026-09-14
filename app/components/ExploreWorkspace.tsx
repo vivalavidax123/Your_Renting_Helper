@@ -2,7 +2,12 @@
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
 import { Welcome } from "./Welcome";
-import { LocationHeader } from "./LocationHeader";
+import {
+  LocationActions,
+  LocationEvidenceNotes,
+  LocationHeader,
+  LocationScore,
+} from "./LocationHeader";
 import { LocationMap } from "./LocationMap";
 import { SearchForm } from "./SearchForm";
 import { ScoreBreakdown } from "./ScoreBreakdown";
@@ -16,13 +21,22 @@ export function ExploreWorkspace() {
   return (
     <main className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
       <div className="mb-4">
-        <SearchForm
-          autocomplete={search.autocomplete}
-          searchState={search.searchState}
-          placesState={search.busy ? "loading" : search.placesState}
-          error={search.error}
-          onSearch={search.handleSearch}
-        />
+        <div className="grid items-stretch gap-3 lg:grid-cols-[1.35fr_0.85fr] lg:gap-5">
+          <div className="grid min-w-0 items-stretch gap-3 lg:grid-cols-[minmax(0,1fr)_7rem]">
+            <SearchForm
+              autocomplete={search.autocomplete}
+              searchState={search.searchState}
+              placesState={search.busy ? "loading" : search.placesState}
+              error={search.error}
+              onSearch={search.handleSearch}
+              compact
+            />
+            <LocationActions />
+          </div>
+          <div className="min-w-0">
+            <LocationScore />
+          </div>
+        </div>
         {search.canSave ? (
           <details className="mt-2 text-xs text-ink-muted">
             <summary className="cursor-pointer">
@@ -53,9 +67,16 @@ export function ExploreWorkspace() {
           The previous result is still shown.
         </p>
       ) : null}
-      <div className="grid items-start gap-5 lg:grid-cols-[1.35fr_0.85fr]">
+      <div className="grid items-stretch gap-5 lg:grid-cols-[1.35fr_0.85fr]">
         <section className="min-w-0 rounded-xl border border-line bg-surface p-5">
           <LocationHeader />
+          <div inert={search.busy}>
+            <ScoreBreakdown
+              categoryScores={search.categoryScores}
+              locationId={search.locationId}
+              profile={search.profile}
+            />
+          </div>
           <details className="mt-3 text-xs text-ink-muted">
             <summary className="cursor-pointer">How to use this result</summary>
             <ul className="mt-2 list-disc space-y-1 pl-4 leading-5">
@@ -65,12 +86,8 @@ export function ExploreWorkspace() {
               <li>Save two locations to compare them.</li>
             </ul>
           </details>
-          <div inert={search.busy}>
-            <ScoreBreakdown
-              categoryScores={search.categoryScores}
-              locationId={search.locationId}
-              profile={search.profile}
-            />
+          <div className="mt-3">
+            <LocationEvidenceNotes />
           </div>
           {!search.locationId ? (
             <p className="mt-3 text-sm text-ink-muted">
@@ -87,7 +104,7 @@ export function ExploreWorkspace() {
             sessionPending={search.sessionPending}
           />
         </section>
-        <aside className="min-w-0 space-y-4">
+        <aside className="flex min-w-0 flex-col gap-4">
           <section className="rounded-xl border border-line bg-surface p-5">
             <h2 className="text-base font-semibold text-ink">
               Location preview
@@ -112,7 +129,7 @@ export function ExploreWorkspace() {
           {search.locationId ? (
             <nav
               aria-label="Supporting evidence"
-              className="grid gap-2 rounded-xl border border-line bg-surface p-4"
+              className="grid flex-1 content-start gap-2 rounded-xl border border-line bg-surface p-4"
             >
               <h2 className="mb-1 text-sm font-semibold text-ink">
                 Explore more

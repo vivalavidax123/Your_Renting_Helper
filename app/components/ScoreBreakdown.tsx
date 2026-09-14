@@ -12,7 +12,7 @@ export function ScoreBreakdown({
   profile: WeightProfile;
 }) {
   return (
-    <section className="mt-5">
+    <section>
       <h2 className="text-base font-semibold text-ink">Category scores</h2>
       <p className="mt-1 text-xs text-ink-muted">
         Open a category to see the places and evidence behind its score.

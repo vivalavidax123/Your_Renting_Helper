@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { readApiResult } from "@/app/lib/api";
 import type { AddressSuggestion, RequestState } from "@/app/lib/types";
 
