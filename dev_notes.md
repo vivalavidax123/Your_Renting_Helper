@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against the repository state on 2026-09-13.
+Status reviewed against committed `HEAD` on 2026-09-14.
 
 | Area                 | Current state                                              |
 | -------------------- | ---------------------------------------------------------- |
@@ -39,6 +39,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 - Guided welcome screen with example-suburb searches and an illustrative map preview; result panels stay hidden until a successful search.
 - Shared-header logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
+- Successful searches and direct location opens replace the search query with the matched formatted address; the result view keeps compact search, mobility, save, and overall-score controls together above the evidence.
 - Signed-in users open the account email menu to access Sign out; Escape and outside clicks close the menu.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
@@ -183,7 +184,7 @@ This structure is sufficient for the current project. Do not add repositories, d
 2. useAutocomplete waits 250 ms after input, requests /api/autocomplete, and supports keyboard selection.
 3. Submitting the form requests /api/geocode.
 4. useLocationSearch requests /api/places with coordinates and location metadata.
-5. The matched address and amenity groups are committed together. Persisted results navigate to /locations/[locationId]?profile=...; direct visits read stored evidence through GET /api/locations/[locationId] without a provider refresh.
+5. The matched address and amenity groups are committed together, and the formatted address replaces the submitted query in the search field. Persisted results navigate to /locations/[locationId]?profile=...; direct visits read stored evidence through GET /api/locations/[locationId] without a provider refresh.
 6. The overview renders the address, overall and category scores, compact analyst, and map. Category links reuse the active groups and scoring profile without another provider or database request.
 7. CbdTravelCard and RentalInsights request /api/cbd-travel and /api/rent-estimates only after the supporting-evidence page opens.
 8. The client validates each API envelope before updating result state.
@@ -368,7 +369,7 @@ The result page includes a lightweight signed-in single-location chat panel, and
 
 Questions are first sent to `omni-moderation-latest`. A flagged result returns a fixed plain-text refusal and skips later model calls. Safe questions then use the environment-selected `OPENAI_MODEL` for a non-streaming structured scope decision with low reasoning, low verbosity, a 200-token ceiling, and `store: false`. The scope permits location scores, nearby amenities, transport, rent evidence, daily routines, renter priorities, trade-offs, and relevant facts to verify; it rejects unrelated general assistance, content generation, and instruction-override attempts. A rejected question receives a fixed plain-text refusal and skips answer generation. Screening failures stop the request with a safe 502 or 504 response rather than bypassing a check.
 
-The answer system instruction independently enforces the same rental-location boundary, requires answers to use supplied data, refuses unsupported claims, avoids promising external searches, connects evidence to practical renter implications, and distinguishes facts from interpretation. Answer requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. ConversationProvider retains messages and drafts in memory per location or ordered comparison pair across workspace navigation. Confirmed account changes clear workspace state; initial session resolution does not erase anonymous work. Reloading or leaving the workspace starts fresh conversations. Route departure aborts active replies, preserves their text, and marks them interrupted. Clear conversation removes only the current transcript and draft. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
+The answer system instruction independently enforces the same rental-location boundary, requires answers to use supplied data, refuses unsupported claims, avoids promising external searches, connects evidence to practical renter implications, and distinguishes facts from interpretation. Answer requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. ConversationProvider retains messages and drafts in memory per location or ordered comparison pair across workspace navigation. The workspace is keyed by the current user identity, so changing between anonymous and authenticated sessions remounts the search and conversation state. Reloading or leaving the workspace starts fresh conversations. Route departure aborts active replies, preserves their text, and marks them interrupted. Clear conversation removes only the current transcript and draft. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
 
 Current MVP boundaries: no RAG, web search, durable conversation storage, model memory of earlier questions, autonomous tools, or map actions. Each request still sends one question; visible transcript retention does not add model conversation memory.
 
