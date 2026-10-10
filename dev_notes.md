@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-09-14.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 96 tests across 19 test files                              |
+| Automated tests      | 105 tests across 21 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -55,6 +55,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Optional Transitland bus-stop, route, destination, and departure enrichment.
 - Derived walkability, transit, density, convenience, and car-reliance indicators.
 - Direct distance, rounded Geoapify driving time, and usual weekday 8am public-transport time to Melbourne CBD.
+- Terrain card measuring how hilly the land within 1.5 km is, from Google Elevation samples. It is shown as separate evidence and does not change any score.
 - Radius-based community median rent estimates for matching property type and bedroom count.
 - Authenticated rent reporting with one updatable report per user/location/property combination.
 - The latest rent report for a signed-in user and searched location is returned so the form can restore it. `RentalInsights` is keyed by location place ID, while `useRentalInsights` owns its request and form state.
@@ -133,6 +134,7 @@ app/
     locations/           Stored-location evidence and grounded chat
     places/              Cache, providers, scoring, and persistence coordinator
     rent-estimates/       Community rent estimates and contributions
+    terrain/              Hilliness summary from Google Elevation samples
   components/            Dashboard, map, auth, theme, scores, and result views
   hooks/                 Autocomplete, search, saved-search, and rental controllers
   lib/
@@ -143,6 +145,7 @@ app/
     categories.ts         Category metadata and profile weights
     indicators.ts         Pure derived-indicator calculations
     scoring.ts            Pure scoring and distance calculations
+    terrain.ts            Pure terrain sample points and hilliness summary
     types.ts              Shared domain and API types
   login/                  Sign-in and sign-up page
   layout.tsx              Metadata, fonts, analytics, and theme bootstrap
@@ -186,7 +189,7 @@ This structure is sufficient for the current project. Do not add repositories, d
 4. useLocationSearch requests /api/places with coordinates and location metadata.
 5. The matched address and amenity groups are committed together, and the formatted address replaces the submitted query in the search field. Persisted results navigate to /locations/[locationId]?profile=...; direct visits read stored evidence through GET /api/locations/[locationId] without a provider refresh.
 6. The overview renders the address, overall and category scores, compact analyst, and map. Category links reuse the active groups and scoring profile without another provider or database request.
-7. CbdTravelCard and RentalInsights request /api/cbd-travel and /api/rent-estimates only after the supporting-evidence page opens.
+7. CbdTravelCard, TerrainCard, and RentalInsights request /api/cbd-travel, /api/terrain, and /api/rent-estimates only after the supporting-evidence page opens.
 8. The client validates each API envelope before updating result state.
 9. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
 
@@ -220,6 +223,7 @@ Profile changes recalculate scores in the browser from the existing place groups
 | POST /api/locations/compare/chat      | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations                            |
 | GET /api/cbd-travel                   | Public                                       | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD    |
 | GET /api/rent-estimates               | Public                                       | Like-for-like community median rent within an adaptive 1–10 km radius                        |
+| GET /api/terrain                      | Public                                       | Hilliness summary from one Google Elevation request                                          |
 | POST /api/rent-estimates              | Signed in                                    | Create or update the caller's rent report for a location/property combination                |
 | /api/auth/[...all]                    | Better Auth                                  | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks                                    |
 
@@ -229,6 +233,19 @@ temporarily uses the server-only `GOOGLE_MAPS_API_KEY` and a representative
 weekday at 8:00 am in `Australia/Melbourne`. The browser map key is never used
 for these web-service requests. Route durations are fetched per search and are
 not stored in the database.
+
+Terrain samples 81 points: the address plus every 150 m along eight compass
+lines out to 1.5 km. All points go to the Google Elevation API in one request
+using the server-only `GOOGLE_MAPS_API_KEY`, which must have the Elevation API
+enabled. Each 150 m stretch gets an absolute grade, so climbs and descents both
+count. The card reports average grade, steepest stretch, the share of
+stretches at 5% or more, and the height range. The average grade sets the
+label: under 1.5% flat, under 3% gently undulating, under 5% hilly, otherwise
+steep. The lines are straight rather than road-following, so the result
+describes the surrounding land, not a specific road. Terrain is fetched per
+visit, not stored, and does not change category or overall scores.
+The design rationale is in
+[docs/terrain-design-zh.md](./docs/terrain-design-zh.md).
 
 Community rent estimates use reports with the same property type and bedroom
 count. The service selects the smallest 1, 3, 5, or 10 km radius containing at
@@ -448,7 +465,7 @@ Application variables:
 | Variable                 | Required                   | Exposure and purpose                                                                               |
 | ------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------- |
 | DATABASE_URL             | Yes                        | Server-only PostgreSQL connection                                                                  |
-| GOOGLE_MAPS_API_KEY      | Yes                        | Server-only autocomplete, geocoding, place retrieval, and temporary public-transport routing       |
+| GOOGLE_MAPS_API_KEY      | Yes                        | Server-only autocomplete, geocoding, place retrieval, elevation, and temporary transit routing     |
 | GEOAPIFY_API_KEY         | Yes                        | Server-only indicative driving time to Melbourne CBD                                               |
 | OPENAI_API_KEY           | For AI analyst             | Server-only OpenAI credential used by the grounded location chat                                   |
 | OPENAI_MODEL             | For AI analyst             | Server-only model selected by the environment; the tracked Docker example defaults to `gpt-5-mini` |
@@ -561,7 +578,7 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 ### Reliability and operations
 
 - No application-level rate limiting on provider-backed search, CBD, AI analyst, or authenticated rent-contribution routes.
-- /api/cbd-travel prevents response caching and can call both Geoapify and Google Routes on every request, creating a quota and cost-exposure risk.
+- /api/cbd-travel and /api/terrain prevent response caching and call their providers on every request, creating a quota and cost-exposure risk. Terrain never changes, so it is a good candidate for storage if usage grows.
 - No structured logging, monitoring dashboard, tracing, or error-tracking integration.
 - A database outage silently falls back to live Google calls and can increase quota usage.
 - Provider calls run within the request lifecycle; there are no background jobs or retries.
@@ -581,7 +598,7 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 - No live database integration suite.
 - No complete authentication-flow tests.
 - No component or browser test covering rent-form state across multiple searched locations.
-- POST /api/rent-estimates and the /api/cbd-travel route do not have focused route tests.
+- POST /api/rent-estimates, /api/cbd-travel, and /api/terrain do not have focused route tests.
 - Limited cache-expiry and provider-failure coverage.
 
 ## Roadmap

@@ -11,8 +11,9 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - Switch between no-car and car-owner views.
 - Explore category-coloured amenities on an interactive map.
 - Open the map in fullscreen and follow non-transport amenities into Google Maps.
-- Open a separate evidence page for walkability, transit access, amenity density, daily convenience, car reliance, CBD travel, and community rent.
+- Open a separate evidence page for walkability, transit access, amenity density, daily convenience, car reliance, CBD travel, terrain, and community rent.
 - See direct distance, indicative driving time, and usual weekday 8am public-transport time to Melbourne CBD.
+- Check how hilly the area is (average and steepest slopes within 1.5 km), useful if hills matter for your car, bike, or walks.
 - See like-for-like community rent medians and, when signed in, contribute a known weekly rent.
 - When signed in, ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting.
 - Use a persistent light or dark theme.

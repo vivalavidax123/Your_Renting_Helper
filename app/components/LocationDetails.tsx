@@ -2,6 +2,7 @@
 import { useExplore } from "./ExploreProvider";
 import { LocationHeader } from "./LocationHeader";
 import { CbdTravelCard } from "./CbdTravelCard";
+import { TerrainCard } from "./TerrainCard";
 import { RentalInsights } from "./RentalInsights";
 import { AdditionalIndicators } from "./AdditionalIndicators";
 export function LocationDetails() {
@@ -22,6 +23,9 @@ export function LocationDetails() {
             location={location}
             canContribute={canSave}
           />
+        </section>
+        <section id="terrain" className="min-w-0 scroll-mt-4 lg:col-span-2">
+          <TerrainCard location={location} />
         </section>
         <section id="indicators" className="min-w-0 scroll-mt-4 lg:col-span-2">
           <AdditionalIndicators
