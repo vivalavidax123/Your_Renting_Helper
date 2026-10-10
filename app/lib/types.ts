@@ -131,3 +131,15 @@ export type LocationResult = {
   fetchedAt: string;
   cached: boolean;
 };
+
+export type TerrainLevel = "flat" | "gentle" | "hilly" | "steep";
+
+export type TerrainSummary = {
+  level: TerrainLevel;
+  radiusMeters: number;
+  elevationRangeMeters: number;
+  averageGradePercent: number;
+  steepestGradePercent: number;
+  // Share of sampled stretches at or above the steep-grade threshold, 0-1.
+  steepShare: number;
+};
