@@ -244,6 +244,8 @@ label: under 1.5% flat, under 3% gently undulating, under 5% hilly, otherwise
 steep. The lines are straight rather than road-following, so the result
 describes the surrounding land, not a specific road. Terrain is fetched per
 visit, not stored, and does not change category or overall scores.
+The design rationale is in
+[docs/terrain-design-zh.md](./docs/terrain-design-zh.md).
 
 Community rent estimates use reports with the same property type and bedroom
 count. The service selects the smallest 1, 3, 5, or 10 km radius containing at
