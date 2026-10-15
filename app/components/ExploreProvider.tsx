@@ -5,7 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { authClient } from "@/app/lib/authClient";
 import {
   isWeightPreset,
-  scoringQuery,
+  isWeightProfile,
+  buildScoringQuery,
   type WeightPreset,
   type WeightProfile,
 } from "@/app/lib/categories";
@@ -49,8 +50,9 @@ function ExploreSession({
   const params = useSearchParams();
   const pathname = usePathname();
   const requestedProfile = params.get("profile");
-  const profile: WeightProfile =
-    requestedProfile === "carOwner" ? "carOwner" : "carFree";
+  const profile: WeightProfile = isWeightProfile(requestedProfile)
+    ? requestedProfile
+    : "carFree";
   // Unknown presets fall back to the default rather than blocking the page:
   // a preset only reweights the overall score, so the fallback is harmless.
   const requestedPreset = params.get("preset");
@@ -58,10 +60,7 @@ function ExploreSession({
     ? requestedPreset
     : "balanced";
   const search = useLocationSearch(profile, preset);
-  const saved = useSavedSearches(
-    search.busy ? "loading" : search.placesState,
-    userId,
-  );
+  const saved = useSavedSearches(search.placesState, userId);
   const { cancelSearch, finishWelcomeNavigation } = search;
   useEffect(() => {
     if (pathname === "/") {
@@ -97,15 +96,13 @@ function ExploreSession({
         changeProfile,
         preset,
         changePreset,
-        scoringParams: scoringQuery(profile, preset),
+        scoringParams: buildScoringQuery(profile, preset),
         canSave: !!userId,
         sessionPending,
       }}
     >
       <ConversationProvider>
-        {requestedProfile &&
-        requestedProfile !== "carFree" &&
-        requestedProfile !== "carOwner" ? (
+        {requestedProfile && !isWeightProfile(requestedProfile) ? (
           <p role="alert" className="p-6">
             Unknown mobility profile.{" "}
             <button

@@ -5,7 +5,7 @@ import { useExplore } from "./ExploreProvider";
 import { LocationHeader } from "./LocationHeader";
 import { NearbyPlacesList } from "./NearbyPlacesList";
 import { LocationMap } from "./LocationMap";
-import { rentScoreCategories } from "@/app/lib/categories";
+import { rentScoreCategories, weightProfileLabels } from "@/app/lib/categories";
 import { formatEvidenceDate } from "@/app/lib/utils";
 export function CategoryDetails({ categoryId }: { categoryId: string }) {
   const {
@@ -32,7 +32,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
     [placeGroups, categoryId],
   );
   const score = categoryScores.find((score) => score.id === categoryId);
-  if (!score)
+  if (!score || !location)
     return (
       <p className="p-6">
         Category evidence is unavailable. Search this location again.
@@ -91,7 +91,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
               ? score.weight + "% of the overall score"
               : "Useful context; not counted in the overall score"}
             {" · "}
-            {profile === "carOwner" ? "Car owner" : "No car"} profile
+            {weightProfileLabels[profile]} profile
           </p>
           <h2 className="mt-5 font-semibold text-ink">Why this score?</h2>
           <p className="mt-2 text-sm leading-6 text-ink-soft">
@@ -123,7 +123,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
           <button
             disabled={busy}
             className="underline disabled:opacity-50"
-            onClick={() => void handleSearch(location!.query)}
+            onClick={() => void handleSearch(location.query)}
           >
             Search this location again
           </button>

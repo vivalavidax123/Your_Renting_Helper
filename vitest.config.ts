@@ -12,6 +12,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": projectRoot,
+      // Server modules start with `import "server-only"`, which throws unless
+      // the bundler marks the code as server code. Tests run in plain Node, so
+      // they get the package's empty server build instead.
+      "server-only": `${projectRoot}/node_modules/server-only/empty.js`,
     },
   },
 });

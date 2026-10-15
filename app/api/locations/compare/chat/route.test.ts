@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
 vi.mock("@/app/lib/auth", () => ({
   auth: { api: { getSession: vi.fn() } },
 }));
 vi.mock("@/app/lib/services/locationAnalysis", () => ({
-  buildLocationAnalysisContext: vi.fn(),
+  loadLocationAnalysisContext: vi.fn(),
 }));
 vi.mock("@/app/lib/services/searchStore", () => ({
   areLocationsSavedByUser: vi.fn(),
@@ -17,25 +16,24 @@ vi.mock("@/app/lib/services/locationAnalyst", async () => {
 
   return {
     ...actual,
-    compareLocations: vi.fn(),
-    isLocationQuestionInScope: vi.fn().mockResolvedValue(true),
-    isLocationQuestionSafe: vi.fn().mockResolvedValue(true),
+    answerComparisonQuestion: vi.fn(),
+    getQuestionRefusal: vi.fn().mockResolvedValue(null),
   };
 });
 
 import { POST } from "./route";
 import { auth } from "@/app/lib/auth";
 import {
-  compareLocations,
+  answerComparisonQuestion,
   LocationAnalystError,
 } from "@/app/lib/services/locationAnalyst";
-import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
+import { loadLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 import { areLocationsSavedByUser } from "@/app/lib/services/searchStore";
 
 const getSession = vi.mocked(auth.api.getSession);
 const checkSaved = vi.mocked(areLocationsSavedByUser);
-const buildContext = vi.mocked(buildLocationAnalysisContext);
-const compare = vi.mocked(compareLocations);
+const buildContext = vi.mocked(loadLocationAnalysisContext);
+const compare = vi.mocked(answerComparisonQuestion);
 
 function answerStream(answer: string) {
   return new ReadableStream({
@@ -143,10 +141,10 @@ describe("POST /api/locations/compare/chat", () => {
 
   it("builds both contexts with the selected profile and streams the answer", async () => {
     const contextA = { locationId: "location-1" } as NonNullable<
-      Awaited<ReturnType<typeof buildLocationAnalysisContext>>
+      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
     >;
     const contextB = { locationId: "location-2" } as NonNullable<
-      Awaited<ReturnType<typeof buildLocationAnalysisContext>>
+      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
     >;
     getSession.mockResolvedValue(signedInAs("user-1"));
     checkSaved.mockResolvedValue(true);
@@ -194,7 +192,7 @@ describe("POST /api/locations/compare/chat", () => {
 
   it("returns 404 when either location snapshot is unavailable", async () => {
     const contextA = { locationId: "location-1" } as NonNullable<
-      Awaited<ReturnType<typeof buildLocationAnalysisContext>>
+      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
     >;
     getSession.mockResolvedValue(signedInAs("user-1"));
     checkSaved.mockResolvedValue(true);
@@ -215,10 +213,10 @@ describe("POST /api/locations/compare/chat", () => {
 
   it("preserves useful analyst service errors", async () => {
     const contextA = { locationId: "location-1" } as NonNullable<
-      Awaited<ReturnType<typeof buildLocationAnalysisContext>>
+      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
     >;
     const contextB = { locationId: "location-2" } as NonNullable<
-      Awaited<ReturnType<typeof buildLocationAnalysisContext>>
+      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
     >;
     getSession.mockResolvedValue(signedInAs("user-1"));
     checkSaved.mockResolvedValue(true);
@@ -227,7 +225,7 @@ describe("POST /api/locations/compare/chat", () => {
       .mockResolvedValueOnce(contextB);
     compare.mockRejectedValue(
       new LocationAnalystError(
-        "The AI service took too long to respond. Please try again.",
+        "The AI service took too long. Please try again.",
         504,
       ),
     );

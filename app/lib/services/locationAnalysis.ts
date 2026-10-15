@@ -1,8 +1,8 @@
 import "server-only";
 
 import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
-import { buildDerivedIndicators } from "@/app/lib/indicators";
-import { scorePlaceGroups } from "@/app/lib/scoring";
+import { buildAnalystIndicators } from "@/app/lib/indicators";
+import { scoreLocation } from "@/app/lib/scoring";
 import type { Indicator } from "@/app/lib/indicators";
 import type {
   CategoryScore,
@@ -10,7 +10,7 @@ import type {
   PlaceGroup,
   TransportService,
 } from "@/app/lib/types";
-import { getLocationAnalysisSource } from "./searchStore";
+import { getStoredLocation } from "./searchStore";
 
 const maxAmenitiesPerCategory = 5;
 
@@ -81,8 +81,8 @@ export function assembleLocationAnalysisContext({
   preset?: WeightPreset;
   dataAsOf: string;
 }): LocationAnalysisContext {
-  const { overallScore, scores } = scorePlaceGroups(groups, profile, preset);
-  const practicalIndicators = buildDerivedIndicators(scores, groups);
+  const { overallScore, scores } = scoreLocation(groups, profile, preset);
+  const practicalIndicators = buildAnalystIndicators(scores, groups);
 
   return {
     locationId,
@@ -132,23 +132,25 @@ export function assembleLocationAnalysisContext({
   };
 }
 
-export async function buildLocationAnalysisContext(
+// Loads a stored location and turns it into the analyst's context. Returns
+// null when the location or its place snapshot no longer exists.
+export async function loadLocationAnalysisContext(
   locationId: string,
   profile: WeightProfile = "carFree",
   preset: WeightPreset = "balanced",
 ) {
-  const source = await getLocationAnalysisSource(locationId);
+  const stored = await getStoredLocation(locationId);
 
-  if (!source) {
+  if (!stored) {
     return null;
   }
 
   return assembleLocationAnalysisContext({
-    locationId: source.id,
-    address: source.formattedAddress,
-    groups: source.groups,
+    locationId: stored.locationId,
+    address: stored.location.formattedAddress,
+    groups: stored.groups,
     profile,
     preset,
-    dataAsOf: source.fetchedAt,
+    dataAsOf: stored.fetchedAt,
   });
 }

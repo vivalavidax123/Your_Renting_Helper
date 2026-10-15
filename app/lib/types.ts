@@ -8,7 +8,7 @@ export type GeocodeLocation = {
   types: string[];
 };
 
-export type ApiFailure = {
+type ApiFailure = {
   ok: false;
   error: string;
   status?: string;
@@ -79,6 +79,8 @@ export type NearbyPlace = {
   transportServices?: TransportService[];
 };
 
+// The nearby places found for one scoring category (id and label match the
+// category), plus the radius that was searched.
 export type PlaceGroup = {
   id: string;
   label: string;

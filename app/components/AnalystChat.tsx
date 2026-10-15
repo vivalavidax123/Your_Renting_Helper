@@ -3,6 +3,7 @@
 import type { FormEvent, KeyboardEvent } from "react";
 import type { UseConversationOptions } from "./ConversationProvider";
 import { useConversation } from "./ConversationProvider";
+import { weightProfileLabels } from "@/app/lib/categories";
 
 type AnalystChatProps = UseConversationOptions & {
   title: string;
@@ -91,8 +92,7 @@ export function AnalystChat({
                 >
                   {message.role === "assistant" ? (
                     <p className="mb-1 text-xs text-ink-muted">
-                      Answered using{" "}
-                      {message.profile === "carFree" ? "No car" : "Car owner"}
+                      Answered using {weightProfileLabels[message.profile]}
                     </p>
                   ) : null}
                   {message.content}

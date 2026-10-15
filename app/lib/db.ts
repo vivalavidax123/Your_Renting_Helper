@@ -1,3 +1,5 @@
+import "server-only";
+
 import { PrismaClient } from "@prisma/client";
 
 // Reuse the Prisma client across Next.js development reloads to avoid opening

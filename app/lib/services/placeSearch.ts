@@ -1,3 +1,5 @@
+import "server-only";
+
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -12,11 +14,10 @@ import {
   fetchPlacesForTypes,
   type GooglePlace,
 } from "./googlePlaces";
-import { fetchTransitlandBusStops } from "./transitland";
+import { fetchTransitlandBusStops, maxTransportBusStops } from "./transitland";
 
 const transportBusRadiusMeters = 1000;
 const transportBusFallbackRadiusMeters = 5000;
-const maxTransportBusStops = 4;
 
 let vlineStationNamesPromise: Promise<Set<string>> | null = null;
 
@@ -152,6 +153,38 @@ function collectPlaces({
   return Array.from(placesById.values());
 }
 
+// Transitland stops come with live departures, so they are preferred over
+// Google's bus stops. Looks within 1 km first, then 5 km. Any failure (or no
+// key) returns an empty list and the Google stops are used instead.
+async function fetchNearestTransitlandBusStops(
+  latitude: number,
+  longitude: number,
+) {
+  const apiKey = process.env.TRANSITLAND_API_KEY;
+
+  if (!apiKey) {
+    return [];
+  }
+
+  for (const radiusMeters of [
+    transportBusRadiusMeters,
+    transportBusFallbackRadiusMeters,
+  ]) {
+    const stops = await fetchTransitlandBusStops({
+      apiKey,
+      latitude,
+      longitude,
+      radiusMeters,
+    }).catch(() => []);
+
+    if (stops.length > 0) {
+      return stops;
+    }
+  }
+
+  return [];
+}
+
 async function fetchPlacesForTransportCategory({
   apiKey,
   category,
@@ -164,61 +197,45 @@ async function fetchPlacesForTransportCategory({
   longitude: number;
 }) {
   const origin = { latitude, longitude };
-  const transitlandApiKey = process.env.TRANSITLAND_API_KEY;
-  const [nearbyBusResults, fallbackBusResults, metroResults, vlineResults] =
-    await Promise.all([
-      fetchPlacesForTypes({
-        apiKey,
-        category,
-        placeTypes: ["bus_stop", "bus_station"],
-        latitude,
-        longitude,
-        radiusMeters: transportBusRadiusMeters,
-      }),
-      fetchPlacesForTypes({
-        apiKey,
-        category,
-        placeTypes: ["bus_stop", "bus_station"],
-        latitude,
-        longitude,
-        radiusMeters: transportBusFallbackRadiusMeters,
-      }),
-      fetchPlacesForTypes({
-        apiKey,
-        category,
-        placeTypes: ["train_station", "subway_station"],
-        latitude,
-        longitude,
-      }),
-      fetchPlacesForBrand({
-        apiKey,
-        category,
-        brandTerm: "V/Line station",
-        latitude,
-        longitude,
-      }),
-    ]);
-  const transitlandBusStops = transitlandApiKey
-    ? await fetchTransitlandBusStops({
-        apiKey: transitlandApiKey,
-        latitude,
-        longitude,
-        radiusMeters: transportBusRadiusMeters,
-      }).catch(() => [])
-    : [];
-  const transitlandFallbackBusStops =
-    transitlandApiKey && transitlandBusStops.length === 0
-      ? await fetchTransitlandBusStops({
-          apiKey: transitlandApiKey,
-          latitude,
-          longitude,
-          radiusMeters: transportBusFallbackRadiusMeters,
-        }).catch(() => [])
-      : [];
-  const transitlandPreferredBusStops =
-    transitlandBusStops.length > 0
-      ? transitlandBusStops
-      : transitlandFallbackBusStops;
+  const [
+    transitlandBusStops,
+    nearbyBusResults,
+    fallbackBusResults,
+    metroResults,
+    vlineResults,
+  ] = await Promise.all([
+    fetchNearestTransitlandBusStops(latitude, longitude),
+    fetchPlacesForTypes({
+      apiKey,
+      category,
+      placeTypes: ["bus_stop", "bus_station"],
+      latitude,
+      longitude,
+      radiusMeters: transportBusRadiusMeters,
+    }),
+    fetchPlacesForTypes({
+      apiKey,
+      category,
+      placeTypes: ["bus_stop", "bus_station"],
+      latitude,
+      longitude,
+      radiusMeters: transportBusFallbackRadiusMeters,
+    }),
+    fetchPlacesForTypes({
+      apiKey,
+      category,
+      placeTypes: ["train_station", "subway_station"],
+      latitude,
+      longitude,
+    }),
+    fetchPlacesForBrand({
+      apiKey,
+      category,
+      brandTerm: "V/Line station",
+      latitude,
+      longitude,
+    }),
+  ]);
 
   const nearbyGoogleBusStops = sortPlacesByDistance(
     collectPlaces({
@@ -247,9 +264,7 @@ async function fetchPlacesForTransportCategory({
       ? nearbyGoogleBusStops
       : fallbackGoogleBusStops;
   const busStops =
-    transitlandPreferredBusStops.length > 0
-      ? transitlandPreferredBusStops
-      : googleBusStops;
+    transitlandBusStops.length > 0 ? transitlandBusStops : googleBusStops;
 
   const railPlaces = sortPlacesByDistance(
     collectPlaces({
@@ -368,7 +383,9 @@ function assignPlacesToPrimaryCategories(
   }));
 }
 
-export async function fetchPlaceGroups({
+// The main search: nearby places for every scoring category around one
+// point, each place listed under exactly one category.
+export async function fetchNearbyPlacesByCategory({
   apiKey,
   latitude,
   longitude,

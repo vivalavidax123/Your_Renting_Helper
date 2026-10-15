@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   formatDepartureTime,
+  formatEvidenceDate,
   formatDistance,
   normalizeStationName,
   normalizeText,
-  parseCoordinate,
+  parseLatLng,
   safeNextPath,
 } from "./utils";
 
@@ -20,19 +21,28 @@ describe("formatDistance", () => {
   });
 });
 
-describe("parseCoordinate", () => {
-  it("parses valid coordinate strings", () => {
-    expect(parseCoordinate("-37.8136")).toBe(-37.8136);
+describe("parseLatLng", () => {
+  it("parses query strings and JSON numbers", () => {
+    expect(parseLatLng("-37.8136", "144.9631")).toEqual({
+      latitude: -37.8136,
+      longitude: 144.9631,
+    });
+    expect(parseLatLng(-37.8136, 144.9631)).toEqual({
+      latitude: -37.8136,
+      longitude: 144.9631,
+    });
   });
 
-  it("rejects the sneaky falsy and non-numeric cases", () => {
-    expect(parseCoordinate(null)).toBeNull();
-    expect(parseCoordinate("abc")).toBeNull();
+  it("rejects the sneaky falsy, non-numeric and out-of-range cases", () => {
+    expect(parseLatLng(null, "144.9")).toBeNull();
+    expect(parseLatLng("abc", "144.9")).toBeNull();
     // Number("") is 0 in JavaScript — an empty query parameter must not
     // silently become the coordinate (0, 0) in the Gulf of Guinea.
-    expect(parseCoordinate("")).toBeNull();
+    expect(parseLatLng("", "")).toBeNull();
     // Number("Infinity") parses but is not a usable coordinate.
-    expect(parseCoordinate("Infinity")).toBeNull();
+    expect(parseLatLng("Infinity", "144.9")).toBeNull();
+    expect(parseLatLng("91", "144.9")).toBeNull();
+    expect(parseLatLng("-37.8", "-181")).toBeNull();
   });
 });
 
@@ -95,5 +105,13 @@ describe("safeNextPath", () => {
     ]) {
       expect(safeNextPath(value)).toBe("/");
     }
+  });
+});
+
+describe("formatEvidenceDate", () => {
+  it("shows the Melbourne calendar date in day/month order", () => {
+    // 21:00 UTC on 15 October is 8:00 am on 16 October in Melbourne (AEDT).
+    expect(formatEvidenceDate("2026-10-15T21:00:00.000Z")).toBe("16/10/2026");
+    expect(formatEvidenceDate("2026-10-15T01:00:00.000Z")).toBe("15/10/2026");
   });
 });

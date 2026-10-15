@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  scoringQuery,
+  buildScoringQuery,
   type WeightPreset,
   type WeightProfile,
 } from "@/app/lib/categories";
-import { isJsonRecord, readApiResult } from "@/app/lib/api";
+import { getErrorMessage, isJsonRecord, readApiResult } from "@/app/lib/api";
 import { useAutocomplete } from "./useAutocomplete";
-import { scorePlaceGroups } from "@/app/lib/scoring";
+import { scoreLocation } from "@/app/lib/scoring";
 import type {
   GeocodeLocation,
   LocationResult,
@@ -41,6 +41,7 @@ export function useLocationSearch(
   preset: WeightPreset,
 ) {
   const router = useRouter();
+  const pathname = usePathname();
   const [navigating, startTransition] = useTransition();
   const [result, setResult] = useState<LocationResult | null>(null);
   const [state, setState] = useState<RequestState>("idle");
@@ -92,11 +93,7 @@ export function useLocationSearch(
         setState("success");
       } catch (error) {
         if (!controller.signal.aborted) {
-          setError(
-            error instanceof Error
-              ? error.message
-              : "Could not open this location.",
-          );
+          setError(getErrorMessage(error, "Could not open this location."));
           setState("error");
         }
       }
@@ -144,7 +141,6 @@ export function useLocationSearch(
         address: location.formattedAddress,
         placeId: location.placeId,
         locationType: location.locationType,
-        profile,
       });
       const response = await fetch("/api/places?" + params, {
         signal: controller.signal,
@@ -167,24 +163,24 @@ export function useLocationSearch(
             ? "/locations/" +
                 encodeURIComponent(next.locationId) +
                 "?" +
-                scoringQuery(profile, preset)
-            : "/?" + scoringQuery(profile, preset),
+                buildScoringQuery(profile, preset)
+            : "/?" + buildScoringQuery(profile, preset),
         );
       });
     } catch (error) {
       if (!controller.signal.aborted) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Search failed. Please try again.",
-        );
+        setError(getErrorMessage(error, "Search failed. Please try again."));
         setState("error");
       }
     }
   }
 
   function returnToWelcome() {
-    returningToWelcomeRef.current = true;
+    // While leaving a location page, its loader would reopen the location we
+    // just cleared, so openLocation is paused until the URL reaches "/". On
+    // "/" itself the URL never changes, so pausing there would never end and
+    // a later Back to a location page would stay on "Opening…" forever.
+    returningToWelcomeRef.current = pathname !== "/";
     controllerRef.current?.abort();
     controllerRef.current = null;
     autocomplete.selectQuery("");
@@ -198,22 +194,28 @@ export function useLocationSearch(
     returningToWelcomeRef.current = false;
   }, []);
 
-  const scored = scorePlaceGroups(result?.groups ?? [], profile, preset);
+  const scored = scoreLocation(result?.groups ?? [], profile, preset);
+  const busy = state === "loading" || navigating;
   return {
     autocomplete,
     result,
     searchState: state,
-    busy: state === "loading" || navigating,
+    busy,
     stage,
     location: result?.location ?? null,
     error,
-    placesState: (result ? "success" : state) as RequestState,
+    // What the places panels should show: loading also covers the route
+    // change after a search, so nothing flashes stale data in between.
+    placesState: (busy
+      ? "loading"
+      : result
+        ? "success"
+        : state) as RequestState,
     placeGroups: result?.groups ?? [],
     categoryScores: scored.scores,
     overallScore: result ? scored.overallScore : null,
     locationId: result?.locationId ?? null,
     fetchedAt: result?.fetchedAt ?? null,
-    placesError: error,
     resultFromCache: result?.cached ?? false,
     handleSearch: (query = autocomplete.query) => runSearch(query),
     searchFromHistory: (search: RecentSearch) =>

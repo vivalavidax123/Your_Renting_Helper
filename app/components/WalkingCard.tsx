@@ -1,4 +1,7 @@
-import { buildWalkingIndicators } from "@/app/lib/indicators";
+import {
+  buildWalkingIndicators,
+  walkingMetersPerMinute,
+} from "@/app/lib/indicators";
 import type { CategoryScore, PlaceGroup } from "@/app/lib/types";
 import { MethodNotes } from "./MethodNotes";
 
@@ -39,7 +42,10 @@ export function WalkingCard({
         {carReliance.detail}.
       </p>
       <MethodNotes>
-        <li>Walk times use straight-line distance at 80 m per minute.</li>
+        <li>
+          Walk times use straight-line distance at {walkingMetersPerMinute} m
+          per minute.
+        </li>
         <li>Real walking routes are usually longer.</li>
       </MethodNotes>
     </div>

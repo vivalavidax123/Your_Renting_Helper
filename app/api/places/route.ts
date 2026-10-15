@@ -1,38 +1,37 @@
-import type { WeightProfile } from "@/app/lib/categories";
+import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
-import { scorePlaceGroups } from "@/app/lib/scoring";
-import { fetchPlaceGroups } from "@/app/lib/services/placeSearch";
+import { scoreLocation } from "@/app/lib/scoring";
+import { fetchNearbyPlacesByCategory } from "@/app/lib/services/placeSearch";
 import {
   buildCacheKey,
   findFreshSnapshot,
   recordUserSearch,
   saveSnapshot,
 } from "@/app/lib/services/searchStore";
-import { parseCoordinate } from "@/app/lib/utils";
+import { parseLatLng } from "@/app/lib/utils";
 
-function parseProfile(value: string | null): WeightProfile {
-  return value === "carOwner" ? "carOwner" : "carFree";
-}
+const maxLabelLength = 300;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const latitude = parseCoordinate(searchParams.get("lat"));
-  const longitude = parseCoordinate(searchParams.get("lng"));
-  const profile = parseProfile(searchParams.get("profile"));
+  const point = parseLatLng(searchParams.get("lat"), searchParams.get("lng"));
 
-  if (latitude === null || longitude === null) {
+  if (!point) {
     return Response.json(
       { ok: false, error: "Latitude and longitude are required." },
       { status: 400 },
     );
   }
 
+  const { latitude, longitude } = point;
+
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
-    return Response.json(
-      { ok: false, error: "Missing GOOGLE_MAPS_API_KEY in .env.local." },
-      { status: 500 },
+    return errorResponse(
+      500,
+      "Search is temporarily unavailable.",
+      "GOOGLE_MAPS_API_KEY is not set.",
     );
   }
 
@@ -41,9 +40,12 @@ export async function GET(request: Request) {
     .getSession({ headers: request.headers })
     .catch(() => null);
   const userId = session?.user.id ?? null;
-  const recordSearch = async () => {
-    if (userId) {
-      await recordUserSearch(userId, cacheKey).catch((error) => {
+  // Awaited rather than deferred: the browser reloads its recent-search list
+  // as soon as this response lands, so the history row must already exist.
+  // Without a location row (saving failed) there is nothing to attach it to.
+  const recordSearch = async (locationId: string | null) => {
+    if (userId && locationId) {
+      await recordUserSearch(userId, locationId).catch((error) => {
         console.error("Recording search history failed:", error);
       });
     }
@@ -53,19 +55,12 @@ export async function GET(request: Request) {
     const cachedResult = await findFreshSnapshot(cacheKey);
 
     if (cachedResult) {
-      const { overallScore, scores } = scorePlaceGroups(
-        cachedResult.groups,
-        profile,
-      );
-
-      await recordSearch();
+      await recordSearch(cachedResult.locationId);
 
       return Response.json({
         ok: true,
         locationId: cachedResult.locationId,
         groups: cachedResult.groups,
-        scores,
-        overallScore,
         cached: true,
         fetchedAt: cachedResult.fetchedAt,
       });
@@ -75,55 +70,55 @@ export async function GET(request: Request) {
   }
 
   try {
-    const groups = await fetchPlaceGroups({ apiKey, latitude, longitude });
-    const { overallScore, scores } = scorePlaceGroups(groups, profile);
-    const canonical =
-      profile === "carFree"
-        ? { overallScore, scores }
-        : scorePlaceGroups(groups, "carFree");
+    const groups = await fetchNearbyPlacesByCategory({
+      apiKey,
+      latitude,
+      longitude,
+    });
+    // The browser scores the groups itself for the chosen profile and
+    // preset; the stored snapshot keeps the canonical No car / Balanced score.
+    const { overallScore, scores } = scoreLocation(groups, "carFree");
     const fallbackLabel = `${latitude}, ${longitude}`;
+    // These labels come straight from the caller and are stored on the shared
+    // location record, so they are trimmed and capped like other user text.
+    const label = (name: string, fallback: string) =>
+      searchParams.get(name)?.trim().slice(0, maxLabelLength) || fallback;
     let locationId: string | null = null;
 
     try {
       locationId = await saveSnapshot({
         cacheKey,
         locationInput: {
-          query: searchParams.get("query") ?? fallbackLabel,
-          formattedAddress: searchParams.get("address") ?? fallbackLabel,
-          placeId: searchParams.get("placeId") ?? "",
-          locationType: searchParams.get("locationType") ?? "UNKNOWN",
+          query: label("query", fallbackLabel),
+          formattedAddress: label("address", fallbackLabel),
+          placeId: label("placeId", ""),
+          locationType: label("locationType", "UNKNOWN"),
           latitude,
           longitude,
         },
         groups,
-        scores: canonical.scores,
-        overallScore: canonical.overallScore,
+        scores,
+        overallScore,
       });
     } catch (error) {
       console.error("Saving search result failed:", error);
     }
 
-    await recordSearch();
+    await recordSearch(locationId);
 
     return Response.json({
       ok: true,
       locationId,
       groups,
-      scores,
-      overallScore,
       cached: false,
       fetchedAt: new Date().toISOString(),
     });
   } catch (error) {
-    return Response.json(
-      {
-        ok: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Could not retrieve nearby places.",
-      },
-      { status: 502 },
+    return errorResponse(
+      502,
+      "Could not retrieve nearby places. Please try again.",
+      "Retrieving nearby places failed:",
+      error,
     );
   }
 }

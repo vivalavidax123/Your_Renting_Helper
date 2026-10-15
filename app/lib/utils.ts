@@ -8,8 +8,12 @@ export function formatDistance(distanceMeters: number) {
 
 // Evidence dates are shown in Australian day/month order everywhere, whatever
 // the browser locale, so the same date never reads differently across pages.
+// The fixed Melbourne time zone keeps server and browser output identical and
+// matches the renter's calendar day (a UTC date is a day behind before ~10am).
 export function formatEvidenceDate(value: string) {
-  return new Date(value).toLocaleDateString("en-AU", { timeZone: "UTC" });
+  return new Date(value).toLocaleDateString("en-AU", {
+    timeZone: "Australia/Melbourne",
+  });
 }
 
 export function formatRadius(radiusMeters: number) {
@@ -30,7 +34,8 @@ export function formatReviewSummary(place: NearbyPlace) {
   return `${rating}${place.userRatingCount.toLocaleString()} ${reviewLabel}`;
 }
 
-export function formatGroupScope(group: PlaceGroup) {
+// One line saying what was searched for a category, shown under its list.
+export function formatSearchScope(group: PlaceGroup) {
   if (group.id === "transport") {
     return "bus stops within 1 km or closest found + nearest stations";
   }
@@ -65,14 +70,34 @@ export function formatDepartureTime(value: string | null) {
   });
 }
 
-export function parseCoordinate(value: string | null) {
-  if (!value) {
+function toCoordinate(value: unknown) {
+  // Number("") is 0, so an empty query value must not become a coordinate.
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : NaN;
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// Reads a latitude and longitude from a query string ("-37.81") or a JSON
+// body (-37.81). Returns null unless both are finite numbers in range.
+export function parseLatLng(lat: unknown, lng: unknown) {
+  const latitude = toCoordinate(lat);
+  const longitude = toCoordinate(lng);
+
+  if (
+    latitude === null ||
+    longitude === null ||
+    Math.abs(latitude) > 90 ||
+    Math.abs(longitude) > 180
+  ) {
     return null;
   }
 
-  const parsed = Number(value);
-
-  return Number.isFinite(parsed) ? parsed : null;
+  return { latitude, longitude };
 }
 
 export function normalizeText(value: string) {

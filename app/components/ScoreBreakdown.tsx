@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { CategoryScore } from "@/app/lib/types";
 import { formatDistance } from "@/app/lib/utils";
-import { MobilityProfile } from "./MobilityProfile";
-import { PresetPicker } from "./PresetPicker";
+import { MobilityProfile, PresetPicker } from "./ScoringControls";
 export function ScoreBreakdown({
   categoryScores,
   locationId,
@@ -79,12 +78,6 @@ export function ScoreBreakdown({
                 category.id +
                 "?" +
                 scoringParams
-              }
-              aria-label={
-                category.label +
-                ", " +
-                category.score +
-                " out of 100, view details"
               }
               className="rounded-lg border border-line bg-surface-subtle p-3 transition hover:border-accent hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >

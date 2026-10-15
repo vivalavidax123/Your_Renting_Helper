@@ -1,19 +1,11 @@
 import { getTerrainSummary } from "@/app/lib/services/terrain";
-import { parseCoordinate } from "@/app/lib/utils";
+import { parseLatLng } from "@/app/lib/utils";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const latitude = parseCoordinate(searchParams.get("lat"));
-  const longitude = parseCoordinate(searchParams.get("lng"));
+  const point = parseLatLng(searchParams.get("lat"), searchParams.get("lng"));
 
-  if (
-    latitude === null ||
-    latitude < -90 ||
-    latitude > 90 ||
-    longitude === null ||
-    longitude < -180 ||
-    longitude > 180
-  ) {
+  if (!point) {
     return Response.json(
       { ok: false, error: "Latitude and longitude are required." },
       { status: 400 },
@@ -21,7 +13,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const terrain = await getTerrainSummary(latitude, longitude);
+    const terrain = await getTerrainSummary(point.latitude, point.longitude);
     return Response.json(
       { ok: true, terrain },
       { headers: { "Cache-Control": "private, no-store" } },

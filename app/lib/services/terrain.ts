@@ -1,3 +1,5 @@
+import "server-only";
+
 import { buildTerrainSamplePoints, summariseTerrain } from "@/app/lib/terrain";
 import type { TerrainSummary } from "@/app/lib/types";
 

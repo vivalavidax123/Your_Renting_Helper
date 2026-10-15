@@ -1,13 +1,9 @@
-import {
-  isWeightPreset,
-  isWeightProfile,
-  type WeightPreset,
-  type WeightProfile,
-} from "@/app/lib/categories";
+import { parseScoringOptions } from "@/app/lib/categories";
+import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   areLocationsSavedByUser,
-  getComparisonSide,
+  getScoredLocation,
 } from "@/app/lib/services/searchStore";
 
 export async function GET(request: Request) {
@@ -31,25 +27,13 @@ export async function GET(request: Request) {
     );
   }
 
-  if (requestedProfile !== null && !isWeightProfile(requestedProfile)) {
-    return Response.json(
-      { ok: false, error: "Profile must be carFree or carOwner." },
-      { status: 400 },
-    );
+  const options = parseScoringOptions(requestedProfile, requestedPreset);
+
+  if ("error" in options) {
+    return Response.json({ ok: false, error: options.error }, { status: 400 });
   }
 
-  if (requestedPreset !== null && !isWeightPreset(requestedPreset)) {
-    return Response.json(
-      {
-        ok: false,
-        error: "Preset must be balanced, student, family or commuter.",
-      },
-      { status: 400 },
-    );
-  }
-
-  const profile: WeightProfile = requestedProfile ?? "carFree";
-  const preset: WeightPreset = requestedPreset ?? "balanced";
+  const { profile, preset } = options;
 
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -75,8 +59,8 @@ export async function GET(request: Request) {
     }
 
     const [a, b] = await Promise.all([
-      getComparisonSide(aId, profile, preset),
-      getComparisonSide(bId, profile, preset),
+      getScoredLocation(aId, profile, preset),
+      getScoredLocation(bId, profile, preset),
     ]);
 
     if (!a || !b) {
@@ -90,10 +74,12 @@ export async function GET(request: Request) {
       { ok: true, a, b },
       { headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
-    return Response.json(
-      { ok: false, error: "Could not compare these locations." },
-      { status: 500 },
+  } catch (error) {
+    return errorResponse(
+      500,
+      "Could not compare these locations.",
+      "Comparing locations failed:",
+      error,
     );
   }
 }

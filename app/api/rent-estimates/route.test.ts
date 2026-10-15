@@ -7,7 +7,10 @@ vi.mock("@/app/lib/services/rentalReports", () => ({
   getLatestRentalReport: vi.fn(),
   getRentalEstimate: vi.fn(),
   getSuggestedRentalProfile: vi.fn(),
-  rentalPropertyTypes: ["apartment", "house", "townhouse", "unit", "other"],
+  isRentalPropertyType: (value: unknown) =>
+    ["apartment", "house", "townhouse", "unit", "other"].includes(
+      value as string,
+    ),
   saveRentalReport: vi.fn(),
 }));
 

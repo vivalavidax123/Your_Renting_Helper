@@ -34,10 +34,6 @@ yarn-error.log*
 .env*
 !.env.docker.example
 
-# local sqlite database (schema is in git; data stays local)
-prisma/*.db
-prisma/*.db-journal
-
 # vercel
 .vercel
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDerivedIndicators, buildWalkingIndicators } from "./indicators";
+import { buildAnalystIndicators, buildWalkingIndicators } from "./indicators";
 import type { CategoryScore, NearbyPlace, PlaceGroup } from "./types";
 
 function score(
@@ -40,7 +40,7 @@ function place(
   };
 }
 
-describe("buildDerivedIndicators", () => {
+describe("buildAnalystIndicators", () => {
   it("uses the nearest matching place without mutating source groups", () => {
     const farther = place("Far bus", 900, "bus_stop");
     const nearer = {
@@ -58,7 +58,7 @@ describe("buildDerivedIndicators", () => {
       },
     ];
 
-    const indicators = buildDerivedIndicators(
+    const indicators = buildAnalystIndicators(
       [score("transport", 75, 240)],
       groups,
     );
@@ -74,7 +74,7 @@ describe("buildDerivedIndicators", () => {
   });
 
   it("returns the five stable indicator categories", () => {
-    const indicators = buildDerivedIndicators([], []);
+    const indicators = buildAnalystIndicators([], []);
 
     expect(indicators.map(({ label }) => label)).toEqual([
       "Walkability",
@@ -87,7 +87,7 @@ describe("buildDerivedIndicators", () => {
 
   it("keeps the on-screen walking indicators identical to the full list", () => {
     const scores = [score("groceries", 80, 300), score("health", 60, 2000)];
-    const all = buildDerivedIndicators(scores, []);
+    const all = buildAnalystIndicators(scores, []);
 
     expect(buildWalkingIndicators(scores, [])).toEqual([all[0], all[4]]);
   });

@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { TransportService } from "@/app/lib/types";
 import { normalizeText } from "@/app/lib/utils";
 import { getDistanceMeters } from "@/app/lib/scoring";
@@ -43,7 +45,7 @@ type TransitlandStopsResponse = {
   stops?: TransitlandStop[];
 };
 
-const maxTransportBusStops = 4;
+export const maxTransportBusStops = 4;
 const maxTransportBusServicesPerStop = 4;
 const transitlandDepartureWindowSeconds = 7200;
 const transitlandBaseUrl = "https://transit.land/api/v2/rest";
@@ -130,6 +132,7 @@ async function fetchTransitlandJson<T>({
     headers: {
       apikey: apiKey,
     },
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) {
@@ -139,7 +142,7 @@ async function fetchTransitlandJson<T>({
   return (await response.json()) as T;
 }
 
-export async function fetchTransitlandBusDepartures({
+async function fetchTransitlandBusDepartures({
   apiKey,
   stop,
 }: {

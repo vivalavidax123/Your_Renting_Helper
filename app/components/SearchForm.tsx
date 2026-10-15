@@ -5,7 +5,7 @@ import type { RequestState } from "@/app/lib/types";
 type SearchFormProps = {
   autocomplete: AutocompleteController;
   searchState: RequestState;
-  placesState: RequestState;
+  busy: boolean;
   error: string;
   onSearch: () => void;
   compact?: boolean;
@@ -14,7 +14,7 @@ type SearchFormProps = {
 export function SearchForm({
   autocomplete,
   searchState,
-  placesState,
+  busy,
   error,
   onSearch,
   compact = false,
@@ -110,7 +110,7 @@ export function SearchForm({
             </div>
             <button
               type="submit"
-              disabled={searchState === "loading" || placesState === "loading"}
+              disabled={busy}
               className={`${compact ? "min-h-10 px-5 text-sm" : "min-h-12 px-6 text-base"} rounded-md bg-action font-medium text-action-ink transition hover:bg-action-hover focus:outline-none focus:ring-4 focus:ring-accent-ring disabled:cursor-not-allowed disabled:bg-action-disabled`}
             >
               {searchState === "loading" ? "Searching..." : "Search"}

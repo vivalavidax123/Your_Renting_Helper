@@ -9,7 +9,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
-import { readApiResult, readTextStream } from "@/app/lib/api";
+import { getErrorMessage, readApiResult, readTextStream } from "@/app/lib/api";
 
 type Message = {
   id: string;
@@ -166,9 +166,10 @@ export function useConversation({
     } catch (error) {
       if (!controller.signal.aborted) {
         setError(
-          error instanceof Error
-            ? error.message
-            : "The analyst could not be reached. Please retry.",
+          getErrorMessage(
+            error,
+            "The analyst could not be reached. Please retry.",
+          ),
         );
         update(conversationKey, (current) => ({
           ...current,

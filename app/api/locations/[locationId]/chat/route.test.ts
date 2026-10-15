@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
 vi.mock("@/app/lib/auth", () => ({
   auth: { api: { getSession: vi.fn() } },
 }));
 vi.mock("@/app/lib/services/locationAnalysis", () => ({
-  buildLocationAnalysisContext: vi.fn(),
+  loadLocationAnalysisContext: vi.fn(),
 }));
 vi.mock("@/app/lib/services/locationAnalyst", async () => {
   const actual = await vi.importActual<
@@ -14,22 +13,21 @@ vi.mock("@/app/lib/services/locationAnalyst", async () => {
 
   return {
     ...actual,
-    analyzeLocation: vi.fn(),
-    isLocationQuestionInScope: vi.fn().mockResolvedValue(true),
-    isLocationQuestionSafe: vi.fn().mockResolvedValue(true),
+    answerLocationQuestion: vi.fn(),
+    getQuestionRefusal: vi.fn().mockResolvedValue(null),
   };
 });
 
 import { POST } from "./route";
 import { auth } from "@/app/lib/auth";
 import {
-  analyzeLocation,
+  answerLocationQuestion,
   LocationAnalystError,
 } from "@/app/lib/services/locationAnalyst";
-import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
+import { loadLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 
-const buildContext = vi.mocked(buildLocationAnalysisContext);
-const analyze = vi.mocked(analyzeLocation);
+const buildContext = vi.mocked(loadLocationAnalysisContext);
+const analyze = vi.mocked(answerLocationQuestion);
 const getSession = vi.mocked(auth.api.getSession);
 
 type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
@@ -112,7 +110,7 @@ describe("POST /api/locations/[locationId]/chat", () => {
 
   it("builds the selected profile context and streams its answer", async () => {
     const context = { locationId: "location-1" } as Awaited<
-      ReturnType<typeof buildLocationAnalysisContext>
+      ReturnType<typeof loadLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);
     analyze.mockResolvedValue(
@@ -146,12 +144,12 @@ describe("POST /api/locations/[locationId]/chat", () => {
 
   it("returns the analyst service's useful failure status", async () => {
     const context = { locationId: "location-1" } as Awaited<
-      ReturnType<typeof buildLocationAnalysisContext>
+      ReturnType<typeof loadLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);
     analyze.mockRejectedValue(
       new LocationAnalystError(
-        "The AI service took too long to respond. Please try again.",
+        "The AI service took too long. Please try again.",
         504,
       ),
     );
@@ -165,7 +163,7 @@ describe("POST /api/locations/[locationId]/chat", () => {
     expect(response.status).toBe(504);
     expect(body).toEqual({
       ok: false,
-      error: "The AI service took too long to respond. Please try again.",
+      error: "The AI service took too long. Please try again.",
     });
   });
 });

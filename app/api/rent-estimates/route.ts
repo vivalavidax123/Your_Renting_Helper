@@ -3,35 +3,21 @@ import {
   getRentalEstimate,
   getLatestRentalReport,
   getSuggestedRentalProfile,
-  rentalPropertyTypes,
+  isRentalPropertyType,
   saveRentalReport,
 } from "@/app/lib/services/rentalReports";
-import type { RentalPropertyType } from "@/app/lib/types";
-import { parseCoordinate } from "@/app/lib/utils";
+import { parseLatLng } from "@/app/lib/utils";
 import { isJsonRecord } from "@/app/lib/api";
-
-function isPropertyType(value: unknown): value is RentalPropertyType {
-  return (
-    typeof value === "string" &&
-    rentalPropertyTypes.includes(value as RentalPropertyType)
-  );
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const latitude = parseCoordinate(searchParams.get("lat"));
-  const longitude = parseCoordinate(searchParams.get("lng"));
+  const point = parseLatLng(searchParams.get("lat"), searchParams.get("lng"));
   const propertyType = searchParams.get("propertyType") ?? "apartment";
   const bedrooms = Number(searchParams.get("bedrooms") ?? "1");
 
   if (
-    latitude === null ||
-    latitude < -90 ||
-    latitude > 90 ||
-    longitude === null ||
-    longitude < -180 ||
-    longitude > 180 ||
-    !isPropertyType(propertyType) ||
+    !point ||
+    !isRentalPropertyType(propertyType) ||
     !Number.isInteger(bedrooms) ||
     bedrooms < 0 ||
     bedrooms > 10
@@ -41,6 +27,8 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+
+  const { latitude, longitude } = point;
 
   try {
     const session = await auth.api
@@ -85,13 +73,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const latitude =
-    typeof body.latitude === "number" && Number.isFinite(body.latitude)
-      ? body.latitude
-      : null;
-  const longitude =
-    typeof body.longitude === "number" && Number.isFinite(body.longitude)
-      ? body.longitude
+  // JSON numbers only: a string such as "-37.8" is a malformed request here.
+  const point =
+    typeof body.latitude === "number" && typeof body.longitude === "number"
+      ? parseLatLng(body.latitude, body.longitude)
       : null;
   const weeklyRent =
     typeof body.weeklyRent === "number" && Number.isInteger(body.weeklyRent)
@@ -103,19 +88,14 @@ export async function POST(request: Request) {
       : null;
 
   if (
-    latitude === null ||
-    latitude < -90 ||
-    latitude > 90 ||
-    longitude === null ||
-    longitude < -180 ||
-    longitude > 180 ||
+    !point ||
     weeklyRent === null ||
     weeklyRent < 50 ||
     weeklyRent > 5000 ||
     bedrooms === null ||
     bedrooms < 0 ||
     bedrooms > 10 ||
-    !isPropertyType(body.propertyType) ||
+    !isRentalPropertyType(body.propertyType) ||
     typeof body.formattedAddress !== "string" ||
     body.formattedAddress.trim().length === 0 ||
     body.formattedAddress.length > 300
@@ -126,28 +106,28 @@ export async function POST(request: Request) {
     );
   }
 
-  const session = await auth.api.getSession({ headers: request.headers });
-
-  if (!session) {
-    return Response.json(
-      { ok: false, error: "Sign in to contribute rental data." },
-      { status: 401 },
-    );
-  }
-
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+
+    if (!session) {
+      return Response.json(
+        { ok: false, error: "Sign in to contribute rental data." },
+        { status: 401 },
+      );
+    }
+
     const ownReport = await saveRentalReport({
       userId: session.user.id,
       formattedAddress: body.formattedAddress.trim(),
-      latitude,
-      longitude,
+      latitude: point.latitude,
+      longitude: point.longitude,
       weeklyRent,
       propertyType: body.propertyType,
       bedrooms,
     });
     const estimate = await getRentalEstimate(
-      latitude,
-      longitude,
+      point.latitude,
+      point.longitude,
       body.propertyType,
       bedrooms,
     );

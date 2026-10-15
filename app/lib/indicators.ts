@@ -1,6 +1,10 @@
 import type { CategoryScore, PlaceGroup } from "./types";
 import { formatDistance } from "./utils";
 
+// A typical adult walking pace. Walk times divide straight-line distance by
+// this, so they are estimates, not route times.
+export const walkingMetersPerMinute = 80;
+
 export type Indicator = {
   label: string;
   value: string;
@@ -30,7 +34,7 @@ function formatOptionalDistance(distanceMeters: number | null) {
 function formatWalkTime(distanceMeters: number | null) {
   if (distanceMeters === null) return "n/a";
 
-  return `${Math.max(1, Math.round(distanceMeters / 80))} min`;
+  return `${Math.max(1, Math.round(distanceMeters / walkingMetersPerMinute))} min`;
 }
 
 function getMajorGroceryBrand(placeName: string) {
@@ -105,7 +109,7 @@ function buildWalkability(
       ? Math.round(
           availableWalkDistances.reduce((sum, distance) => sum + distance, 0) /
             availableWalkDistances.length /
-            80,
+            walkingMetersPerMinute,
         )
       : 0;
 
@@ -173,7 +177,8 @@ export function buildWalkingIndicators(
   ];
 }
 
-export function buildDerivedIndicators(
+// All five indicators, for the AI analyst's context.
+export function buildAnalystIndicators(
   categoryScores: CategoryScore[],
   placeGroups: PlaceGroup[],
 ): Indicator[] {

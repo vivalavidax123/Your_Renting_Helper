@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { NearbyPlace, PlaceGroup } from "@/app/lib/types";
 import {
-  formatGroupScope,
+  formatSearchScope,
   formatDistance,
   formatReviewSummary,
   formatPlaceType,
@@ -42,6 +42,7 @@ function PlaceRow({
       <button
         type="button"
         onClick={() => onSelect(place.id)}
+        aria-pressed={selected}
         className={`w-full rounded-md px-1 py-1 text-left ${
           selected ? "bg-accent-soft" : "hover:bg-hover"
         }`}
@@ -122,7 +123,7 @@ function CategorySection({
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-sm font-semibold text-ink">Nearby places</h3>
         <span className="text-xs text-ink-faint">
-          {formatGroupScope(group)}
+          {formatSearchScope(group)}
         </span>
       </div>
       {group.places.length > 0 ? (
@@ -142,6 +143,7 @@ function CategorySection({
             <button
               type="button"
               onClick={() => setExpanded((value) => !value)}
+              aria-expanded={expanded}
               className="mt-1 w-full rounded-md py-1 text-xs font-medium text-ink-muted hover:text-ink"
             >
               {expanded

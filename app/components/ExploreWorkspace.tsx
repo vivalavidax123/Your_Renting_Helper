@@ -19,7 +19,7 @@ export function ExploreWorkspace() {
         <SearchForm
           autocomplete={search.autocomplete}
           searchState={search.searchState}
-          placesState={search.busy ? "loading" : search.placesState}
+          busy={search.busy}
           error={search.error}
           onSearch={search.handleSearch}
           compact
@@ -33,7 +33,6 @@ export function ExploreWorkspace() {
               recent={search.recent}
               saved={search.saved}
               disabled={search.busy}
-              canSave={search.canSave}
               onSelect={search.searchFromHistory}
               onToggleSaved={search.toggleSaved}
             />
@@ -87,7 +86,7 @@ export function ExploreWorkspace() {
             locationId={search.locationId}
             profile={search.profile}
             preset={search.preset}
-            placesState={search.busy ? "loading" : search.placesState}
+            placesState={search.placesState}
             signedIn={search.canSave}
             sessionPending={search.sessionPending}
           />
@@ -98,7 +97,7 @@ export function ExploreWorkspace() {
               Location preview
             </h2>
             <LocationMap
-              location={search.location}
+              location={search.result.location}
               placeGroups={search.placeGroups}
               selectedPlace={null}
               onAutoScroll={noScroll}
@@ -106,7 +105,7 @@ export function ExploreWorkspace() {
             <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-muted">
               <li>
                 Matched as{" "}
-                {search.location?.locationType
+                {search.result.location.locationType
                   .toLowerCase()
                   .replaceAll("_", " ")}
                 .

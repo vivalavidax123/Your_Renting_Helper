@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
-
-import { analyzeLocation, compareLocations } from "./locationAnalyst";
+import {
+  answerLocationQuestion,
+  answerComparisonQuestion,
+  getQuestionRefusal,
+  isLocationQuestionInScope,
+  isLocationQuestionSafe,
+  readQuestion,
+} from "./locationAnalyst";
 import type { LocationAnalysisContext } from "./locationAnalysis";
 
 function openAIStream(...events: object[]) {
@@ -56,7 +61,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("analyzeLocation", () => {
+describe("answerLocationQuestion", () => {
   it("sends grounded application context and returns the model text", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       openAIStream(
@@ -70,7 +75,9 @@ describe("analyzeLocation", () => {
     );
 
     await expect(
-      readAnswer(analyzeLocation(context, "Is this suitable without a car?")),
+      readAnswer(
+        answerLocationQuestion(context, "Is this suitable without a car?"),
+      ),
     ).resolves.toBe("The transport data is strong.");
 
     const [, init] = fetchMock.mock.calls[0];
@@ -105,7 +112,9 @@ describe("analyzeLocation", () => {
     vi.stubEnv("OPENAI_API_KEY", "");
     const fetchMock = vi.spyOn(globalThis, "fetch");
 
-    await expect(analyzeLocation(context, "Why this score?")).rejects.toEqual(
+    await expect(
+      answerLocationQuestion(context, "Why this score?"),
+    ).rejects.toEqual(
       expect.objectContaining({
         message: "AI location analysis is not configured.",
         status: 500,
@@ -119,7 +128,9 @@ describe("analyzeLocation", () => {
       new Response("unauthorised", { status: 401 }),
     );
 
-    await expect(analyzeLocation(context, "Why this score?")).rejects.toEqual(
+    await expect(
+      answerLocationQuestion(context, "Why this score?"),
+    ).rejects.toEqual(
       expect.objectContaining({
         message: "The AI service is temporarily unavailable. Please try again.",
         status: 502,
@@ -131,7 +142,7 @@ describe("analyzeLocation", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(openAIStream());
 
     await expect(
-      readAnswer(analyzeLocation(context, "Why this score?")),
+      readAnswer(answerLocationQuestion(context, "Why this score?")),
     ).rejects.toEqual(expect.objectContaining({ status: 502 }));
   });
 
@@ -147,7 +158,7 @@ describe("analyzeLocation", () => {
     );
 
     await expect(
-      readAnswer(analyzeLocation(context, "Why this score?")),
+      readAnswer(answerLocationQuestion(context, "Why this score?")),
     ).rejects.toEqual(
       expect.objectContaining({
         message:
@@ -158,7 +169,7 @@ describe("analyzeLocation", () => {
   });
 });
 
-describe("compareLocations", () => {
+describe("answerComparisonQuestion", () => {
   it("labels both contexts and asks for a practical, conditional comparison", async () => {
     const secondContext: LocationAnalysisContext = {
       ...context,
@@ -178,7 +189,11 @@ describe("compareLocations", () => {
 
     await expect(
       readAnswer(
-        compareLocations(context, secondContext, "Which is more convenient?"),
+        answerComparisonQuestion(
+          context,
+          secondContext,
+          "Which is more convenient?",
+        ),
       ),
     ).resolves.toBe("Location B is more convenient for daily errands.");
 
@@ -194,5 +209,152 @@ describe("compareLocations", () => {
     expect(body.input).toContain("Location B data:");
     expect(body.input).toContain("2 Example Road, Melbourne VIC");
     expect(body.input).toContain("Which is more convenient?");
+  });
+});
+
+describe("isLocationQuestionSafe", () => {
+  it("returns false when moderation flags the question", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ results: [{ flagged: true }] }),
+    );
+
+    await expect(isLocationQuestionSafe("question")).resolves.toBe(false);
+  });
+
+  it("returns true for an unflagged question", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ results: [{ flagged: false }] }),
+    );
+
+    await expect(isLocationQuestionSafe("question")).resolves.toBe(true);
+  });
+
+  it("maps provider failures to friendly errors with a status", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("down", { status: 503 }),
+    );
+    await expect(isLocationQuestionSafe("question")).rejects.toMatchObject({
+      status: 502,
+      message:
+        "The AI safety check is temporarily unavailable. Please try again.",
+    });
+
+    const timeout = new Error("timed out");
+    timeout.name = "TimeoutError";
+    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(timeout);
+    await expect(isLocationQuestionSafe("question")).rejects.toMatchObject({
+      status: 504,
+      message: "The AI safety check took too long. Please try again.",
+    });
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      Response.json({ results: [] }),
+    );
+    await expect(isLocationQuestionSafe("question")).rejects.toMatchObject({
+      status: 502,
+      message:
+        "The AI safety check returned an invalid response. Please try again.",
+    });
+  });
+});
+
+describe("isLocationQuestionInScope", () => {
+  function classification(decision: string) {
+    return Response.json({
+      output: [
+        {
+          content: [
+            { type: "output_text", text: JSON.stringify({ decision }) },
+          ],
+        },
+      ],
+    });
+  }
+
+  it("reads the allow or reject decision", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      classification("allow"),
+    );
+    await expect(isLocationQuestionInScope("q", "single")).resolves.toBe(true);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      classification("reject"),
+    );
+    await expect(isLocationQuestionInScope("q", "comparison")).resolves.toBe(
+      false,
+    );
+  });
+
+  it("rejects an unexpected decision and provider failures", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      classification("maybe"),
+    );
+    await expect(
+      isLocationQuestionInScope("q", "single"),
+    ).rejects.toMatchObject({
+      status: 502,
+      message:
+        "The AI scope check returned an invalid response. Please try again.",
+    });
+
+    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new TypeError("down"));
+    await expect(
+      isLocationQuestionInScope("q", "single"),
+    ).rejects.toMatchObject({
+      status: 502,
+      message:
+        "The AI scope check is temporarily unavailable. Please try again.",
+    });
+  });
+});
+
+describe("readQuestion", () => {
+  it("trims the question and rejects empty or overlong text", () => {
+    expect(readQuestion("  Is it quiet?  ")).toEqual({
+      question: "Is it quiet?",
+    });
+    expect(readQuestion("   ")).toEqual({ error: "Question is required." });
+    expect(readQuestion(42)).toEqual({ error: "Question is required." });
+    expect(readQuestion("a".repeat(1_001))).toEqual({
+      error: "Question must be 1,000 characters or fewer.",
+    });
+  });
+});
+
+describe("getQuestionRefusal", () => {
+  function scopeDecision(decision: string) {
+    return Response.json({
+      output: [
+        {
+          content: [
+            { type: "output_text", text: JSON.stringify({ decision }) },
+          ],
+        },
+      ],
+    });
+  }
+
+  it("refuses a flagged question without running the scope check", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({ results: [{ flagged: true }] }));
+
+    await expect(getQuestionRefusal("q", "single")).resolves.toBe(
+      "I can’t help with that request. Ask about the selected location or renting instead.",
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses an off-topic question and allows an on-topic one", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({ results: [{ flagged: false }] }))
+      .mockResolvedValueOnce(scopeDecision("reject"))
+      .mockResolvedValueOnce(Response.json({ results: [{ flagged: false }] }))
+      .mockResolvedValueOnce(scopeDecision("allow"));
+
+    await expect(getQuestionRefusal("q", "comparison")).resolves.toBe(
+      "I can only answer questions about the selected locations, nearby amenities, transport, rental evidence, and renting trade-offs.",
+    );
+    await expect(getQuestionRefusal("q", "comparison")).resolves.toBeNull();
   });
 });

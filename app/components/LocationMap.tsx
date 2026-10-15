@@ -1,5 +1,7 @@
 "use client";
 
+import { getErrorMessage } from "@/app/lib/api";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 import {
@@ -21,7 +23,7 @@ export function LocationMap({
   selectedPlace,
   onAutoScroll,
 }: {
-  location: MapLocation | null;
+  location: MapLocation;
   placeGroups: PlaceGroup[];
   selectedPlace: { placeId: string } | null;
   onAutoScroll: () => void;
@@ -52,7 +54,7 @@ export function LocationMap({
     let isMounted = true;
 
     async function renderMap() {
-      if (!apiKey || !location || !mapRef.current || !theme) {
+      if (!apiKey || !mapRef.current || !theme) {
         return;
       }
 
@@ -101,11 +103,7 @@ export function LocationMap({
         setMapRevision((revision) => revision + 1);
       } catch (error) {
         if (isMounted) {
-          setMapError(
-            error instanceof Error
-              ? error.message
-              : "Google Maps failed to load.",
-          );
+          setMapError(getErrorMessage(error, "Google Maps failed to load."));
         }
       }
     }
@@ -173,14 +171,6 @@ export function LocationMap({
       <div className="mt-5 flex aspect-[4/3] items-center justify-center rounded-lg border border-line bg-surface-subtle p-5 text-center text-sm leading-6 text-ink-soft">
         The live map is unavailable. You can still explore scores and nearby
         places.
-      </div>
-    );
-  }
-
-  if (!location) {
-    return (
-      <div className="mt-5 flex aspect-[4/3] items-center justify-center rounded-lg border border-line bg-accent-soft p-5 text-center text-sm leading-6 text-ink-soft">
-        Search for a location to preview it on the map.
       </div>
     );
   }

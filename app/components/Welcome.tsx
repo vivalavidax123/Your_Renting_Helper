@@ -1,7 +1,9 @@
 "use client";
+import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
 import { SearchForm } from "./SearchForm";
 import { RecentSearches } from "./RecentSearches";
+import { useLoginHref } from "@/app/hooks/useLoginHref";
 import { rentScoreCategories } from "@/app/lib/categories";
 
 const exampleSuburbs = [
@@ -85,6 +87,7 @@ function ExampleResult() {
 
 export function Welcome() {
   const search = useExplore();
+  const loginHref = useLoginHref();
   return (
     <main className="mx-auto grid w-full max-w-7xl items-start gap-6 px-4 pb-8 pt-3 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:pt-8">
       <section className="rounded-xl border border-line bg-surface p-5 sm:p-8">
@@ -99,7 +102,7 @@ export function Welcome() {
           <SearchForm
             autocomplete={search.autocomplete}
             searchState={search.searchState}
-            placesState={search.busy ? "loading" : search.placesState}
+            busy={search.busy}
             error={search.error}
             onSearch={search.handleSearch}
           />
@@ -122,10 +125,22 @@ export function Welcome() {
             recent={search.recent}
             saved={search.saved}
             disabled={search.busy}
-            canSave={search.canSave}
             onSelect={search.searchFromHistory}
             onToggleSaved={search.toggleSaved}
           />
+        ) : !search.sessionPending ? (
+          // Signed-out visitors learn what an account adds, in the spot where
+          // their saved chips would appear. Hidden while the session loads so
+          // signed-in visitors never see it flash.
+          <p className="mt-4 text-sm text-ink-muted">
+            <Link
+              href={loginHref}
+              className="font-medium text-accent hover:underline"
+            >
+              Sign in
+            </Link>{" "}
+            to save addresses and come back to them later.
+          </p>
         ) : null}
         {search.busy ? (
           <p role="status" className="mt-4 text-sm font-medium text-accent-ink">

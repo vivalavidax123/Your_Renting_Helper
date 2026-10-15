@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-10-15.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 114 tests across 21 test files                             |
+| Automated tests      | 124 tests across 21 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -37,10 +37,10 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 ### Implemented
 
-- Search-first welcome screen with a one-line scope note (best for Melbourne), four example-suburb searches, signed-in users' saved and recent locations shown directly, and a desktop-only static "Example result" preview built from the real category labels and colours; result panels stay hidden until a successful search.
+- Search-first welcome screen with a one-line scope note (best for Melbourne), four example-suburb searches, signed-in users' saved and recent locations shown directly (signed-out visitors see a one-line "Sign in to save addresses" prompt there instead), and a desktop-only static "Example result" preview built from the real category labels and colours; result panels stay hidden until a successful search.
 - Shared-header logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
-- Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header that shows the matched address, the save action, and the overall score together.
-- Signed-in users open the account email menu to access Sign out; Escape and outside clicks close the menu.
+- Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header that shows the matched address, the save action (signed-in visitors only), and the overall score together.
+- Signed-in users open the account email dropdown (a plain disclosure button, not an ARIA menu) to access Sign out; Escape and outside clicks close it.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
 - Clickable category score cards in fixed category order, each with a score bar in its category colour, plus dedicated evidence routes. A category page shows its score with the same bar, category navigation (one sideways-scrolling row on phones), up to ten nearby places before "Show all" (name and distance, then type and reviews; the address appears once a place is selected), and a focused map that stays in view on desktop. Category and supporting-evidence pages show only a back link, the title, and the address in their header; saving stays on the overview.
@@ -60,7 +60,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Terrain card measuring how hilly the land within 1.5 km is, from Google Elevation samples. It is shown as separate evidence and does not change any score.
 - Radius-based community median rent estimates for matching property type and bedroom count.
 - Authenticated rent reporting with one updatable report per user/location/property combination.
-- The latest rent report for a signed-in user and searched location is returned so the form can restore it. `RentalInsights` is keyed by location place ID, while `useRentalInsights` owns its request and form state.
+- The latest rent report for a signed-in user and searched location is returned so the form can restore it. `RentalInsights` is keyed by the stored location id, while `useRentalInsights` owns its request and form state.
 - When a new location's default profile is empty, the strongest nearby property/bedroom group within 10 km is selected automatically.
 - Persistent light and dark themes across the main and login views.
 - Reduced-motion preferences shorten interface transitions and loading animations.
@@ -68,7 +68,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Per-user recent searches and saved locations.
 - Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available. The table uses A, B and Lead columns (for example "A +6") so it fits phone width; full addresses stay in the selectors and column tooltips.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
-- Evidence dates use Australian day/month format on every page. The rental-quality and distance disclaimers appear once, on the overview.
+- Evidence dates use Australian day/month format in Melbourne time on every page. The rental-quality and distance disclaimers appear once, on the overview.
 - The page-by-page interface review behind the current result, compare, details, home, category and login layouts is recorded in [docs/ui-refresh-2026-10.md](./docs/ui-refresh-2026-10.md).
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
 - Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations.
@@ -108,7 +108,7 @@ Versions are taken from the current package manifest and deployment files.
 | UI                   | React 19.2.4                                                    |
 | Language             | TypeScript 5                                                    |
 | Styling              | Tailwind CSS 4 plus semantic tokens in app/globals.css          |
-| Fonts                | Geist and Geist Mono through next/font                          |
+| Fonts                | Geist through next/font                                         |
 | Database             | PostgreSQL                                                      |
 | ORM                  | Prisma 6.19.3                                                   |
 | Authentication       | Better Auth 1.6.23 with Prisma adapter                          |
@@ -143,15 +143,19 @@ app/
   hooks/                 Autocomplete, search, saved-search, rental, and sign-in-link controllers
   lib/
     maps/                 Browser-only Google Maps integration
-    services/             Google, Transitland, and persistence services
-    api.ts                Runtime API-envelope validation
+    services/             Google, Transitland, OpenAI, and persistence services (server-only)
+    api.ts                API-envelope validation and shared response/error helpers
     auth.ts               Better Auth server configuration
     categories.ts         Category metadata, preset weights and profile factors
     indicators.ts         Pure derived-indicator calculations
     scoring.ts            Pure scoring and distance calculations
     terrain.ts            Pure terrain sample points and hilliness summary
     types.ts              Shared domain and API types
-  login/                  Sign-in and sign-up page
+  (auth)/                 Account pages sharing one centred-card layout
+    login/                Sign-in and sign-up
+    forgot-password/      Request a password-reset link
+    reset-password/       Choose a new password from an emailed link
+    verify-email/         Email-verification result
   layout.tsx              Metadata, fonts, analytics, and theme bootstrap
   (explore)/              Shared search workspace and direct location routes
     compare/              Dedicated saved-location comparison page
@@ -172,8 +176,8 @@ docker-compose.yml        App, migration, and PostgreSQL services
 
 The project deliberately uses a small number of direct boundaries:
 
-- **Route handlers** validate HTTP input, resolve sessions when needed, coordinate services, and translate failures into response codes.
-- **Service modules** own Google, Transitland, and Prisma operations.
+- **Route handlers** validate HTTP input, resolve sessions when needed, coordinate services, and translate failures into response codes. Shared parsers (`parseLatLng`, `parseScoringOptions`, `readQuestion`) keep validation identical across routes. Visitors only ever receive fixed, friendly error messages; `errorResponse` sends provider, database, and configuration details to the server log instead.
+- **Service modules** own Google, Transitland, OpenAI, and Prisma operations. Server modules start with `import "server-only"`, so the build fails if browser code imports them. Outbound provider requests have timeouts (8 s; 5 s for autocomplete).
 - **Pure modules** own scoring, indicators, formatting, and shared calculations.
 - **Hooks** own browser request state, cancellation, and interaction workflows.
 - **Components** focus on rendering and user intent.
@@ -203,10 +207,11 @@ The shared-header logo cancels active search work, clears the active result and 
 
 1. Coordinates are rounded to four decimal places to form a shared cache key.
 2. /api/places checks for the newest snapshot younger than seven days.
-3. A cache hit returns stored place groups and recalculates the requested profile score without calling Google.
-4. A cache miss retrieves all categories, filters and deduplicates places, calculates the requested score, and stores a canonical no-car snapshot.
-5. If the visitor is signed in, the location is upserted into that user's recent-search history.
-6. Cache or persistence failures are logged and do not block a live provider result.
+3. A cache hit returns the stored place groups without calling Google.
+4. A cache miss retrieves all categories, filters and deduplicates places, and stores them in a snapshot with the canonical No car / Balanced score.
+5. The response carries place groups only; the browser calculates category and overall scores for the active profile and preset.
+6. If the visitor is signed in, the location is upserted into that user's recent-search history before the response is sent, because the browser reloads its recent list as soon as the response arrives.
+7. Cache or persistence failures are logged and do not block a live provider result.
 
 Profile and preset changes recalculate scores in the browser from the existing place groups. They do not call /api/places again or recreate the map.
 
@@ -216,7 +221,7 @@ Profile and preset changes recalculate scores in the browser from the existing p
 | ------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | GET /api/autocomplete                 | Public                                       | Australian Google Places suggestions                                                              |
 | GET /api/geocode                      | Public                                       | Address geocoding and provider error mapping                                                      |
-| GET /api/places                       | Public, session-aware                        | Cache lookup, provider retrieval, scoring, snapshot save, optional history write                  |
+| GET /api/places                       | Public, session-aware                        | Cache lookup, provider retrieval, snapshot save, optional history write; returns raw place groups |
 | GET /api/history                      | Public, session-aware                        | Current user's recent searches; signed-out users receive an empty list                            |
 | GET /api/favourites                   | Signed in                                    | Current user's saved locations                                                                    |
 | POST /api/favourites                  | Signed in                                    | Save a known location                                                                             |
@@ -284,7 +289,7 @@ Current category order also defines cross-category deduplication priority:
 - Each Google place ID is assigned to only one category.
 - Category-specific excluded primary types prevent secondary-type mismatches such as hotels appearing as fitness venues.
 
-A fresh uncached search currently makes ten Google Nearby Search calls and one V/Line Text Search. Transitland calls are additional when its key is configured. Keep the provider fan-out visible when adding categories or fields.
+A fresh uncached search currently makes ten Google Nearby Search calls and one V/Line Text Search. Transitland calls are additional when its key is configured and run alongside the Google transport searches rather than after them. Keep the provider fan-out visible when adding categories or fields.
 
 ### Transport retrieval
 
@@ -352,7 +357,7 @@ Any scoring or retrieval change that would make stored place groups or scores mi
 
 ## Derived Indicators
 
-app/lib/indicators.ts derives five indicators from the current place groups and category scores. `buildDerivedIndicators` returns all five for the AI analyst; `buildWalkingIndicators` returns walkability and car reliance for the details page, because the other three restate category scores (and amenity density is bounded by the 20-results-per-category provider limit):
+app/lib/indicators.ts derives five indicators from the current place groups and category scores. `buildAnalystIndicators` returns all five for the AI analyst; `buildWalkingIndicators` returns walkability and car reliance for the details page, because the other three restate category scores (and amenity density is bounded by the 20-results-per-category provider limit):
 
 - **Walkability:** estimated minutes at 80 metres per minute for key destinations.
 - **Transit access:** transport score label, closest distance, and available departure count.
@@ -366,7 +371,7 @@ The result page includes a lightweight signed-in single-location chat panel, and
 
 ### Single-location request flow
 
-1. `/api/places` returns the persisted `SearchLocation` id with the score result.
+1. `/api/places` returns the persisted `SearchLocation` id with the place groups.
 2. The signed-in client sends that id, the current mobility profile and preset, and one question to `POST /api/locations/[locationId]/chat`.
 3. The route verifies the Better Auth session and returns 401 without calling the analyst when no session exists.
 4. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile and preset.
@@ -553,17 +558,18 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 114-test suite across 21 files covers:
+The current 124-test suite across 21 files covers:
 
 - scoring behaviour and invariants;
-- formatting, coordinate parsing, distance, and time utilities, plus the same-site check for sign-in return paths;
+- formatting (including Melbourne-time evidence dates), coordinate parsing and range checks, distance, and time utilities, plus the same-site check for sign-in return paths;
+- request parsing for scoring options and chat questions;
 - API-envelope validation;
 - derived indicators;
 - favourites and rent-estimate route behavior;
 - authentication email configuration and delivery callbacks;
 - community-rent medians, adaptive radii, report upserts, and profile suggestions;
 - CBD driving/transit response parsing and Melbourne daylight-saving calculations;
-- grounded AI context construction, OpenAI request configuration, streamed response parsing, text-chunk accumulation, and failure mapping;
+- grounded AI context construction, OpenAI request configuration, streamed response parsing, text-chunk accumulation, failure mapping, and the moderation and scope checks with their refusals;
 - single-location and authenticated saved-location comparison chat routes;
 - analyst request payloads and rental hook API boundaries;
 - the invariant that the car-owner profile never lowers category or overall scores;

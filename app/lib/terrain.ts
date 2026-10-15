@@ -4,7 +4,7 @@ import type { TerrainLevel, TerrainSummary } from "./types";
 // from the address. Straight lines do not follow streets, so the result
 // describes how hilly the surrounding land is, not the exact grade of a
 // particular road.
-export const terrainRadiusMeters = 1500;
+const terrainRadiusMeters = 1500;
 export const terrainSpacingMeters = 150;
 const bearingCount = 8;
 

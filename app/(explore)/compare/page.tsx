@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useLoginHref } from "@/app/hooks/useLoginHref";
 import { ComparePanel } from "@/app/components/ComparePanel";
 import { useExplore } from "@/app/components/ExploreProvider";
-import { MobilityProfile } from "@/app/components/MobilityProfile";
-import { PresetPicker } from "@/app/components/PresetPicker";
+import {
+  MobilityProfile,
+  PresetPicker,
+} from "@/app/components/ScoringControls";
 
 export default function ComparePage() {
   const {

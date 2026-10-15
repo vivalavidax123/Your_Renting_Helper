@@ -1,7 +1,9 @@
+import "server-only";
+
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/app/lib/db";
 import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
-import { scorePlaceGroups } from "@/app/lib/scoring";
+import { scoreLocation } from "@/app/lib/scoring";
 import type { CategoryScore, PlaceGroup, RecentSearch } from "@/app/lib/types";
 
 // Cached score results are reused for this long before Google is queried
@@ -10,7 +12,7 @@ import type { CategoryScore, PlaceGroup, RecentSearch } from "@/app/lib/types";
 // (e.g. demoing the same suburbs) off the paid Google quota for longer.
 const cacheTtlMs = 7 * 24 * 60 * 60 * 1000;
 
-export type SearchLocationInput = {
+type SearchLocationInput = {
   query: string;
   formattedAddress: string;
   placeId: string;
@@ -19,18 +21,10 @@ export type SearchLocationInput = {
   longitude: number;
 };
 
-// The cache hands back the raw place data only. Scores are cheap to
-// recompute and depend on the requested weight profile, so the API route
-// rescores on every hit instead of reusing the stored (balanced) scores.
-export type CachedSearchResult = {
+// The cache hands back the raw place data only. Scores depend on the
+// visitor's profile and preset, so the browser computes them from the groups.
+type CachedSearchResult = {
   locationId: string;
-  groups: PlaceGroup[];
-  fetchedAt: string;
-};
-
-export type LocationAnalysisSource = {
-  id: string;
-  formattedAddress: string;
   groups: PlaceGroup[];
   fetchedAt: string;
 };
@@ -179,23 +173,12 @@ export async function listRecentSearches(
 }
 
 // Called after a successful search by a signed-in user. Upserts so
-// re-searching a spot bumps it to the top instead of duplicating it. The
-// location row is created by saveSnapshot; if that failed (or the cache row
-// vanished) there is nothing to attach history to, so it is a silent no-op.
-export async function recordUserSearch(userId: string, cacheKey: string) {
-  const location = await prisma.searchLocation.findUnique({
-    where: { cacheKey },
-    select: { id: true },
-  });
-
-  if (!location) {
-    return;
-  }
-
+// re-searching a spot bumps it to the top instead of duplicating it.
+export async function recordUserSearch(userId: string, locationId: string) {
   await prisma.userSearch.upsert({
-    where: { userId_locationId: { userId, locationId: location.id } },
+    where: { userId_locationId: { userId, locationId } },
     update: { lastSearchedAt: new Date() },
-    create: { userId, locationId: location.id },
+    create: { userId, locationId },
   });
 }
 
@@ -228,57 +211,30 @@ export async function areLocationsSavedByUser(
 
 // Full category scores for one location, recalculated from the newest stored
 // place groups for the comparison view's selected mobility profile and preset.
-export async function getComparisonSide(
+export async function getScoredLocation(
   id: string,
   profile: WeightProfile,
   preset: WeightPreset,
 ) {
-  const location = await prisma.searchLocation.findUnique({
-    where: { id },
-    include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
-  });
+  const stored = await getStoredLocation(id);
 
-  const snapshot = location?.snapshots[0];
-
-  if (!location || !snapshot) {
+  if (!stored) {
     return null;
   }
 
-  const groups = JSON.parse(snapshot.groupsJson) as PlaceGroup[];
-  const { overallScore, scores } = scorePlaceGroups(groups, profile, preset);
+  const { overallScore, scores } = scoreLocation(
+    stored.groups,
+    profile,
+    preset,
+  );
 
   return {
-    id: location.id,
-    query: location.query,
-    formattedAddress: location.formattedAddress,
+    id: stored.locationId,
+    query: stored.location.query,
+    formattedAddress: stored.location.formattedAddress,
     overallScore,
     scores,
-    fetchedAt: snapshot.createdAt.toISOString(),
-  };
-}
-
-// Supplies deterministic application data for location analysis. Scores are
-// recomputed by the analysis service because they depend on the user's current
-// mobility profile, just like the main search result.
-export async function getLocationAnalysisSource(
-  id: string,
-): Promise<LocationAnalysisSource | null> {
-  const location = await prisma.searchLocation.findUnique({
-    where: { id },
-    include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
-  });
-
-  const snapshot = location?.snapshots[0];
-
-  if (!location || !snapshot) {
-    return null;
-  }
-
-  return {
-    id: location.id,
-    formattedAddress: location.formattedAddress,
-    groups: JSON.parse(snapshot.groupsJson) as PlaceGroup[],
-    fetchedAt: snapshot.createdAt.toISOString(),
+    fetchedAt: stored.fetchedAt,
   };
 }
 
@@ -316,7 +272,9 @@ export async function setLocationSaved(
   }
 }
 
-// Read-only evidence access never triggers paid provider calls or records history.
+// A location and its newest place snapshot. Every page, the comparison and
+// the AI analyst read stored evidence through this one query. It never calls
+// a paid provider or records history.
 export async function getStoredLocation(id: string) {
   const location = await prisma.searchLocation.findUnique({
     where: { id },

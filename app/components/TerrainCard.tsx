@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isJsonRecord, readApiResult } from "@/app/lib/api";
-import { steepGradePercent } from "@/app/lib/terrain";
+import { steepGradePercent, terrainSpacingMeters } from "@/app/lib/terrain";
 import type {
   GeocodeLocation,
   RequestState,
@@ -48,20 +48,12 @@ function isTerrainPayload(value: Record<string, unknown>) {
   );
 }
 
-export function TerrainCard({
-  location,
-}: {
-  location: GeocodeLocation | null;
-}) {
-  const [state, setState] = useState<RequestState>("idle");
+export function TerrainCard({ location }: { location: GeocodeLocation }) {
+  const [state, setState] = useState<RequestState>("loading");
   const [terrain, setTerrain] = useState<TerrainSummary | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!location) {
-      return;
-    }
-
     const controller = new AbortController();
 
     async function loadTerrain() {
@@ -70,8 +62,8 @@ export function TerrainCard({
 
       try {
         const query = new URLSearchParams({
-          lat: String(location?.latitude),
-          lng: String(location?.longitude),
+          lat: String(location.latitude),
+          lng: String(location.longitude),
         });
         const response = await fetch(`/api/terrain?${query}`, {
           signal: controller.signal,
@@ -106,12 +98,6 @@ export function TerrainCard({
   return (
     <div className="h-full rounded-lg border border-line bg-surface p-5 shadow-sm">
       <h2 className="text-base font-semibold text-ink">Terrain</h2>
-
-      {state === "idle" ? (
-        <p className="mt-4 rounded-lg border border-line bg-surface-subtle px-3 py-2.5 text-sm leading-6 text-ink-soft">
-          Search for a location to measure its terrain.
-        </p>
-      ) : null}
 
       {state === "loading" ? (
         <p className="mt-4 text-sm font-medium text-ink-soft">
@@ -157,8 +143,8 @@ export function TerrainCard({
               {terrain.elevationRangeMeters} m.
             </li>
             <li>
-              Sampled every 150 m along eight straight lines out to{" "}
-              {formatRadius(terrain.radiusMeters)}.
+              Sampled every {terrainSpacingMeters} m along eight straight lines
+              out to {formatRadius(terrain.radiusMeters)}.
             </li>
             <li>
               Lines do not follow streets, so a specific road can be steeper or

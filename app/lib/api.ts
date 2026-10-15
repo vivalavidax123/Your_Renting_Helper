@@ -6,6 +6,46 @@ export function isJsonRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+// A failed API response for visitors. Anything internal (database errors,
+// provider messages, missing key names) goes to the server log through
+// logDetails; the browser only ever receives the fixed, friendly message.
+export function errorResponse(
+  status: number,
+  message: string,
+  ...logDetails: unknown[]
+) {
+  if (logDetails.length > 0) {
+    console.error(...logDetails);
+  }
+
+  return Response.json({ ok: false, error: message }, { status });
+}
+
+// A plain-text answer (a streamed AI answer or a short refusal). nosniff
+// stops the browser from guessing a different content type, and no-cache
+// stops proxies from holding back a stream.
+export function textResponse(body: BodyInit) {
+  return new Response(body, {
+    headers: {
+      "Cache-Control": "no-cache",
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}
+
+// The text to show a visitor for a caught browser-side error. Errors this app
+// throws itself (including readApiResult's) carry friendly messages; fetch
+// network failures (TypeError: "Failed to fetch") and broken JSON
+// (SyntaxError) do not, so those fall back to the caller's message.
+export function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error &&
+    !(error instanceof TypeError) &&
+    !(error instanceof SyntaxError)
+    ? error.message
+    : fallback;
+}
+
 export async function readApiResult<T extends object>(
   response: Response,
   isSuccessPayload: (value: JsonRecord) => boolean,

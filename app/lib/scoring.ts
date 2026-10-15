@@ -6,6 +6,7 @@ import {
   type WeightProfile,
 } from "./categories";
 import type { PlaceGroup, NearbyPlace } from "./types";
+import { formatDistance } from "./utils";
 
 // V3 scoring: every pillar is a continuous curve so that no 1-metre or
 // 0.01-rating difference can ever jump the score by a whole tier. The
@@ -83,15 +84,12 @@ function getExplanation(count: number, closestDistanceMeters: number | null) {
     return "No nearby matches were found within the search radius.";
   }
 
-  const distance =
-    closestDistanceMeters < 1000
-      ? `${closestDistanceMeters} m`
-      : `${(closestDistanceMeters / 1000).toFixed(1)} km`;
-
-  return `${count} nearby match${count === 1 ? "" : "es"} found; closest is ${distance} away.`;
+  return `${count} nearby match${count === 1 ? "" : "es"} found; closest is ${formatDistance(closestDistanceMeters)} away.`;
 }
 
-export function scorePlaceGroups(
+// Scores every category for one location's nearby places, then combines the
+// counted categories into the overall score using the preset's weights.
+export function scoreLocation(
   groups: PlaceGroup[],
   profile: WeightProfile = "carFree",
   preset: WeightPreset = "balanced",
