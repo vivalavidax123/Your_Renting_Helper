@@ -14,7 +14,11 @@ export function useSavedSearches(
   placesState: RequestState,
   userId: string | null,
 ) {
-  const [savedError, setSavedError] = useState("");
+  // A failed list load and a failed save/unsave are tracked apart: the next
+  // successful load clears only its own error, so a toggle error stays
+  // visible even though every toggle triggers a refetch.
+  const [listError, setListError] = useState("");
+  const [toggleError, setToggleError] = useState("");
   const [loadedSavedForUser, setLoadedSavedForUser] = useState<string | null>(
     null,
   );
@@ -56,14 +60,19 @@ export function useSavedSearches(
 
         // Signed-out visitors skip /api/favourites; an empty list is the
         // correct rendering and avoids an unnecessary 401 request.
-        setSaved(favouritesData.ok ? favouritesData.searches : []);
+        if (favouritesData.ok) {
+          setSaved(favouritesData.searches);
+          setListError("");
+        } else {
+          setListError("Could not load saved locations.");
+        }
         if (userId) {
           setLoadedSavedForUser(userId);
         }
       })
       .catch(() => {
         if (!cancelled && userId) {
-          setSavedError("Could not load saved locations.");
+          setListError("Could not load saved locations.");
           setLoadedSavedForUser(userId);
         }
       });
@@ -76,7 +85,7 @@ export function useSavedSearches(
   const toggleSaved = useCallback(async (search: RecentSearch) => {
     const isSaved = search.savedAt !== null;
 
-    setSavedError("");
+    setToggleError("");
     try {
       const response = await fetch(
         isSaved ? `/api/favourites?id=${search.id}` : "/api/favourites",
@@ -97,7 +106,7 @@ export function useSavedSearches(
           data.ok ? "Could not update saved locations." : data.error,
         );
     } catch (error) {
-      setSavedError(
+      setToggleError(
         error instanceof Error
           ? error.message
           : "Could not update saved locations.",
@@ -108,6 +117,8 @@ export function useSavedSearches(
   }, []);
 
   const savedPending = Boolean(userId && loadedSavedForUser !== userId);
+
+  const savedError = toggleError || listError;
 
   return { recent, saved, toggleSaved, savedError, savedPending };
 }

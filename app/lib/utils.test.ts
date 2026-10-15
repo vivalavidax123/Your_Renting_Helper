@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatDepartureTime,
+  formatEvidenceDate,
   formatDistance,
   normalizeStationName,
   normalizeText,
@@ -95,5 +96,13 @@ describe("safeNextPath", () => {
     ]) {
       expect(safeNextPath(value)).toBe("/");
     }
+  });
+});
+
+describe("formatEvidenceDate", () => {
+  it("shows the Melbourne calendar date in day/month order", () => {
+    // 21:00 UTC on 15 October is 8:00 am on 16 October in Melbourne (AEDT).
+    expect(formatEvidenceDate("2026-10-15T21:00:00.000Z")).toBe("16/10/2026");
+    expect(formatEvidenceDate("2026-10-15T01:00:00.000Z")).toBe("15/10/2026");
   });
 });

@@ -20,6 +20,7 @@ export function RentalInsights({
   const loginHref = useLoginHref();
   const {
     state,
+    loadError,
     estimate,
     ownReport,
     isFormOpen,
@@ -61,7 +62,7 @@ export function RentalInsights({
 
       {state === "error" ? (
         <p className="mt-4 rounded-lg border border-danger-line bg-danger-soft px-3 py-2.5 text-sm text-danger-ink">
-          {message}
+          {loadError}
         </p>
       ) : null}
 

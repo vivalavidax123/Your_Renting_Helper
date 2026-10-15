@@ -8,8 +8,12 @@ export function formatDistance(distanceMeters: number) {
 
 // Evidence dates are shown in Australian day/month order everywhere, whatever
 // the browser locale, so the same date never reads differently across pages.
+// The fixed Melbourne time zone keeps server and browser output identical and
+// matches the renter's calendar day (a UTC date is a day behind before ~10am).
 export function formatEvidenceDate(value: string) {
-  return new Date(value).toLocaleDateString("en-AU", { timeZone: "UTC" });
+  return new Date(value).toLocaleDateString("en-AU", {
+    timeZone: "Australia/Melbourne",
+  });
 }
 
 export function formatRadius(radiusMeters: number) {

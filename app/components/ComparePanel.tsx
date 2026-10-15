@@ -146,7 +146,10 @@ export function ComparePanel({
     saved.some((search) => search.id === requestedBId)
       ? requestedBId
       : "";
-  const requestKey = `${effectiveAId}|${effectiveBId}|${profile}|${preset}`;
+  // Retry bumps attempt, which changes the key: the old error no longer
+  // matches, so the panel shows loading and the effect fetches again.
+  const [attempt, setAttempt] = useState(0);
+  const requestKey = `${effectiveAId}|${effectiveBId}|${profile}|${preset}|${attempt}`;
   const [result, setResult] = useState<{
     key: string;
     a: ComparisonSide;
@@ -205,7 +208,7 @@ export function ComparePanel({
         if (!controller.signal.aborted) {
           setRequestError({
             key: requestKey,
-            message: "Comparison failed to load. Try again.",
+            message: "Comparison failed to load.",
           });
         }
       });
@@ -297,7 +300,14 @@ export function ComparePanel({
           role="alert"
           className="mt-5 rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm font-medium text-danger-ink"
         >
-          {activeError}
+          {activeError}{" "}
+          <button
+            type="button"
+            onClick={() => setAttempt((value) => value + 1)}
+            className="underline"
+          >
+            Retry
+          </button>
         </p>
       ) : null}
 

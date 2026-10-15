@@ -116,6 +116,9 @@ export function useRentalInsights(location: GeocodeLocation | null) {
     useState<RentalPropertyType>("apartment");
   const [bedrooms, setBedrooms] = useState("1");
   const [submissionState, setSubmissionState] = useState<RequestState>("idle");
+  // The load error and the form's submit feedback are separate so that
+  // opening or closing the form never blanks the estimate's error box.
+  const [loadError, setLoadError] = useState("");
   const [message, setMessage] = useState("");
   const restoredInitialProfile = useRef(false);
 
@@ -146,7 +149,7 @@ export function useRentalInsights(location: GeocodeLocation | null) {
 
         if (!response.ok || !data.ok) {
           setState("error");
-          setMessage(data.ok ? "Rental data is unavailable." : data.error);
+          setLoadError(data.ok ? "Rental data is unavailable." : data.error);
           return;
         }
 
@@ -176,7 +179,7 @@ export function useRentalInsights(location: GeocodeLocation | null) {
       } catch {
         if (!controller.signal.aborted) {
           setState("error");
-          setMessage("Rental data is unavailable.");
+          setLoadError("Rental data is unavailable.");
         }
       }
     }
@@ -237,6 +240,7 @@ export function useRentalInsights(location: GeocodeLocation | null) {
 
   return {
     state,
+    loadError,
     estimate,
     ownReport,
     isFormOpen,

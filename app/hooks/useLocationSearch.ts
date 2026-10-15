@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   scoringQuery,
   type WeightPreset,
@@ -41,6 +41,7 @@ export function useLocationSearch(
   preset: WeightPreset,
 ) {
   const router = useRouter();
+  const pathname = usePathname();
   const [navigating, startTransition] = useTransition();
   const [result, setResult] = useState<LocationResult | null>(null);
   const [state, setState] = useState<RequestState>("idle");
@@ -184,7 +185,11 @@ export function useLocationSearch(
   }
 
   function returnToWelcome() {
-    returningToWelcomeRef.current = true;
+    // While leaving a location page, its loader would reopen the location we
+    // just cleared, so openLocation is paused until the URL reaches "/". On
+    // "/" itself the URL never changes, so pausing there would never end and
+    // a later Back to a location page would stay on "Opening…" forever.
+    returningToWelcomeRef.current = pathname !== "/";
     controllerRef.current?.abort();
     controllerRef.current = null;
     autocomplete.selectQuery("");
