@@ -43,14 +43,22 @@ describe("getCbdTravel", () => {
   it("still returns distance when no routing keys are configured", async () => {
     vi.stubEnv("GEOAPIFY_API_KEY", "");
     vi.stubEnv("GOOGLE_MAPS_API_KEY", "");
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await getCbdTravel(-37.9, 145.0);
 
     expect(result.distanceMeters).toBeGreaterThan(0);
     expect(result.driveMinutes).toBeNull();
     expect(result.transitMinutes).toBeNull();
-    expect(result.warning).toContain("GEOAPIFY_API_KEY");
-    expect(result.warning).toContain("GOOGLE_MAPS_API_KEY");
+    // Visitors never see environment variable names; the server log does.
+    expect(result.warning).toBe("Travel times are unavailable right now.");
+    expect(logError).toHaveBeenCalledWith(
+      expect.stringContaining("GEOAPIFY_API_KEY"),
+    );
+    expect(logError).toHaveBeenCalledWith(
+      expect.stringContaining("GOOGLE_MAPS_API_KEY"),
+    );
+    logError.mockRestore();
   });
 
   it("returns driving time when only Geoapify is configured", async () => {
@@ -65,13 +73,19 @@ describe("getCbdTravel", () => {
         ),
     );
 
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+
     const result = await getCbdTravel(-37.9, 145.0);
 
     expect(result.driveMinutes).toBe(35);
     expect(result.transitMinutes).toBeNull();
-    expect(result.warning).toContain(
-      "GOOGLE_MAPS_API_KEY for public transport",
+    expect(result.warning).toBe(
+      "Some travel times are temporarily unavailable.",
     );
+    expect(logError).toHaveBeenCalledWith(
+      expect.stringContaining("GOOGLE_MAPS_API_KEY for public transport"),
+    );
+    logError.mockRestore();
   });
 });
 

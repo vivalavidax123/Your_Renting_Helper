@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-09-14.
+Status reviewed against committed `HEAD` on 2026-10-15.
 
 | Area                 | Current state                                              |
 | -------------------- | ---------------------------------------------------------- |
@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-09-14.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 111 tests across 21 test files                             |
+| Automated tests      | 112 tests across 21 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -27,7 +27,7 @@ The core renter workflow is implemented:
 1. Search an Australian address or suburb.
 2. Geocode the query and retrieve nearby places.
 3. Calculate category and overall scores for a no-car or car-owner profile and a score-priority preset.
-4. Review amenities, derived indicators, CBD travel, community rent evidence, and the interactive map.
+4. Review amenities, walking times, CBD travel, terrain, community rent evidence, and the interactive map.
 5. Sign in to keep history, save locations, submit known weekly rents, and use the AI analyst.
 6. Ask what one location's evidence means for day-to-day renting or compare two saved results with scores and AI analysis.
 
@@ -39,13 +39,13 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 - Guided welcome screen with example-suburb searches and an illustrative map preview; result panels stay hidden until a successful search.
 - Shared-header logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
-- Successful searches and direct location opens replace the search query with the matched formatted address; the result view keeps compact search, mobility, save, and overall-score controls together above the evidence.
+- Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header that shows the matched address, the save action, and the overall score together.
 - Signed-in users open the account email menu to access Sign out; Escape and outside clicks close the menu.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
-- Clickable category scores with dedicated evidence routes, category navigation, nearby-place lists, and focused maps.
+- Clickable category score cards in fixed category order, each with a score bar in its category colour, plus dedicated evidence routes, category navigation, nearby-place lists, and focused maps. Category and supporting-evidence pages show the address under their title.
 - No-car and car-owner scoring profiles.
-- Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The preset selector sits beside the overview's category scores and on the comparison page.
+- Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The mobility and preset selectors sit together above the overview's category cards and on the comparison page.
 - Location overviews own the interactive profile selector; category and supporting-evidence pages show the active profile as read-only context. Comparison retains one shared selector because both locations must use the same profile.
 - Seven-day shared result cache.
 - Interactive Google map with searched-location and amenity markers.
@@ -54,7 +54,8 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Theme-aware map, markers, and custom popup styling.
 - Google Maps links in non-transport amenity popups.
 - Optional Transitland bus-stop, route, destination, and departure enrichment.
-- Derived walkability, transit, density, convenience, and car-reliance indicators.
+- Derived walkability, transit, density, convenience, and car-reliance indicators. The details page shows only walking times and car reliance; all five feed the AI analyst context.
+- Supporting-evidence page with four equal cards (commute, walking, rent, terrain): one column on phones, a 2x2 grid from `lg` up. Each card leads with its answer, keeps data sources visible, and folds method notes into a collapsed "How this is measured" section.
 - Direct distance, rounded Geoapify driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - Terrain card measuring how hilly the land within 1.5 km is, from Google Elevation samples. It is shown as separate evidence and does not change any score.
 - Radius-based community median rent estimates for matching property type and bedroom count.
@@ -65,8 +66,9 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Reduced-motion preferences shorten interface transitions and loading animations.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
-- Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available.
+- Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available. The table uses A, B and Lead columns (for example "A +6") so it fits phone width; full addresses stay in the selectors and column tooltips.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
+- Evidence dates use Australian day/month format on every page. The rental-quality and distance disclaimers appear once, on the overview.
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
 - Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
@@ -76,7 +78,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 ### Partial or Deferred
 
-- Population, school, childcare, safety, and development data are placeholders only. Rent data is community-reported rather than an official market dataset.
+- Population, school, childcare, safety, and development data are not implemented. Rent data is community-reported rather than an official market dataset.
 - Walkability uses straight-line estimates, not route-aware walking times.
 - Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset is implemented with its manual inbox/password check pending. Account settings and account deletion are not implemented.
 - Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
@@ -153,7 +155,7 @@ app/
   (explore)/              Shared search workspace and direct location routes
     compare/              Dedicated saved-location comparison page
     locations/[locationId]/categories/[categoryId]/  Category evidence
-    locations/[locationId]/details/  Commute, rent, and derived indicators
+    locations/[locationId]/details/  Commute, walking, rent, and terrain
   components/ExploreProvider.tsx  Search/session state retained across workspace pages
   components/ConversationProvider.tsx  In-memory location/pair transcripts
   components/AnalystChat.tsx  Shared single-location and comparison chat interface
@@ -233,7 +235,8 @@ traffic, and round the result to the nearest five minutes. Public transport
 temporarily uses the server-only `GOOGLE_MAPS_API_KEY` and a representative
 weekday at 8:00 am in `Australia/Melbourne`. The browser map key is never used
 for these web-service requests. Route durations are fetched per search and are
-not stored in the database.
+not stored in the database. When a key is missing, the server log names it and
+visitors see only a plain "unavailable" message.
 
 Terrain samples 81 points: the address plus every 150 m along eight compass
 lines out to 1.5 km. All points go to the Google Elevation API in one request
@@ -348,20 +351,13 @@ Any scoring or retrieval change that would make stored place groups or scores mi
 
 ## Derived Indicators
 
-app/lib/indicators.ts derives five indicators from the current place groups and category scores:
+app/lib/indicators.ts derives five indicators from the current place groups and category scores. `buildDerivedIndicators` returns all five for the AI analyst; `buildWalkingIndicators` returns walkability and car reliance for the details page, because the other three restate category scores (and amenity density is bounded by the 20-results-per-category provider limit):
 
 - **Walkability:** estimated minutes at 80 metres per minute for key destinations.
 - **Transit access:** transport score label, closest distance, and available departure count.
 - **Amenity density:** total place count across current groups.
 - **Daily convenience:** average of groceries, food, health, services, and shopping scores.
 - **Car reliance:** estimate based on core categories beyond 1.2 km, with a small fuel-score offset.
-
-The visible planned list is not live data:
-
-- population density;
-- schools and childcare;
-- safety;
-- planned development.
 
 ## AI Location Analyst
 
@@ -554,7 +550,7 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 96-test suite across 19 files covers:
+The current 112-test suite across 21 files covers:
 
 - scoring behaviour and invariants;
 - formatting, coordinate parsing, distance, and time utilities;

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { isJsonRecord, readApiResult } from "@/app/lib/api";
 import type { CbdTravel, GeocodeLocation, RequestState } from "@/app/lib/types";
 import { formatDistance } from "@/app/lib/utils";
+import { MethodNotes } from "./MethodNotes";
 
 function isCbdTravelPayload(value: Record<string, unknown>) {
   const travel = value.travel;
@@ -83,11 +84,10 @@ export function CbdTravelCard({
   }, [location]);
 
   return (
-    <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
-      <h2 className="text-base font-semibold text-ink">Melbourne CBD</h2>
-      <p className="mt-1 text-xs text-ink-muted">
-        Distance to Town Hall and indicative trip times.
-      </p>
+    <div className="h-full rounded-lg border border-line bg-surface p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-ink">
+        Commute to Melbourne CBD
+      </h2>
 
       {state === "idle" ? (
         <p className="mt-4 rounded-lg border border-line bg-surface-subtle px-3 py-2.5 text-sm leading-6 text-ink-soft">
@@ -109,42 +109,35 @@ export function CbdTravelCard({
 
       {state === "success" && travel ? (
         <>
-          <dl className="mt-3 grid grid-cols-3 gap-2">
+          <dl className="mt-3 grid grid-cols-2 gap-2">
             <div className="rounded-lg bg-surface-subtle p-3">
-              <dt className="text-xs text-ink-muted">Direct distance</dt>
-              <dd className="mt-1 text-sm font-semibold text-ink">
-                {formatDistance(travel.distanceMeters)}
-              </dd>
-            </div>
-            <div className="rounded-lg bg-surface-subtle p-3">
-              <dt className="text-xs text-ink-muted">Indicative drive</dt>
-              <dd className="mt-1 text-sm font-semibold text-ink">
-                {formatMinutes(travel.driveMinutes)}
-              </dd>
-            </div>
-            <div className="rounded-lg bg-surface-subtle p-3">
-              <dt className="text-xs text-ink-muted">
-                Indicative transit at 8am
-              </dt>
-              <dd className="mt-1 text-sm font-semibold text-ink">
+              <dt className="text-xs text-ink-muted">Public transport</dt>
+              <dd className="mt-1 text-2xl font-semibold text-ink">
                 {formatMinutes(travel.transitMinutes)}
               </dd>
             </div>
+            <div className="rounded-lg bg-surface-subtle p-3">
+              <dt className="text-xs text-ink-muted">Driving</dt>
+              <dd className="mt-1 text-2xl font-semibold text-ink">
+                {formatMinutes(travel.driveMinutes)}
+              </dd>
+            </div>
           </dl>
-          <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-faint">
-            <li>Driving assumes free-flow traffic.</li>
-            <li>Both times are rounded to the nearest 5 minutes.</li>
-            <li>
-              Public transport uses the usual weekday timetable at 8:00 am
-              Melbourne time.
-            </li>
-            <li>Actual trips vary.</li>
-          </ul>
+          <p className="mt-3 text-sm text-ink-soft">
+            Weekday 8 am timetable and free-flow traffic.{" "}
+            {formatDistance(travel.distanceMeters)} in a straight line to Town
+            Hall.
+          </p>
+          {travel.warning ? (
+            <p className="mt-1 text-xs leading-5 text-ink-muted">
+              {travel.warning}
+            </p>
+          ) : null}
           {travel.driveMinutes !== null || travel.transitMinutes !== null ? (
-            <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs font-normal text-ink-muted">
+            <p className="mt-2 text-xs leading-5 text-ink-muted">
+              Data:{" "}
               {travel.driveMinutes !== null ? (
-                <li>
-                  Driving: Powered by{" "}
+                <>
                   <a
                     href="https://www.geoapify.com/"
                     target="_blank"
@@ -152,8 +145,8 @@ export function CbdTravelCard({
                     className="underline hover:text-ink-soft"
                   >
                     Geoapify
-                  </a>{" "}
-                  and{" "}
+                  </a>
+                  ,{" "}
                   <a
                     href="https://www.openstreetmap.org/copyright"
                     target="_blank"
@@ -162,19 +155,21 @@ export function CbdTravelCard({
                   >
                     &copy; OpenStreetMap contributors
                   </a>
-                  .
-                </li>
+                  {travel.transitMinutes !== null ? ", " : "."}
+                </>
               ) : null}
-              {travel.transitMinutes !== null ? (
-                <li>Public transport: Google Maps.</li>
-              ) : null}
-            </ul>
-          ) : null}
-          {travel.warning ? (
-            <p className="mt-2 text-xs leading-5 text-ink-muted">
-              {travel.warning}
+              {travel.transitMinutes !== null ? "Google Maps." : null}
             </p>
           ) : null}
+          <MethodNotes>
+            <li>
+              Public transport uses the usual weekday timetable at 8:00 am
+              Melbourne time.
+            </li>
+            <li>Driving assumes free-flow traffic.</li>
+            <li>Both times are rounded to the nearest 5 minutes.</li>
+            <li>Actual trips vary.</li>
+          </MethodNotes>
         </>
       ) : null}
     </div>

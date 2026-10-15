@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
-import { MobilityProfile } from "./MobilityProfile";
+import { formatEvidenceDate } from "@/app/lib/utils";
 
 export function LocationEvidenceNotes() {
   const { fetchedAt, resultFromCache } = useExplore();
@@ -11,9 +11,7 @@ export function LocationEvidenceNotes() {
       {fetchedAt ? (
         <li>
           {resultFromCache ? "Saved evidence" : "Evidence collected"}:{" "}
-          {new Date(fetchedAt).toLocaleDateString("en-AU", {
-            timeZone: "UTC",
-          })}
+          {formatEvidenceDate(fetchedAt)}
         </li>
       ) : null}
       <li>A convenience indicator, not a rating of rental quality.</li>
@@ -22,7 +20,7 @@ export function LocationEvidenceNotes() {
   );
 }
 
-function SaveLocationControl({ compact = false }: { compact?: boolean }) {
+function SaveLocationControl() {
   const {
     location,
     locationId,
@@ -37,17 +35,12 @@ function SaveLocationControl({ compact = false }: { compact?: boolean }) {
   if (!location || !locationId) return null;
 
   const favourite = saved.find((item) => item.id === locationId);
+  const className =
+    "inline-flex min-h-10 items-center justify-center rounded-lg border border-line px-3 text-sm transition hover:bg-hover disabled:opacity-50";
 
   if (!canSave) {
     return (
-      <Link
-        className={
-          compact
-            ? "inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-line bg-surface-subtle px-2 text-xs text-accent-ink hover:bg-hover"
-            : "text-sm text-accent-ink underline"
-        }
-        href="/login"
-      >
+      <Link className={className + " text-accent-ink"} href="/login">
         Sign in to save
       </Link>
     );
@@ -57,7 +50,7 @@ function SaveLocationControl({ compact = false }: { compact?: boolean }) {
     <button
       type="button"
       disabled={busy}
-      className={`${compact ? "min-h-10 w-full bg-surface-subtle px-2 py-1.5 text-xs" : "min-h-12 px-3 py-2 text-sm"} rounded-lg border border-line text-ink-soft transition hover:bg-hover disabled:opacity-50`}
+      className={className + " text-ink-soft"}
       onClick={() =>
         void toggleSaved(
           favourite ?? {
@@ -70,63 +63,62 @@ function SaveLocationControl({ compact = false }: { compact?: boolean }) {
         )
       }
     >
-      {favourite
-        ? compact
-          ? "★ Saved"
-          : "★ Saved · remove"
-        : compact
-          ? "☆ Save"
-          : "☆ Save location"}
+      {favourite ? "★ Saved · remove" : "☆ Save location"}
     </button>
   );
 }
 
-export function LocationActions() {
-  const { location, savedError } = useExplore();
+function SavedError() {
+  const { savedError } = useExplore();
 
-  if (!location) return null;
-
-  return (
-    <div className="flex h-full w-28 flex-col justify-between gap-2">
-      <MobilityProfile />
-      <SaveLocationControl compact />
-      {savedError ? (
-        <p role="alert" className="text-sm text-danger-ink">
-          {savedError}
-        </p>
-      ) : null}
-    </div>
-  );
+  return savedError ? (
+    <p role="alert" className="text-sm text-danger-ink">
+      {savedError}
+    </p>
+  ) : null;
 }
 
-export function LocationScore() {
-  const { location, overallScore } = useExplore();
-
-  if (!location || overallScore === null) return null;
-
-  return (
-    <div
-      role="img"
-      aria-label={`Overall score ${overallScore} out of 100`}
-      className="flex h-full min-h-20 w-28 flex-col items-center justify-center rounded-lg border border-accent bg-accent-soft px-3 py-2 text-accent-ink"
-    >
-      <p className="whitespace-nowrap leading-none">
-        <span className="text-3xl font-bold">{overallScore}</span>
-        <span className="ml-1 text-xs font-semibold">/100</span>
-      </p>
-      <p className="mt-1.5 text-xs font-medium">Overall score</p>
-    </div>
-  );
-}
-
+// Without a title this is the overview header: the address, the overall
+// score and the save action together, so every result says what it is about.
+// With a title it heads a sub-page and keeps the address as context.
 export function LocationHeader({ title }: { title?: string }) {
-  const { location, locationId, profile, scoringParams, savedError } =
+  const { location, locationId, profile, scoringParams, overallScore } =
     useExplore();
 
   if (!location) return null;
 
   if (!title) {
-    return <h1 className="sr-only">{location.formattedAddress}</h1>;
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
+            Location result
+          </p>
+          <h1 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">
+            {location.formattedAddress}
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <SaveLocationControl />
+          {overallScore !== null ? (
+            <div
+              role="img"
+              aria-label={`Overall score ${overallScore} out of 100`}
+              className="flex min-h-16 flex-col items-center justify-center rounded-lg border border-accent bg-accent-soft px-4 py-2 text-accent-ink"
+            >
+              <p className="whitespace-nowrap leading-none">
+                <span className="text-3xl font-bold">{overallScore}</span>
+                <span className="ml-1 text-xs font-semibold">/100</span>
+              </p>
+              <p className="mt-1 text-xs font-medium">Overall score</p>
+            </div>
+          ) : null}
+        </div>
+        <div className="w-full empty:hidden">
+          <SavedError />
+        </div>
+      </div>
+    );
   }
 
   const profileLabel = profile === "carOwner" ? "Car owner" : "No car";
@@ -139,9 +131,14 @@ export function LocationHeader({ title }: { title?: string }) {
       >
         ← Back to overview
       </Link>
-      <h1 className="break-words text-2xl font-bold tracking-tight text-ink">
-        {title}
-      </h1>
+      <div>
+        <h1 className="break-words text-2xl font-bold tracking-tight text-ink">
+          {title}
+        </h1>
+        <p className="mt-1 break-words text-sm text-ink-muted">
+          {location.formattedAddress}
+        </p>
+      </div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="rounded-md bg-surface-raised px-3 py-2 text-xs text-ink-muted">
           Profile:{" "}
@@ -149,12 +146,7 @@ export function LocationHeader({ title }: { title?: string }) {
         </p>
         <SaveLocationControl />
       </div>
-      {savedError ? (
-        <p role="alert" className="text-sm text-danger-ink">
-          {savedError}
-        </p>
-      ) : null}
-      <LocationEvidenceNotes />
+      <SavedError />
     </div>
   );
 }

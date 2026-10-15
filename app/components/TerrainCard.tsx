@@ -10,6 +10,7 @@ import type {
   TerrainSummary,
 } from "@/app/lib/types";
 import { formatRadius } from "@/app/lib/utils";
+import { MethodNotes } from "./MethodNotes";
 
 const levelText: Record<TerrainLevel, { label: string; detail: string }> = {
   flat: {
@@ -103,11 +104,8 @@ export function TerrainCard({
   }, [location]);
 
   return (
-    <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
+    <div className="h-full rounded-lg border border-line bg-surface p-5 shadow-sm">
       <h2 className="text-base font-semibold text-ink">Terrain</h2>
-      <p className="mt-1 text-xs text-ink-muted">
-        How hilly the land is around this address.
-      </p>
 
       {state === "idle" ? (
         <p className="mt-4 rounded-lg border border-line bg-surface-subtle px-3 py-2.5 text-sm leading-6 text-ink-soft">
@@ -129,15 +127,13 @@ export function TerrainCard({
 
       {state === "success" && terrain ? (
         <>
-          <p className="mt-3 text-sm text-ink">
-            <span className="font-semibold">
-              {levelText[terrain.level].label}.
-            </span>{" "}
-            <span className="text-ink-soft">
-              {levelText[terrain.level].detail}
-            </span>
+          <p className="mt-3 text-2xl font-semibold text-ink">
+            {levelText[terrain.level].label}
           </p>
-          <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <p className="mt-1 text-sm text-ink-soft">
+            {levelText[terrain.level].detail}
+          </p>
+          <dl className="mt-3 grid grid-cols-2 gap-2">
             <div className="rounded-lg bg-surface-subtle p-3">
               <dt className="text-xs text-ink-muted">Average slope</dt>
               <dd className="mt-1 text-sm font-semibold text-ink">
@@ -150,22 +146,16 @@ export function TerrainCard({
                 {terrain.steepestGradePercent}%
               </dd>
             </div>
-            <div className="rounded-lg bg-surface-subtle p-3">
-              <dt className="text-xs text-ink-muted">
-                Stretches ≥ {steepGradePercent}%
-              </dt>
-              <dd className="mt-1 text-sm font-semibold text-ink">
-                {Math.round(terrain.steepShare * 100)}%
-              </dd>
-            </div>
-            <div className="rounded-lg bg-surface-subtle p-3">
-              <dt className="text-xs text-ink-muted">Height range</dt>
-              <dd className="mt-1 text-sm font-semibold text-ink">
-                {terrain.elevationRangeMeters} m
-              </dd>
-            </div>
           </dl>
-          <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-faint">
+          <p className="mt-2 text-xs leading-5 text-ink-muted">
+            Data: Google Maps elevation.
+          </p>
+          <MethodNotes>
+            <li>
+              {Math.round(terrain.steepShare * 100)}% of stretches are{" "}
+              {steepGradePercent}% or steeper; the height range is{" "}
+              {terrain.elevationRangeMeters} m.
+            </li>
             <li>
               Sampled every 150 m along eight straight lines out to{" "}
               {formatRadius(terrain.radiusMeters)}.
@@ -174,8 +164,7 @@ export function TerrainCard({
               Lines do not follow streets, so a specific road can be steeper or
               gentler.
             </li>
-            <li>Elevation data: Google Maps.</li>
-          </ul>
+          </MethodNotes>
         </>
       ) : null}
     </div>

@@ -10,6 +10,7 @@ import {
 } from "@/app/lib/categories";
 import { isJsonRecord, readApiResult } from "@/app/lib/api";
 import type { ComparisonSide, RecentSearch } from "@/app/lib/types";
+import { formatEvidenceDate } from "@/app/lib/utils";
 import { AnalystChat } from "./AnalystChat";
 
 function isComparisonSide(value: unknown): value is ComparisonSide {
@@ -108,6 +109,20 @@ function scoreCell(score: number, otherScore: number) {
       }`}
     >
       {Math.round(score)}
+    </td>
+  );
+}
+
+// "A +6", "B +3" or "Tie": which side leads and by how much, so the reader
+// doesn't have to subtract the two columns.
+function differenceCell(scoreA: number, scoreB: number) {
+  const difference = Math.round(scoreA) - Math.round(scoreB);
+
+  return (
+    <td className="px-3 py-2.5 text-right tabular-nums text-ink-muted">
+      {difference === 0
+        ? "Tie"
+        : (difference > 0 ? "A +" : "B +") + Math.abs(difference)}
     </td>
   );
 }
@@ -288,16 +303,13 @@ export function ComparePanel({
 
       {activeResult ? (
         <>
-          <p className="mt-5 text-xs text-ink-muted sm:hidden">
-            Scroll the table sideways to see both locations.
-          </p>
           <div
             role="region"
             aria-label="Location score comparison"
             tabIndex={0}
-            className="mt-2 overflow-x-auto rounded-lg border border-line sm:mt-5"
+            className="mt-5 overflow-x-auto rounded-lg border border-line"
           >
-            <table className="w-full min-w-[620px] border-collapse text-sm">
+            <table className="w-full border-collapse text-sm">
               <caption className="sr-only">
                 Category score comparison using the{" "}
                 {profile === "carFree" ? "No car" : "Car owner"} profile and{" "}
@@ -308,12 +320,13 @@ export function ComparePanel({
                   <th className="px-3 py-3 text-left font-semibold">
                     Category
                   </th>
-                  <th className="max-w-56 px-3 py-3 text-right font-semibold">
-                    {activeResult.a.formattedAddress}
+                  <th className="px-3 py-3 text-right font-semibold">
+                    <abbr title={activeResult.a.formattedAddress}>A</abbr>
                   </th>
-                  <th className="max-w-56 px-3 py-3 text-right font-semibold">
-                    {activeResult.b.formattedAddress}
+                  <th className="px-3 py-3 text-right font-semibold">
+                    <abbr title={activeResult.b.formattedAddress}>B</abbr>
                   </th>
+                  <th className="px-3 py-3 text-right font-semibold">Lead</th>
                 </tr>
               </thead>
               <tbody>
@@ -326,6 +339,10 @@ export function ComparePanel({
                   {scoreCell(
                     activeResult.b.overallScore,
                     activeResult.a.overallScore,
+                  )}
+                  {differenceCell(
+                    activeResult.a.overallScore,
+                    activeResult.b.overallScore,
                   )}
                 </tr>
                 {activeResult.a.scores.map((scoreA) => {
@@ -347,6 +364,7 @@ export function ComparePanel({
                       </td>
                       {scoreCell(scoreA.score, scoreB.score)}
                       {scoreCell(scoreB.score, scoreA.score)}
+                      {differenceCell(scoreA.score, scoreB.score)}
                     </tr>
                   );
                 })}
@@ -355,9 +373,8 @@ export function ComparePanel({
           </div>
 
           <p className="mt-3 text-xs leading-5 text-ink-muted">
-            Evidence collected{" "}
-            {new Date(activeResult.a.fetchedAt).toLocaleDateString()} for A and{" "}
-            {new Date(activeResult.b.fetchedAt).toLocaleDateString()} for B.
+            Evidence collected {formatEvidenceDate(activeResult.a.fetchedAt)}{" "}
+            for A and {formatEvidenceDate(activeResult.b.fetchedAt)} for B.
           </p>
         </>
       ) : null}

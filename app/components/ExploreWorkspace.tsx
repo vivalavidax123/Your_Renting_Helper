@@ -2,12 +2,7 @@
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
 import { Welcome } from "./Welcome";
-import {
-  LocationActions,
-  LocationEvidenceNotes,
-  LocationHeader,
-  LocationScore,
-} from "./LocationHeader";
+import { LocationEvidenceNotes, LocationHeader } from "./LocationHeader";
 import { LocationMap } from "./LocationMap";
 import { SearchForm } from "./SearchForm";
 import { ScoreBreakdown } from "./ScoreBreakdown";
@@ -21,22 +16,14 @@ export function ExploreWorkspace() {
   return (
     <main className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
       <div className="mb-4">
-        <div className="grid items-stretch gap-3 lg:grid-cols-[1.35fr_0.85fr] lg:gap-5">
-          <div className="grid min-w-0 items-stretch gap-3 lg:grid-cols-[minmax(0,1fr)_7rem]">
-            <SearchForm
-              autocomplete={search.autocomplete}
-              searchState={search.searchState}
-              placesState={search.busy ? "loading" : search.placesState}
-              error={search.error}
-              onSearch={search.handleSearch}
-              compact
-            />
-            <LocationActions />
-          </div>
-          <div className="min-w-0">
-            <LocationScore />
-          </div>
-        </div>
+        <SearchForm
+          autocomplete={search.autocomplete}
+          searchState={search.searchState}
+          placesState={search.busy ? "loading" : search.placesState}
+          error={search.error}
+          onSearch={search.handleSearch}
+          compact
+        />
         {search.canSave ? (
           <details className="mt-2 text-xs text-ink-muted">
             <summary className="cursor-pointer">
@@ -70,7 +57,7 @@ export function ExploreWorkspace() {
       <div className="grid items-stretch gap-5 lg:grid-cols-[1.35fr_0.85fr]">
         <section className="min-w-0 rounded-xl border border-line bg-surface p-5">
           <LocationHeader />
-          <div inert={search.busy}>
+          <div inert={search.busy} className="mt-5 border-t border-line pt-5">
             <ScoreBreakdown
               categoryScores={search.categoryScores}
               locationId={search.locationId}
@@ -136,9 +123,10 @@ export function ExploreWorkspace() {
                 Explore more
               </h2>
               {[
-                { anchor: "commute", label: "Melbourne CBD commute" },
+                { anchor: "commute", label: "Commute to Melbourne CBD" },
+                { anchor: "walking", label: "Walking" },
                 { anchor: "rent", label: "Community rent" },
-                { anchor: "indicators", label: "Additional indicators" },
+                { anchor: "terrain", label: "Terrain" },
               ].map((item) => (
                 <Link
                   key={item.anchor}

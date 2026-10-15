@@ -8,13 +8,6 @@ export type Indicator = {
   detailItems?: { label: string; value: string }[];
 };
 
-export const plannedIndicators = [
-  "Population density",
-  "Schools / childcare",
-  "Safety",
-  "Planned development",
-];
-
 const majorGroceryPatterns = ["Coles", "Woolworths", "Aldi", "IGA"].map(
   (brand) => ({ brand, pattern: new RegExp(`\\b${brand}\\b`, "i") }),
 );
@@ -72,19 +65,13 @@ function nearestPlace(
   );
 }
 
-export function buildDerivedIndicators(
+function buildWalkability(
   categoryScores: CategoryScore[],
   placeGroups: PlaceGroup[],
-): Indicator[] {
+): Indicator {
   const groceries = getCategoryScore(categoryScores, "groceries");
-  const food = getCategoryScore(categoryScores, "food");
-  const health = getCategoryScore(categoryScores, "health");
-  const services = getCategoryScore(categoryScores, "services");
   const shopping = getCategoryScore(categoryScores, "shopping_centres");
   const transport = getCategoryScore(categoryScores, "transport");
-  const fuel = getCategoryScore(categoryScores, "fuel");
-
-  const allPlaces = placeGroups.flatMap((group) => group.places);
   const nearestBus = nearestPlace(
     placeGroups,
     "transport",
@@ -121,6 +108,83 @@ export function buildDerivedIndicators(
             80,
         )
       : 0;
+
+  return {
+    label: "Walkability",
+    value:
+      availableWalkDistances.length > 0
+        ? `${Math.max(1, averageWalkMinutes)} min avg`
+        : "Pending",
+    detail: "Estimated walk time to key everyday destinations",
+    detailItems: [
+      { label: nearestBusLabel, value: formatWalkTime(nearestBusDistance) },
+      {
+        label: nearestGroceryLabel,
+        value: formatWalkTime(nearestGrocery?.distanceMeters ?? null),
+      },
+      {
+        label: nearestShoppingLabel,
+        value: formatWalkTime(nearestShoppingCentre?.distanceMeters ?? null),
+      },
+    ],
+  };
+}
+
+function buildCarReliance(categoryScores: CategoryScore[]): Indicator {
+  const coreScores = [
+    "groceries",
+    "health",
+    "services",
+    "shopping_centres",
+  ].map((id) => getCategoryScore(categoryScores, id));
+  const fuel = getCategoryScore(categoryScores, "fuel");
+  const driveOutsideWalk = coreScores.filter(
+    (score) =>
+      score?.closestDistanceMeters === null ||
+      score?.closestDistanceMeters === undefined ||
+      score.closestDistanceMeters > 1200,
+  ).length;
+  const carRelianceScore = Math.max(
+    0,
+    Math.min(100, 85 - driveOutsideWalk * 16 + (fuel?.score ?? 0) * 0.15),
+  );
+
+  return {
+    label: "Car reliance",
+    value:
+      carRelianceScore >= 75
+        ? "Lower"
+        : carRelianceScore >= 55
+          ? "Moderate"
+          : "Higher",
+    detail: `${driveOutsideWalk} core categories likely need a longer walk or drive`,
+  };
+}
+
+// The two indicators the details page shows. The other three only restate
+// category scores, so they stay in the AI analyst context but not on screen.
+export function buildWalkingIndicators(
+  categoryScores: CategoryScore[],
+  placeGroups: PlaceGroup[],
+): Indicator[] {
+  return [
+    buildWalkability(categoryScores, placeGroups),
+    buildCarReliance(categoryScores),
+  ];
+}
+
+export function buildDerivedIndicators(
+  categoryScores: CategoryScore[],
+  placeGroups: PlaceGroup[],
+): Indicator[] {
+  const groceries = getCategoryScore(categoryScores, "groceries");
+  const food = getCategoryScore(categoryScores, "food");
+  const health = getCategoryScore(categoryScores, "health");
+  const services = getCategoryScore(categoryScores, "services");
+  const shopping = getCategoryScore(categoryScores, "shopping_centres");
+  const transport = getCategoryScore(categoryScores, "transport");
+
+  const allPlaces = placeGroups.flatMap((group) => group.places);
   const transportDepartures =
     placeGroups
       .find((group) => group.id === "transport")
@@ -135,37 +199,9 @@ export function buildDerivedIndicators(
     services,
     shopping,
   ]);
-  const driveOutsideWalk = [groceries, health, services, shopping].filter(
-    (score) =>
-      score?.closestDistanceMeters === null ||
-      score?.closestDistanceMeters === undefined ||
-      score.closestDistanceMeters > 1200,
-  ).length;
-  const carRelianceScore = Math.max(
-    0,
-    Math.min(100, 85 - driveOutsideWalk * 16 + (fuel?.score ?? 0) * 0.15),
-  );
 
   return [
-    {
-      label: "Walkability",
-      value:
-        availableWalkDistances.length > 0
-          ? `${Math.max(1, averageWalkMinutes)} min avg`
-          : "Pending",
-      detail: "Estimated walk time to key everyday destinations",
-      detailItems: [
-        { label: nearestBusLabel, value: formatWalkTime(nearestBusDistance) },
-        {
-          label: nearestGroceryLabel,
-          value: formatWalkTime(nearestGrocery?.distanceMeters ?? null),
-        },
-        {
-          label: nearestShoppingLabel,
-          value: formatWalkTime(nearestShoppingCentre?.distanceMeters ?? null),
-        },
-      ],
-    },
+    buildWalkability(categoryScores, placeGroups),
     {
       label: "Transit access",
       value: transport ? getScoreLabel(transport.score) : "Pending",
@@ -188,15 +224,6 @@ export function buildDerivedIndicators(
       value: getScoreLabel(convenienceScore),
       detail: "Groceries, food, health, services, and shopping coverage",
     },
-    {
-      label: "Car reliance",
-      value:
-        carRelianceScore >= 75
-          ? "Lower"
-          : carRelianceScore >= 55
-            ? "Moderate"
-            : "Higher",
-      detail: `${driveOutsideWalk} core categories likely need a longer walk or drive`,
-    },
+    buildCarReliance(categoryScores),
   ];
 }
