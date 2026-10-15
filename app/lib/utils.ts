@@ -90,3 +90,20 @@ export function normalizeStationName(value: string) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+// The page to return to after sign-in, from ?next=. Only same-site paths are
+// allowed: browsers read "//host" and "/\host" as another site (and drop tabs
+// and newlines first), so accepting those would turn ?next= into an open
+// redirect that sends a freshly signed-in user to someone else's page.
+export function safeNextPath(value: string | null) {
+  if (
+    !value ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    /[\\\u0000-\u001f]/.test(value)
+  ) {
+    return "/";
+  }
+
+  return value;
+}

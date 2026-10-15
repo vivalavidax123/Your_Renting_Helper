@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/app/lib/authClient";
+import { useLoginHref } from "@/app/hooks/useLoginHref";
 
 // Slim session line for the page header: a sign-in link when logged out,
 // the account email plus sign-out when logged in. useSession is reactive,
 // so signing out re-renders this and everything else subscribed to it.
 export function AuthStatus() {
   const { data: session, isPending } = authClient.useSession();
+  const loginHref = useLoginHref();
   const [menuOpen, setMenuOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -47,7 +49,7 @@ export function AuthStatus() {
   if (!session) {
     return (
       <Link
-        href="/login"
+        href={loginHref}
         className="text-sm font-medium text-ink-muted hover:text-accent"
       >
         Sign in

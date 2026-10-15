@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLoginHref } from "@/app/hooks/useLoginHref";
 import { ComparePanel } from "@/app/components/ComparePanel";
 import { useExplore } from "@/app/components/ExploreProvider";
 import { MobilityProfile } from "@/app/components/MobilityProfile";
@@ -18,6 +19,7 @@ export default function ComparePage() {
     sessionPending,
     locationId,
   } = useExplore();
+  const loginHref = useLoginHref();
   const returnHref = locationId
     ? `/locations/${locationId}?${scoringParams}`
     : "/";
@@ -65,7 +67,7 @@ export default function ComparePage() {
             load the correct evidence securely.
           </p>
           <Link
-            href="/login"
+            href={loginHref}
             className="mt-4 inline-block rounded-md bg-action px-4 py-2 text-sm font-semibold text-action-ink hover:bg-action-hover"
           >
             Sign in to compare

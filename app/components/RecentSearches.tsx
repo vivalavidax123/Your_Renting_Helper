@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLoginHref } from "@/app/hooks/useLoginHref";
 import type { RecentSearch } from "@/app/lib/types";
 
 // Purely presentational: the lists live in useSavedSearches and arrive as
@@ -76,6 +77,7 @@ export function RecentSearches({
   onSelect,
   onToggleSaved,
 }: RecentSearchesProps) {
+  const loginHref = useLoginHref();
   // Saved locations already appear in their own row; repeating them under
   // "Recent" would show the same chip twice, so recent keeps unsaved only.
   const unsavedRecent = recent.filter((search) => search.savedAt === null);
@@ -85,7 +87,10 @@ export function RecentSearches({
   if (!canSave) {
     return (
       <p className="mt-4 text-sm text-ink-muted">
-        <Link href="/login" className="font-medium text-accent hover:underline">
+        <Link
+          href={loginHref}
+          className="font-medium text-accent hover:underline"
+        >
           Sign in
         </Link>{" "}
         to save locations, keep your recent searches, and compare rentals side

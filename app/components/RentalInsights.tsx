@@ -6,6 +6,7 @@ import {
   rentalPropertyOptions as propertyOptions,
   useRentalInsights,
 } from "@/app/hooks/useRentalInsights";
+import { useLoginHref } from "@/app/hooks/useLoginHref";
 import type { GeocodeLocation, RentalPropertyType } from "@/app/lib/types";
 import { formatRadius } from "@/app/lib/utils";
 
@@ -16,6 +17,7 @@ export function RentalInsights({
   location: GeocodeLocation | null;
   canContribute: boolean;
 }) {
+  const loginHref = useLoginHref();
   const {
     state,
     estimate,
@@ -209,7 +211,7 @@ export function RentalInsights({
           ) : (
             <p className="text-sm leading-6 text-ink-soft">
               <Link
-                href="/login"
+                href={loginHref}
                 className="font-semibold text-accent hover:text-accent-hover"
               >
                 Sign in

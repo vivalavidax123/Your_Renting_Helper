@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
 import { formatEvidenceDate } from "@/app/lib/utils";
+import { useLoginHref } from "@/app/hooks/useLoginHref";
 
 export function LocationEvidenceNotes() {
   const { fetchedAt, resultFromCache } = useExplore();
@@ -31,6 +32,7 @@ function SaveLocationControl() {
     saved,
     toggleSaved,
   } = useExplore();
+  const loginHref = useLoginHref();
 
   if (!location || !locationId) return null;
 
@@ -40,7 +42,7 @@ function SaveLocationControl() {
 
   if (!canSave) {
     return (
-      <Link className={className + " text-accent-ink"} href="/login">
+      <Link className={className + " text-accent-ink"} href={loginHref}>
         Sign in to save
       </Link>
     );

@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-10-15.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 112 tests across 21 test files                             |
+| Automated tests      | 114 tests across 21 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -139,7 +139,7 @@ app/
     rent-estimates/       Community rent estimates and contributions
     terrain/              Hilliness summary from Google Elevation samples
   components/            Dashboard, map, auth, theme, scores, and result views
-  hooks/                 Autocomplete, search, saved-search, and rental controllers
+  hooks/                 Autocomplete, search, saved-search, rental, and sign-in-link controllers
   lib/
     maps/                 Browser-only Google Maps integration
     services/             Google, Transitland, and persistence services
@@ -430,6 +430,8 @@ Better Auth uses the Prisma adapter and the same PostgreSQL database as the appl
 - BETTER_AUTH_SECRET must remain stable within an environment.
 - Environments sharing one database must share the same secret or encrypted OAuth material becomes unreadable.
 - Email sign-in uses a full-page redirect after success so the session is reloaded rather than reused from stale client state.
+- Sign-in links carry the current page as `/login?next=...` (`useLoginHref`). After email or Google sign-in the user returns there. `safeNextPath` accepts only same-site paths (no `//host`, backslashes, or control characters) so `next` cannot become an open redirect; anything else falls back to `/`. New email sign-ups still land on the verification page, not on `next`.
+- The login page shows the product name above the card, Google first, visible field labels, and the eight-character password hint only when signing up.
 - Favourites return 401 when signed out.
 - History is session-aware and returns an empty list when signed out.
 
@@ -550,10 +552,10 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 112-test suite across 21 files covers:
+The current 114-test suite across 21 files covers:
 
 - scoring behaviour and invariants;
-- formatting, coordinate parsing, distance, and time utilities;
+- formatting, coordinate parsing, distance, and time utilities, plus the same-site check for sign-in return paths;
 - API-envelope validation;
 - derived indicators;
 - favourites and rent-estimate route behavior;
