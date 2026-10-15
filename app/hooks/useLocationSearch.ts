@@ -141,7 +141,6 @@ export function useLocationSearch(
         address: location.formattedAddress,
         placeId: location.placeId,
         locationType: location.locationType,
-        profile,
       });
       const response = await fetch("/api/places?" + params, {
         signal: controller.signal,
@@ -196,21 +195,27 @@ export function useLocationSearch(
   }, []);
 
   const scored = scorePlaceGroups(result?.groups ?? [], profile, preset);
+  const busy = state === "loading" || navigating;
   return {
     autocomplete,
     result,
     searchState: state,
-    busy: state === "loading" || navigating,
+    busy,
     stage,
     location: result?.location ?? null,
     error,
-    placesState: (result ? "success" : state) as RequestState,
+    // What the places panels should show: loading also covers the route
+    // change after a search, so nothing flashes stale data in between.
+    placesState: (busy
+      ? "loading"
+      : result
+        ? "success"
+        : state) as RequestState,
     placeGroups: result?.groups ?? [],
     categoryScores: scored.scores,
     overallScore: result ? scored.overallScore : null,
     locationId: result?.locationId ?? null,
     fetchedAt: result?.fetchedAt ?? null,
-    placesError: error,
     resultFromCache: result?.cached ?? false,
     handleSearch: (query = autocomplete.query) => runSearch(query),
     searchFromHistory: (search: RecentSearch) =>

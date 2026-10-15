@@ -32,7 +32,7 @@ const findSnapshot = vi.mocked(findFreshSnapshot);
 const persistSnapshot = vi.mocked(saveSnapshot);
 
 const request = () =>
-  new Request("http://test/api/places?lat=-37.81&lng=144.96&profile=carFree");
+  new Request("http://test/api/places?lat=-37.81&lng=144.96");
 
 beforeEach(() => {
   vi.clearAllMocks();

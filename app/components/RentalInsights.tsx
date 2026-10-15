@@ -14,7 +14,7 @@ export function RentalInsights({
   location,
   canContribute,
 }: {
-  location: GeocodeLocation | null;
+  location: GeocodeLocation;
   canContribute: boolean;
 }) {
   const loginHref = useLoginHref();
@@ -47,12 +47,6 @@ export function RentalInsights({
       <p className="mt-1 text-xs leading-5 text-ink-muted">
         Rents reported by users, not an official valuation.
       </p>
-
-      {state === "idle" ? (
-        <p className="mt-4 rounded-lg border border-line bg-surface-subtle px-3 py-2.5 text-sm leading-6 text-ink-soft">
-          Search for a location to see community rental evidence.
-        </p>
-      ) : null}
 
       {state === "loading" ? (
         <p className="mt-4 text-sm font-medium text-ink-soft">
@@ -101,139 +95,135 @@ export function RentalInsights({
         </div>
       ) : null}
 
-      {location ? (
-        <div className="mt-4 border-t border-line pt-4">
-          {ownReport ? (
-            <p className="mb-3 rounded-lg border border-accent-line bg-accent-soft px-3 py-2.5 text-sm leading-6 text-accent-ink">
-              Your report: ${ownReport.weeklyRent.toLocaleString()}/wk ·{" "}
-              {ownReport.bedrooms === 0
-                ? "studio"
-                : `${ownReport.bedrooms}-bedroom`}{" "}
-              {propertyOptions
-                .find((option) => option.value === ownReport.propertyType)
-                ?.label.toLowerCase()}
-            </p>
-          ) : null}
-          {canContribute ? (
-            <>
-              <button
-                type="button"
-                onClick={toggleForm}
-                aria-expanded={isFormOpen}
-                className="text-sm font-semibold text-accent hover:text-accent-hover"
-              >
-                {isFormOpen
-                  ? "Close rent form"
-                  : ownReport
-                    ? "Update your known weekly rent"
-                    : "Add a known weekly rent"}
-              </button>
+      <div className="mt-4 border-t border-line pt-4">
+        {ownReport ? (
+          <p className="mb-3 rounded-lg border border-accent-line bg-accent-soft px-3 py-2.5 text-sm leading-6 text-accent-ink">
+            Your report: ${ownReport.weeklyRent.toLocaleString()}/wk ·{" "}
+            {ownReport.bedrooms === 0
+              ? "studio"
+              : `${ownReport.bedrooms}-bedroom`}{" "}
+            {propertyOptions
+              .find((option) => option.value === ownReport.propertyType)
+              ?.label.toLowerCase()}
+          </p>
+        ) : null}
+        {canContribute ? (
+          <>
+            <button
+              type="button"
+              onClick={toggleForm}
+              aria-expanded={isFormOpen}
+              className="text-sm font-semibold text-accent hover:text-accent-hover"
+            >
+              {isFormOpen
+                ? "Close rent form"
+                : ownReport
+                  ? "Update your known weekly rent"
+                  : "Add a known weekly rent"}
+            </button>
 
-              {isFormOpen ? (
-                <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+            {isFormOpen ? (
+              <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+                <div>
+                  <label
+                    htmlFor="weekly-rent"
+                    className="text-xs font-medium text-ink-soft"
+                  >
+                    Weekly rent (AUD)
+                  </label>
+                  <input
+                    id="weekly-rent"
+                    type="number"
+                    min="50"
+                    max="5000"
+                    step="1"
+                    required
+                    value={weeklyRent}
+                    onChange={(event) => setWeeklyRent(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label
-                      htmlFor="weekly-rent"
+                      htmlFor="property-type"
                       className="text-xs font-medium text-ink-soft"
                     >
-                      Weekly rent (AUD)
+                      Property type
                     </label>
-                    <input
-                      id="weekly-rent"
-                      type="number"
-                      min="50"
-                      max="5000"
-                      step="1"
-                      required
-                      value={weeklyRent}
-                      onChange={(event) => setWeeklyRent(event.target.value)}
+                    <select
+                      id="property-type"
+                      value={propertyType}
+                      onChange={(event) =>
+                        setPropertyType(
+                          event.target.value as RentalPropertyType,
+                        )
+                      }
                       className="mt-1 w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-                    />
+                    >
+                      {propertyOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label
-                        htmlFor="property-type"
-                        className="text-xs font-medium text-ink-soft"
-                      >
-                        Property type
-                      </label>
-                      <select
-                        id="property-type"
-                        value={propertyType}
-                        onChange={(event) =>
-                          setPropertyType(
-                            event.target.value as RentalPropertyType,
-                          )
-                        }
-                        className="mt-1 w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-                      >
-                        {propertyOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="bedrooms"
-                        className="text-xs font-medium text-ink-soft"
-                      >
-                        Bedrooms
-                      </label>
-                      <select
-                        id="bedrooms"
-                        value={bedrooms}
-                        onChange={(event) => setBedrooms(event.target.value)}
-                        className="mt-1 w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-                      >
-                        <option value="0">Studio</option>
-                        {[1, 2, 3, 4, 5, 6].map((count) => (
-                          <option key={count} value={count}>
-                            {count}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div>
+                    <label
+                      htmlFor="bedrooms"
+                      className="text-xs font-medium text-ink-soft"
+                    >
+                      Bedrooms
+                    </label>
+                    <select
+                      id="bedrooms"
+                      value={bedrooms}
+                      onChange={(event) => setBedrooms(event.target.value)}
+                      className="mt-1 w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+                    >
+                      <option value="0">Studio</option>
+                      {[1, 2, 3, 4, 5, 6].map((count) => (
+                        <option key={count} value={count}>
+                          {count}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={submissionState === "loading"}
-                    className="w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-action-ink hover:bg-action-hover disabled:bg-action-disabled"
-                  >
-                    {submissionState === "loading"
-                      ? "Saving…"
-                      : "Submit report"}
-                  </button>
-                </form>
-              ) : null}
-            </>
-          ) : (
-            <p className="text-sm leading-6 text-ink-soft">
-              <Link
-                href={loginHref}
-                className="font-semibold text-accent hover:text-accent-hover"
-              >
-                Sign in
-              </Link>{" "}
-              to add a rent you know.
-            </p>
-          )}
-
-          {message && submissionState !== "idle" ? (
-            <p
-              className={`mt-3 rounded-md px-3 py-2 text-xs leading-5 ${
-                submissionState === "success"
-                  ? "border border-accent-line bg-accent-soft text-accent-ink"
-                  : "border border-danger-line bg-danger-soft text-danger-ink"
-              }`}
+                </div>
+                <button
+                  type="submit"
+                  disabled={submissionState === "loading"}
+                  className="w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-action-ink hover:bg-action-hover disabled:bg-action-disabled"
+                >
+                  {submissionState === "loading" ? "Saving…" : "Submit report"}
+                </button>
+              </form>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-sm leading-6 text-ink-soft">
+            <Link
+              href={loginHref}
+              className="font-semibold text-accent hover:text-accent-hover"
             >
-              {message}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+              Sign in
+            </Link>{" "}
+            to add a rent you know.
+          </p>
+        )}
+
+        {message && submissionState !== "idle" ? (
+          <p
+            className={`mt-3 rounded-md px-3 py-2 text-xs leading-5 ${
+              submissionState === "success"
+                ? "border border-accent-line bg-accent-soft text-accent-ink"
+                : "border border-danger-line bg-danger-soft text-danger-ink"
+            }`}
+          >
+            {message}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

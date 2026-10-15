@@ -58,10 +58,7 @@ function ExploreSession({
     ? requestedPreset
     : "balanced";
   const search = useLocationSearch(profile, preset);
-  const saved = useSavedSearches(
-    search.busy ? "loading" : search.placesState,
-    userId,
-  );
+  const saved = useSavedSearches(search.placesState, userId);
   const { cancelSearch, finishWelcomeNavigation } = search;
   useEffect(() => {
     if (pathname === "/") {

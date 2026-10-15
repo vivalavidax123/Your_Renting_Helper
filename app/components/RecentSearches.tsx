@@ -1,17 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { useLoginHref } from "@/app/hooks/useLoginHref";
 import type { RecentSearch } from "@/app/lib/types";
 
 // Purely presentational: the lists live in useSavedSearches and arrive as
 // props, so this component and the comparison panel can never disagree.
+// Callers render it only for signed-in visitors, because saving and history
+// both need an account.
 type RecentSearchesProps = {
   recent: RecentSearch[];
   saved: RecentSearch[];
   disabled: boolean;
-  // Saving needs an account; when false the star buttons are not rendered.
-  canSave: boolean;
   onSelect: (search: RecentSearch) => void;
   onToggleSaved: (search: RecentSearch) => void;
 };
@@ -19,7 +17,6 @@ type RecentSearchesProps = {
 type SearchChipProps = {
   search: RecentSearch;
   disabled: boolean;
-  canSave: boolean;
   onSelect: (search: RecentSearch) => void;
   onToggleSaved: (search: RecentSearch) => void;
 };
@@ -29,7 +26,6 @@ type SearchChipProps = {
 function SearchChip({
   search,
   disabled,
-  canSave,
   onSelect,
   onToggleSaved,
 }: SearchChipProps) {
@@ -41,7 +37,7 @@ function SearchChip({
         type="button"
         onClick={() => onSelect(search)}
         disabled={disabled}
-        className={`flex items-center gap-2 rounded-l-full py-1.5 pl-3 hover:bg-accent-soft disabled:opacity-50 ${canSave ? "pr-1" : "rounded-r-full pr-3"}`}
+        className="flex items-center gap-2 rounded-l-full py-1.5 pl-3 pr-1 hover:bg-accent-soft disabled:opacity-50"
       >
         <span className="max-w-52 truncate">{search.formattedAddress}</span>
         {search.overallScore !== null ? (
@@ -50,21 +46,19 @@ function SearchChip({
           </span>
         ) : null}
       </button>
-      {canSave && (
-        <button
-          type="button"
-          onClick={() => onToggleSaved(search)}
-          disabled={disabled}
-          aria-label={
-            isSaved ? "Remove from saved locations" : "Save this location"
-          }
-          className="rounded-r-full py-1.5 pl-1 pr-2.5 text-sm leading-none hover:bg-warning-soft disabled:opacity-50"
-        >
-          <span className={isSaved ? "text-amber-500" : "text-ink-faint"}>
-            {isSaved ? "★" : "☆"}
-          </span>
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => onToggleSaved(search)}
+        disabled={disabled}
+        aria-label={
+          isSaved ? "Remove from saved locations" : "Save this location"
+        }
+        className="rounded-r-full py-1.5 pl-1 pr-2.5 text-sm leading-none hover:bg-warning-soft disabled:opacity-50"
+      >
+        <span className={isSaved ? "text-amber-500" : "text-ink-faint"}>
+          {isSaved ? "★" : "☆"}
+        </span>
+      </button>
     </div>
   );
 }
@@ -73,31 +67,12 @@ export function RecentSearches({
   recent,
   saved,
   disabled,
-  canSave,
   onSelect,
   onToggleSaved,
 }: RecentSearchesProps) {
-  const loginHref = useLoginHref();
   // Saved locations already appear in their own row; repeating them under
   // "Recent" would show the same chip twice, so recent keeps unsaved only.
   const unsavedRecent = recent.filter((search) => search.savedAt === null);
-
-  // Signed-out visitors see, in the exact spot their chips will occupy,
-  // what an account buys them. Frontend-only: the APIs already gate.
-  if (!canSave) {
-    return (
-      <p className="mt-4 text-sm text-ink-muted">
-        <Link
-          href={loginHref}
-          className="font-medium text-accent hover:underline"
-        >
-          Sign in
-        </Link>{" "}
-        to save locations, keep your recent searches, and compare rentals side
-        by side.
-      </p>
-    );
-  }
 
   if (unsavedRecent.length === 0 && saved.length === 0) {
     return null;
@@ -116,7 +91,6 @@ export function RecentSearches({
                 <SearchChip
                   search={search}
                   disabled={disabled}
-                  canSave={canSave}
                   onSelect={onSelect}
                   onToggleSaved={onToggleSaved}
                 />
@@ -137,7 +111,6 @@ export function RecentSearches({
                 <SearchChip
                   search={search}
                   disabled={disabled}
-                  canSave={canSave}
                   onSelect={onSelect}
                   onToggleSaved={onToggleSaved}
                 />

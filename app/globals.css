@@ -93,17 +93,10 @@
   --color-danger-ink: var(--danger-ink);
   --color-warning-soft: var(--warning-soft);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 html {
   background: var(--page);
-}
-
-body {
-  background: var(--page);
-  color: var(--ink);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 .map-info-window {

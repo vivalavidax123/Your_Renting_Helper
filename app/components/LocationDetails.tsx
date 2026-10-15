@@ -10,6 +10,9 @@ import { TerrainCard } from "./TerrainCard";
 export function LocationDetails() {
   const { location, canSave, locationId, categoryScores, placeGroups } =
     useExplore();
+  // Rendered only inside LocationLoader, so the location is always present;
+  // the guard narrows the type for the cards below.
+  if (!location) return null;
   return (
     <main className="mx-auto w-full max-w-7xl space-y-5 px-4 pb-8 sm:px-6 lg:px-8">
       <section className="rounded-xl border border-line bg-surface p-5">

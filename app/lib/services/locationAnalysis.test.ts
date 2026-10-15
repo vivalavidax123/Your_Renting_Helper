@@ -2,17 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("./searchStore", () => ({
-  getLocationAnalysisSource: vi.fn(),
+  getStoredLocation: vi.fn(),
 }));
 
 import {
   assembleLocationAnalysisContext,
   buildLocationAnalysisContext,
 } from "./locationAnalysis";
-import { getLocationAnalysisSource } from "./searchStore";
+import { getStoredLocation } from "./searchStore";
 import type { PlaceGroup } from "@/app/lib/types";
 
-const locationSource = vi.mocked(getLocationAnalysisSource);
+const storedLocation = vi.mocked(getStoredLocation);
 
 const groceries: PlaceGroup = {
   id: "groceries",
@@ -114,11 +114,20 @@ describe("assembleLocationAnalysisContext", () => {
 
 describe("buildLocationAnalysisContext", () => {
   it("loads the latest stored location data", async () => {
-    locationSource.mockResolvedValue({
-      id: "location-1",
-      formattedAddress: "1 Test Street, Melbourne VIC",
+    storedLocation.mockResolvedValue({
+      locationId: "location-1",
+      location: {
+        query: "1 Test Street",
+        formattedAddress: "1 Test Street, Melbourne VIC",
+        placeId: "place-1",
+        latitude: -37.81,
+        longitude: 144.96,
+        locationType: "ROOFTOP",
+        types: [],
+      },
       groups: [groceries],
       fetchedAt: "2026-08-30T00:00:00.000Z",
+      cached: true,
     });
 
     const context = await buildLocationAnalysisContext(
@@ -126,7 +135,7 @@ describe("buildLocationAnalysisContext", () => {
       "carOwner",
     );
 
-    expect(locationSource).toHaveBeenCalledWith("location-1");
+    expect(storedLocation).toHaveBeenCalledWith("location-1");
     expect(context).toMatchObject({
       locationId: "location-1",
       preferences: { mobilityProfile: "carOwner", weightPreset: "balanced" },
@@ -135,7 +144,7 @@ describe("buildLocationAnalysisContext", () => {
   });
 
   it("returns null when the location or its score snapshot is unavailable", async () => {
-    locationSource.mockResolvedValue(null);
+    storedLocation.mockResolvedValue(null);
 
     await expect(buildLocationAnalysisContext("missing")).resolves.toBeNull();
   });

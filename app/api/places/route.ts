@@ -1,4 +1,3 @@
-import type { WeightProfile } from "@/app/lib/categories";
 import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import { scorePlaceGroups } from "@/app/lib/scoring";
@@ -13,15 +12,10 @@ import { parseCoordinate } from "@/app/lib/utils";
 
 const maxLabelLength = 300;
 
-function parseProfile(value: string | null): WeightProfile {
-  return value === "carOwner" ? "carOwner" : "carFree";
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const latitude = parseCoordinate(searchParams.get("lat"));
   const longitude = parseCoordinate(searchParams.get("lng"));
-  const profile = parseProfile(searchParams.get("profile"));
 
   if (latitude === null || longitude === null) {
     return Response.json(
@@ -57,19 +51,12 @@ export async function GET(request: Request) {
     const cachedResult = await findFreshSnapshot(cacheKey);
 
     if (cachedResult) {
-      const { overallScore, scores } = scorePlaceGroups(
-        cachedResult.groups,
-        profile,
-      );
-
       await recordSearch();
 
       return Response.json({
         ok: true,
         locationId: cachedResult.locationId,
         groups: cachedResult.groups,
-        scores,
-        overallScore,
         cached: true,
         fetchedAt: cachedResult.fetchedAt,
       });
@@ -80,11 +67,9 @@ export async function GET(request: Request) {
 
   try {
     const groups = await fetchPlaceGroups({ apiKey, latitude, longitude });
-    const { overallScore, scores } = scorePlaceGroups(groups, profile);
-    const canonical =
-      profile === "carFree"
-        ? { overallScore, scores }
-        : scorePlaceGroups(groups, "carFree");
+    // The browser scores the groups itself for the chosen profile and
+    // preset; the stored snapshot keeps the canonical No car / Balanced score.
+    const { overallScore, scores } = scorePlaceGroups(groups, "carFree");
     const fallbackLabel = `${latitude}, ${longitude}`;
     // These labels come straight from the caller and are stored on the shared
     // location record, so they are trimmed and capped like other user text.
@@ -104,8 +89,8 @@ export async function GET(request: Request) {
           longitude,
         },
         groups,
-        scores: canonical.scores,
-        overallScore: canonical.overallScore,
+        scores,
+        overallScore,
       });
     } catch (error) {
       console.error("Saving search result failed:", error);
@@ -117,8 +102,6 @@ export async function GET(request: Request) {
       ok: true,
       locationId,
       groups,
-      scores,
-      overallScore,
       cached: false,
       fetchedAt: new Date().toISOString(),
     });

@@ -32,7 +32,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
     [placeGroups, categoryId],
   );
   const score = categoryScores.find((score) => score.id === categoryId);
-  if (!score)
+  if (!score || !location)
     return (
       <p className="p-6">
         Category evidence is unavailable. Search this location again.
@@ -123,7 +123,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
           <button
             disabled={busy}
             className="underline disabled:opacity-50"
-            onClick={() => void handleSearch(location!.query)}
+            onClick={() => void handleSearch(location.query)}
           >
             Search this location again
           </button>

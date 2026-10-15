@@ -8,7 +8,7 @@ export type GeocodeLocation = {
   types: string[];
 };
 
-export type ApiFailure = {
+type ApiFailure = {
   ok: false;
   error: string;
   status?: string;

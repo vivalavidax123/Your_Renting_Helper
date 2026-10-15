@@ -10,7 +10,7 @@ import type { CategoryScore, PlaceGroup, RecentSearch } from "@/app/lib/types";
 // (e.g. demoing the same suburbs) off the paid Google quota for longer.
 const cacheTtlMs = 7 * 24 * 60 * 60 * 1000;
 
-export type SearchLocationInput = {
+type SearchLocationInput = {
   query: string;
   formattedAddress: string;
   placeId: string;
@@ -19,18 +19,10 @@ export type SearchLocationInput = {
   longitude: number;
 };
 
-// The cache hands back the raw place data only. Scores are cheap to
-// recompute and depend on the requested weight profile, so the API route
-// rescores on every hit instead of reusing the stored (balanced) scores.
-export type CachedSearchResult = {
+// The cache hands back the raw place data only. Scores depend on the
+// visitor's profile and preset, so the browser computes them from the groups.
+type CachedSearchResult = {
   locationId: string;
-  groups: PlaceGroup[];
-  fetchedAt: string;
-};
-
-export type LocationAnalysisSource = {
-  id: string;
-  formattedAddress: string;
   groups: PlaceGroup[];
   fetchedAt: string;
 };
@@ -253,31 +245,6 @@ export async function getComparisonSide(
     formattedAddress: location.formattedAddress,
     overallScore,
     scores,
-    fetchedAt: snapshot.createdAt.toISOString(),
-  };
-}
-
-// Supplies deterministic application data for location analysis. Scores are
-// recomputed by the analysis service because they depend on the user's current
-// mobility profile, just like the main search result.
-export async function getLocationAnalysisSource(
-  id: string,
-): Promise<LocationAnalysisSource | null> {
-  const location = await prisma.searchLocation.findUnique({
-    where: { id },
-    include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
-  });
-
-  const snapshot = location?.snapshots[0];
-
-  if (!location || !snapshot) {
-    return null;
-  }
-
-  return {
-    id: location.id,
-    formattedAddress: location.formattedAddress,
-    groups: JSON.parse(snapshot.groupsJson) as PlaceGroup[],
     fetchedAt: snapshot.createdAt.toISOString(),
   };
 }

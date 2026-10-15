@@ -10,7 +10,7 @@ import type {
   PlaceGroup,
   TransportService,
 } from "@/app/lib/types";
-import { getLocationAnalysisSource } from "./searchStore";
+import { getStoredLocation } from "./searchStore";
 
 const maxAmenitiesPerCategory = 5;
 
@@ -137,18 +137,18 @@ export async function buildLocationAnalysisContext(
   profile: WeightProfile = "carFree",
   preset: WeightPreset = "balanced",
 ) {
-  const source = await getLocationAnalysisSource(locationId);
+  const stored = await getStoredLocation(locationId);
 
-  if (!source) {
+  if (!stored) {
     return null;
   }
 
   return assembleLocationAnalysisContext({
-    locationId: source.id,
-    address: source.formattedAddress,
-    groups: source.groups,
+    locationId: stored.locationId,
+    address: stored.location.formattedAddress,
+    groups: stored.groups,
     profile,
     preset,
-    dataAsOf: source.fetchedAt,
+    dataAsOf: stored.fetchedAt,
   });
 }

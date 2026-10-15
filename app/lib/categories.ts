@@ -15,7 +15,7 @@ export type RentScoreCategory = {
   excludedPrimaryTypes?: string[];
 };
 
-export const defaultSearchRadiusMeters = 3000;
+const defaultSearchRadiusMeters = 3000;
 
 export const rentScoreCategories: RentScoreCategory[] = [
   {

@@ -106,8 +106,8 @@ export function buildRentalReportBody({
   };
 }
 
-export function useRentalInsights(location: GeocodeLocation | null) {
-  const [state, setState] = useState<RequestState>("idle");
+export function useRentalInsights(location: GeocodeLocation) {
+  const [state, setState] = useState<RequestState>("loading");
   const [estimate, setEstimate] = useState<RentalEstimate | null>(null);
   const [ownReport, setOwnReport] = useState<RentalReportSummary | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -123,9 +123,6 @@ export function useRentalInsights(location: GeocodeLocation | null) {
   const restoredInitialProfile = useRef(false);
 
   useEffect(() => {
-    if (!location) return;
-
-    const activeLocation = location;
     const controller = new AbortController();
 
     async function loadEstimate() {
@@ -134,7 +131,7 @@ export function useRentalInsights(location: GeocodeLocation | null) {
       try {
         const response = await fetch(
           buildRentalEstimateUrl({
-            location: activeLocation,
+            location,
             propertyType,
             bedrooms,
           }),
@@ -195,8 +192,6 @@ export function useRentalInsights(location: GeocodeLocation | null) {
   }
 
   async function submitReport() {
-    if (!location) return;
-
     setSubmissionState("loading");
     setMessage("");
 

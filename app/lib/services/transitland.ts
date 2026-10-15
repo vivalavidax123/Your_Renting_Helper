@@ -139,7 +139,7 @@ async function fetchTransitlandJson<T>({
   return (await response.json()) as T;
 }
 
-export async function fetchTransitlandBusDepartures({
+async function fetchTransitlandBusDepartures({
   apiKey,
   stop,
 }: {

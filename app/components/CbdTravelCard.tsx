@@ -28,20 +28,12 @@ function formatMinutes(value: number | null) {
   return hours > 0 ? `${hours} hr ${minutes} min` : `${minutes} min`;
 }
 
-export function CbdTravelCard({
-  location,
-}: {
-  location: GeocodeLocation | null;
-}) {
-  const [state, setState] = useState<RequestState>("idle");
+export function CbdTravelCard({ location }: { location: GeocodeLocation }) {
+  const [state, setState] = useState<RequestState>("loading");
   const [travel, setTravel] = useState<CbdTravel | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!location) {
-      return;
-    }
-
     const controller = new AbortController();
 
     async function loadTravel() {
@@ -50,8 +42,8 @@ export function CbdTravelCard({
 
       try {
         const query = new URLSearchParams({
-          lat: String(location?.latitude),
-          lng: String(location?.longitude),
+          lat: String(location.latitude),
+          lng: String(location.longitude),
         });
         const response = await fetch(`/api/cbd-travel?${query}`, {
           signal: controller.signal,
@@ -88,12 +80,6 @@ export function CbdTravelCard({
       <h2 className="text-base font-semibold text-ink">
         Commute to Melbourne CBD
       </h2>
-
-      {state === "idle" ? (
-        <p className="mt-4 rounded-lg border border-line bg-surface-subtle px-3 py-2.5 text-sm leading-6 text-ink-soft">
-          Search for a location to estimate its CBD commute.
-        </p>
-      ) : null}
 
       {state === "loading" ? (
         <p className="mt-4 text-sm font-medium text-ink-soft">
