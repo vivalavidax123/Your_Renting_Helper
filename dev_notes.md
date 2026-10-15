@@ -37,7 +37,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 ### Implemented
 
-- Guided welcome screen with example-suburb searches and an illustrative map preview; result panels stay hidden until a successful search.
+- Search-first welcome screen with a one-line scope note (best for Melbourne), four example-suburb searches, signed-in users' saved and recent locations shown directly, and a desktop-only static "Example result" preview built from the real category labels and colours; result panels stay hidden until a successful search.
 - Shared-header logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
 - Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header that shows the matched address, the save action, and the overall score together.
 - Signed-in users open the account email menu to access Sign out; Escape and outside clicks close the menu.
