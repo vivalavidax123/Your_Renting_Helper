@@ -39,7 +39,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 - Search-first welcome screen with a one-line scope note (best for Melbourne), four example-suburb searches, signed-in users' saved and recent locations shown directly (signed-out visitors see a one-line "Sign in to save addresses" prompt there instead), and a desktop-only static "Example result" preview built from the real category labels and colours; result panels stay hidden until a successful search.
 - Shared-header logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
-- Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header that shows the matched address, the save action, and the overall score together.
+- Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header that shows the matched address, the save action (signed-in visitors only), and the overall score together.
 - Signed-in users open the account email dropdown (a plain disclosure button, not an ARIA menu) to access Sign out; Escape and outside clicks close it.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
