@@ -43,10 +43,10 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Signed-in users open the account email menu to access Sign out; Escape and outside clicks close the menu.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
-- Clickable category score cards in fixed category order, each with a score bar in its category colour, plus dedicated evidence routes, category navigation, nearby-place lists, and focused maps. Category and supporting-evidence pages show the address under their title.
+- Clickable category score cards in fixed category order, each with a score bar in its category colour, plus dedicated evidence routes. A category page shows its score with the same bar, category navigation (one sideways-scrolling row on phones), up to ten nearby places before "Show all" (name and distance, then type and reviews; the address appears once a place is selected), and a focused map that stays in view on desktop. Category and supporting-evidence pages show only a back link, the title, and the address in their header; saving stays on the overview.
 - No-car and car-owner scoring profiles.
 - Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The mobility and preset selectors sit together above the overview's category cards and on the comparison page.
-- Location overviews own the interactive profile selector; category and supporting-evidence pages show the active profile as read-only context. Comparison retains one shared selector because both locations must use the same profile.
+- Location overviews own the interactive profile selector; category pages show the active profile as read-only context next to the category weight. Comparison retains one shared selector because both locations must use the same profile.
 - Seven-day shared result cache.
 - Interactive Google map with searched-location and amenity markers.
 - Fullscreen map control.
