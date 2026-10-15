@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { NearbyPlace, PlaceGroup } from "@/app/lib/types";
 import {
-  formatGroupScope,
+  formatSearchScope,
   formatDistance,
   formatReviewSummary,
   formatPlaceType,
@@ -123,7 +123,7 @@ function CategorySection({
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-sm font-semibold text-ink">Nearby places</h3>
         <span className="text-xs text-ink-faint">
-          {formatGroupScope(group)}
+          {formatSearchScope(group)}
         </span>
       </div>
       {group.places.length > 0 ? (

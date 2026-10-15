@@ -87,7 +87,9 @@ function getExplanation(count: number, closestDistanceMeters: number | null) {
   return `${count} nearby match${count === 1 ? "" : "es"} found; closest is ${formatDistance(closestDistanceMeters)} away.`;
 }
 
-export function scorePlaceGroups(
+// Scores every category for one location's nearby places, then combines the
+// counted categories into the overall score using the preset's weights.
+export function scoreLocation(
   groups: PlaceGroup[],
   profile: WeightProfile = "carFree",
   preset: WeightPreset = "balanced",

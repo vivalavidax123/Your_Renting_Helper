@@ -4,7 +4,7 @@ vi.mock("@/app/lib/auth", () => ({
   auth: { api: { getSession: vi.fn() } },
 }));
 vi.mock("@/app/lib/services/locationAnalysis", () => ({
-  buildLocationAnalysisContext: vi.fn(),
+  loadLocationAnalysisContext: vi.fn(),
 }));
 vi.mock("@/app/lib/services/locationAnalyst", async () => {
   const actual = await vi.importActual<
@@ -13,7 +13,7 @@ vi.mock("@/app/lib/services/locationAnalyst", async () => {
 
   return {
     ...actual,
-    analyzeLocation: vi.fn(),
+    answerLocationQuestion: vi.fn(),
     getQuestionRefusal: vi.fn().mockResolvedValue(null),
   };
 });
@@ -21,13 +21,13 @@ vi.mock("@/app/lib/services/locationAnalyst", async () => {
 import { POST } from "./route";
 import { auth } from "@/app/lib/auth";
 import {
-  analyzeLocation,
+  answerLocationQuestion,
   LocationAnalystError,
 } from "@/app/lib/services/locationAnalyst";
-import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
+import { loadLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 
-const buildContext = vi.mocked(buildLocationAnalysisContext);
-const analyze = vi.mocked(analyzeLocation);
+const buildContext = vi.mocked(loadLocationAnalysisContext);
+const analyze = vi.mocked(answerLocationQuestion);
 const getSession = vi.mocked(auth.api.getSession);
 
 type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
@@ -110,7 +110,7 @@ describe("POST /api/locations/[locationId]/chat", () => {
 
   it("builds the selected profile context and streams its answer", async () => {
     const context = { locationId: "location-1" } as Awaited<
-      ReturnType<typeof buildLocationAnalysisContext>
+      ReturnType<typeof loadLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);
     analyze.mockResolvedValue(
@@ -144,7 +144,7 @@ describe("POST /api/locations/[locationId]/chat", () => {
 
   it("returns the analyst service's useful failure status", async () => {
     const context = { locationId: "location-1" } as Awaited<
-      ReturnType<typeof buildLocationAnalysisContext>
+      ReturnType<typeof loadLocationAnalysisContext>
     >;
     buildContext.mockResolvedValue(context);
     analyze.mockRejectedValue(

@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { getDistanceMeters, scorePlaceGroups } from "./scoring";
+import { getDistanceMeters, scoreLocation } from "./scoring";
 import {
   isWeightPreset,
   parseScoringOptions,
   rentScoreCategories,
-  scoringQuery,
+  buildScoringQuery,
   weightPresets,
   type WeightPreset,
 } from "./categories";
 import type { NearbyPlace, PlaceGroup } from "./types";
 
 // The scoring pillars are private functions, so every test goes through the
-// public scorePlaceGroups API. That is deliberate: tests pinned to internals
+// public scoreLocation API. That is deliberate: tests pinned to internals
 // break on refactors; tests pinned to observable behaviour only break when
 // behaviour actually changes.
 
@@ -47,13 +47,13 @@ function groceriesScore(
   groups: PlaceGroup[],
   profile?: "carFree" | "carOwner",
 ) {
-  const { scores } = scorePlaceGroups(groups, profile);
+  const { scores } = scoreLocation(groups, profile);
   return scores.find((s) => s.id === "groceries")!.score;
 }
 
-describe("scorePlaceGroups", () => {
+describe("scoreLocation", () => {
   it("scores zero everywhere when nothing is nearby", () => {
-    const { overallScore, scores } = scorePlaceGroups([]);
+    const { overallScore, scores } = scoreLocation([]);
 
     expect(overallScore).toBe(0);
     for (const category of scores) {
@@ -124,8 +124,8 @@ describe("scorePlaceGroups", () => {
       },
     ];
 
-    const carFree = scorePlaceGroups(fuelGroup, "carFree");
-    const carOwner = scorePlaceGroups(fuelGroup, "carOwner");
+    const carFree = scoreLocation(fuelGroup, "carFree");
+    const carOwner = scoreLocation(fuelGroup, "carOwner");
 
     expect(carFree.scores.find((s) => s.id === "fuel")!.weight).toBe(0);
     expect(carOwner.scores.find((s) => s.id === "fuel")!.weight).toBe(0);
@@ -146,8 +146,8 @@ describe("scorePlaceGroups", () => {
           }),
         ],
       }));
-      const carFree = scorePlaceGroups(groups, "carFree");
-      const carOwner = scorePlaceGroups(groups, "carOwner");
+      const carFree = scoreLocation(groups, "carFree");
+      const carOwner = scoreLocation(groups, "carOwner");
 
       expect(carOwner.overallScore).toBeGreaterThanOrEqual(
         carFree.overallScore,
@@ -200,8 +200,8 @@ describe("scorePlaceGroups", () => {
       group("services", 1, 2500, 3.6),
       group("fuel", 2, 2400, 3.0),
     ];
-    const carFree = scorePlaceGroups(groups, "carFree");
-    const carOwner = scorePlaceGroups(groups, "carOwner");
+    const carFree = scoreLocation(groups, "carFree");
+    const carOwner = scoreLocation(groups, "carOwner");
 
     expect(carOwner.overallScore).toBeGreaterThan(carFree.overallScore);
   });
@@ -209,9 +209,7 @@ describe("scorePlaceGroups", () => {
   it("computes the overall score as the weight-blended category average", () => {
     // Invariant test: recompute the aggregation from the returned parts and
     // require them to agree, so the formula can never silently drift.
-    const { overallScore, scores } = scorePlaceGroups(
-      groceriesAt(300, 900, 1600),
-    );
+    const { overallScore, scores } = scoreLocation(groceriesAt(300, 900, 1600));
 
     const totalWeight = scores.reduce((sum, s) => sum + s.weight, 0);
     const expected = Math.round(
@@ -259,16 +257,16 @@ describe("weight presets", () => {
   });
 
   it("keeps the original scores when no preset is given", () => {
-    expect(scorePlaceGroups(mixedGroups, "carFree")).toEqual(
-      scorePlaceGroups(mixedGroups, "carFree", "balanced"),
+    expect(scoreLocation(mixedGroups, "carFree")).toEqual(
+      scoreLocation(mixedGroups, "carFree", "balanced"),
     );
   });
 
   it("changes only the overall score, never a category's own score", () => {
-    const balanced = scorePlaceGroups(mixedGroups, "carFree", "balanced");
+    const balanced = scoreLocation(mixedGroups, "carFree", "balanced");
 
     for (const preset of presets) {
-      const result = scorePlaceGroups(mixedGroups, "carFree", preset);
+      const result = scoreLocation(mixedGroups, "carFree", preset);
 
       expect(result.scores.map((s) => s.score)).toEqual(
         balanced.scores.map((s) => s.score),
@@ -278,9 +276,9 @@ describe("weight presets", () => {
     // Close transport and far health: commuters should like this place more
     // than families do.
     expect(
-      scorePlaceGroups(mixedGroups, "carFree", "commuter").overallScore,
+      scoreLocation(mixedGroups, "carFree", "commuter").overallScore,
     ).toBeGreaterThan(
-      scorePlaceGroups(mixedGroups, "carFree", "family").overallScore,
+      scoreLocation(mixedGroups, "carFree", "family").overallScore,
     );
   });
 
@@ -309,8 +307,8 @@ describe("weight presets", () => {
   });
 
   it("leaves the default preset out of shared links", () => {
-    expect(scoringQuery("carFree", "balanced")).toBe("profile=carFree");
-    expect(scoringQuery("carOwner", "family")).toBe(
+    expect(buildScoringQuery("carFree", "balanced")).toBe("profile=carFree");
+    expect(buildScoringQuery("carOwner", "family")).toBe(
       "profile=carOwner&preset=family",
     );
   });

@@ -2,12 +2,12 @@ import { parseScoringOptions } from "@/app/lib/categories";
 import { errorResponse, isJsonRecord, textResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
-  compareLocations,
+  answerComparisonQuestion,
   getQuestionRefusal,
   LocationAnalystError,
   readQuestion,
 } from "@/app/lib/services/locationAnalyst";
-import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
+import { loadLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 import { areLocationsSavedByUser } from "@/app/lib/services/searchStore";
 
 function readLocationIds(value: unknown): [string, string] | null {
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 
     const [locationA, locationB] = await Promise.all(
       locationIds.map((locationId) =>
-        buildLocationAnalysisContext(locationId, profile, preset),
+        loadLocationAnalysisContext(locationId, profile, preset),
       ),
     );
 
@@ -107,7 +107,9 @@ export async function POST(request: Request) {
       return textResponse(refusal);
     }
 
-    return textResponse(await compareLocations(locationA, locationB, question));
+    return textResponse(
+      await answerComparisonQuestion(locationA, locationB, question),
+    );
   } catch (error) {
     if (error instanceof LocationAnalystError) {
       return Response.json(

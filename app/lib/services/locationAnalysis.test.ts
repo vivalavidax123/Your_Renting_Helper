@@ -6,7 +6,7 @@ vi.mock("./searchStore", () => ({
 
 import {
   assembleLocationAnalysisContext,
-  buildLocationAnalysisContext,
+  loadLocationAnalysisContext,
 } from "./locationAnalysis";
 import { getStoredLocation } from "./searchStore";
 import type { PlaceGroup } from "@/app/lib/types";
@@ -111,7 +111,7 @@ describe("assembleLocationAnalysisContext", () => {
   });
 });
 
-describe("buildLocationAnalysisContext", () => {
+describe("loadLocationAnalysisContext", () => {
   it("loads the latest stored location data", async () => {
     storedLocation.mockResolvedValue({
       locationId: "location-1",
@@ -129,10 +129,7 @@ describe("buildLocationAnalysisContext", () => {
       cached: true,
     });
 
-    const context = await buildLocationAnalysisContext(
-      "location-1",
-      "carOwner",
-    );
+    const context = await loadLocationAnalysisContext("location-1", "carOwner");
 
     expect(storedLocation).toHaveBeenCalledWith("location-1");
     expect(context).toMatchObject({
@@ -145,6 +142,6 @@ describe("buildLocationAnalysisContext", () => {
   it("returns null when the location or its score snapshot is unavailable", async () => {
     storedLocation.mockResolvedValue(null);
 
-    await expect(buildLocationAnalysisContext("missing")).resolves.toBeNull();
+    await expect(loadLocationAnalysisContext("missing")).resolves.toBeNull();
   });
 });

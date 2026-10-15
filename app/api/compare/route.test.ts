@@ -5,19 +5,19 @@ vi.mock("@/app/lib/auth", () => ({
 }));
 vi.mock("@/app/lib/services/searchStore", () => ({
   areLocationsSavedByUser: vi.fn(),
-  getComparisonSide: vi.fn(),
+  getScoredLocation: vi.fn(),
 }));
 
 import { GET } from "./route";
 import { auth } from "@/app/lib/auth";
 import {
   areLocationsSavedByUser,
-  getComparisonSide,
+  getScoredLocation,
 } from "@/app/lib/services/searchStore";
 
 const getSession = vi.mocked(auth.api.getSession);
 const checkSaved = vi.mocked(areLocationsSavedByUser);
-const getSide = vi.mocked(getComparisonSide);
+const getSide = vi.mocked(getScoredLocation);
 
 type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
 
@@ -77,10 +77,10 @@ describe("GET /api/compare", () => {
 
   it("loads both sides with the same selected profile and preset", async () => {
     const sideA = { id: "location-1" } as Awaited<
-      ReturnType<typeof getComparisonSide>
+      ReturnType<typeof getScoredLocation>
     >;
     const sideB = { id: "location-2" } as Awaited<
-      ReturnType<typeof getComparisonSide>
+      ReturnType<typeof getScoredLocation>
     >;
     getSession.mockResolvedValue(signedInAs("user-1"));
     checkSaved.mockResolvedValue(true);

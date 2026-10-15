@@ -370,7 +370,8 @@ async function requestAnalyst(instructions: string, input: string) {
   return createAnswerStream(response.body);
 }
 
-export function analyzeLocation(
+// Streams the analyst's answer about one location.
+export function answerLocationQuestion(
   context: LocationAnalysisContext,
   question: string,
 ) {
@@ -385,7 +386,8 @@ You are comparing exactly two rental locations labelled Location A and Location 
 Refer to each location by its label or address so the renter can always tell which evidence belongs to which place. Mention a tie when a difference is negligible and state when data is unavailable rather than filling the gap.
 Give a conditional recommendation when the better choice depends on lifestyle or priorities. Do not force an overall winner when the supplied evidence does not support one.`;
 
-export function compareLocations(
+// Streams the analyst's answer comparing two locations.
+export function answerComparisonQuestion(
   locationA: LocationAnalysisContext,
   locationB: LocationAnalysisContext,
   question: string,

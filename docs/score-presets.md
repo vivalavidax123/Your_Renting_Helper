@@ -19,9 +19,9 @@ Everyone used to share one fixed set of weights (transport 28, groceries 22, hea
 ```
 URL ?profile=carFree&preset=family
   └─ ExploreProvider.tsx          reads and validates preset, provides changePreset and scoringParams
-       ├─ useLocationSearch.ts    scores in the browser with scorePlaceGroups(groups, profile, preset)
+       ├─ useLocationSearch.ts    scores in the browser with scoreLocation(groups, profile, preset)
        ├─ page links              keep the current choice through scoringParams
-       ├─ ComparePanel.tsx  ──>  GET /api/compare?preset=…        ─> searchStore.getComparisonSide
+       ├─ ComparePanel.tsx  ──>  GET /api/compare?preset=…        ─> searchStore.getScoredLocation
        └─ AnalystChat       ──>  POST …/chat { preset }           ─> locationAnalysis (the AI sees the same scores)
 ```
 
@@ -29,15 +29,15 @@ The key point: the database stores **raw place data**, and scores are recalculat
 
 ## 4. Files changed
 
-| File                                                                                                          | Role                                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `app/lib/categories.ts`                                                                                       | `WeightPreset` type, the four `weightPresets`, `isWeightPreset` / `isWeightProfile` validation, `scoringQuery` for link parameters |
-| `app/lib/scoring.ts`                                                                                          | `scorePlaceGroups` takes a third `preset` argument, defaulting to `balanced`                                                       |
-| `app/components/PresetPicker.tsx` (new)                                                                       | Four buttons, following the style and behaviour of `MobilityProfile.tsx`                                                           |
-| `ExploreProvider.tsx`, `useLocationSearch.ts`                                                                 | Read and write the URL, pass the preset to scoring                                                                                 |
-| `ScoreBreakdown.tsx`, `CategoryDetails.tsx`, `LocationHeader.tsx`, `ExploreWorkspace.tsx`, `compare/page.tsx` | Links carry the preset; place the picker                                                                                           |
-| `ComparePanel.tsx`, `/api/compare`, `searchStore.ts`                                                          | The comparison uses the same preset                                                                                                |
-| `ConversationProvider.tsx`, `AnalystChat.tsx`, `LocationAnalyst.tsx`, both chat routes, `locationAnalysis.ts` | The AI analyst uses the same preset and receives it as `preferences.weightPreset`                                                  |
+| File                                                                                                          | Role                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/lib/categories.ts`                                                                                       | `WeightPreset` type, the four `weightPresets`, `isWeightPreset` / `isWeightProfile` validation, `buildScoringQuery` for link parameters |
+| `app/lib/scoring.ts`                                                                                          | `scoreLocation` takes a third `preset` argument, defaulting to `balanced`                                                               |
+| `app/components/PresetPicker.tsx` (new)                                                                       | Four buttons, following the style and behaviour of `MobilityProfile.tsx`                                                                |
+| `ExploreProvider.tsx`, `useLocationSearch.ts`                                                                 | Read and write the URL, pass the preset to scoring                                                                                      |
+| `ScoreBreakdown.tsx`, `CategoryDetails.tsx`, `LocationHeader.tsx`, `ExploreWorkspace.tsx`, `compare/page.tsx` | Links carry the preset; place the picker                                                                                                |
+| `ComparePanel.tsx`, `/api/compare`, `searchStore.ts`                                                          | The comparison uses the same preset                                                                                                     |
+| `ConversationProvider.tsx`, `AnalystChat.tsx`, `LocationAnalyst.tsx`, both chat routes, `locationAnalysis.ts` | The AI analyst uses the same preset and receives it as `preferences.weightPreset`                                                       |
 
 ## 5. What the tests prove
 

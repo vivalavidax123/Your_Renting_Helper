@@ -6,7 +6,7 @@ import { authClient } from "@/app/lib/authClient";
 import {
   isWeightPreset,
   isWeightProfile,
-  scoringQuery,
+  buildScoringQuery,
   type WeightPreset,
   type WeightProfile,
 } from "@/app/lib/categories";
@@ -96,7 +96,7 @@ function ExploreSession({
         changeProfile,
         preset,
         changePreset,
-        scoringParams: scoringQuery(profile, preset),
+        scoringParams: buildScoringQuery(profile, preset),
         canSave: !!userId,
         sessionPending,
       }}

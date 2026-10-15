@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  scoringQuery,
+  buildScoringQuery,
   type WeightPreset,
   type WeightProfile,
 } from "@/app/lib/categories";
 import { getErrorMessage, isJsonRecord, readApiResult } from "@/app/lib/api";
 import { useAutocomplete } from "./useAutocomplete";
-import { scorePlaceGroups } from "@/app/lib/scoring";
+import { scoreLocation } from "@/app/lib/scoring";
 import type {
   GeocodeLocation,
   LocationResult,
@@ -163,8 +163,8 @@ export function useLocationSearch(
             ? "/locations/" +
                 encodeURIComponent(next.locationId) +
                 "?" +
-                scoringQuery(profile, preset)
-            : "/?" + scoringQuery(profile, preset),
+                buildScoringQuery(profile, preset)
+            : "/?" + buildScoringQuery(profile, preset),
         );
       });
     } catch (error) {
@@ -194,7 +194,7 @@ export function useLocationSearch(
     returningToWelcomeRef.current = false;
   }, []);
 
-  const scored = scorePlaceGroups(result?.groups ?? [], profile, preset);
+  const scored = scoreLocation(result?.groups ?? [], profile, preset);
   const busy = state === "loading" || navigating;
   return {
     autocomplete,

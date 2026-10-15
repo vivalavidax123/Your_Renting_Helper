@@ -3,7 +3,7 @@ import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   areLocationsSavedByUser,
-  getComparisonSide,
+  getScoredLocation,
 } from "@/app/lib/services/searchStore";
 
 export async function GET(request: Request) {
@@ -59,8 +59,8 @@ export async function GET(request: Request) {
     }
 
     const [a, b] = await Promise.all([
-      getComparisonSide(aId, profile, preset),
-      getComparisonSide(bId, profile, preset),
+      getScoredLocation(aId, profile, preset),
+      getScoredLocation(bId, profile, preset),
     ]);
 
     if (!a || !b) {

@@ -1,7 +1,7 @@
 import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
-import { scorePlaceGroups } from "@/app/lib/scoring";
-import { fetchPlaceGroups } from "@/app/lib/services/placeSearch";
+import { scoreLocation } from "@/app/lib/scoring";
+import { fetchNearbyPlacesByCategory } from "@/app/lib/services/placeSearch";
 import {
   buildCacheKey,
   findFreshSnapshot,
@@ -70,10 +70,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const groups = await fetchPlaceGroups({ apiKey, latitude, longitude });
+    const groups = await fetchNearbyPlacesByCategory({
+      apiKey,
+      latitude,
+      longitude,
+    });
     // The browser scores the groups itself for the chosen profile and
     // preset; the stored snapshot keeps the canonical No car / Balanced score.
-    const { overallScore, scores } = scorePlaceGroups(groups, "carFree");
+    const { overallScore, scores } = scoreLocation(groups, "carFree");
     const fallbackLabel = `${latitude}, ${longitude}`;
     // These labels come straight from the caller and are stored on the shared
     // location record, so they are trimmed and capped like other user text.

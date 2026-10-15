@@ -4,10 +4,10 @@ vi.mock("@/app/lib/auth", () => ({
   auth: { api: { getSession: vi.fn() } },
 }));
 vi.mock("@/app/lib/scoring", () => ({
-  scorePlaceGroups: vi.fn(),
+  scoreLocation: vi.fn(),
 }));
 vi.mock("@/app/lib/services/placeSearch", () => ({
-  fetchPlaceGroups: vi.fn(),
+  fetchNearbyPlacesByCategory: vi.fn(),
 }));
 vi.mock("@/app/lib/services/searchStore", () => ({
   buildCacheKey: vi.fn(() => "cache-key"),
@@ -18,16 +18,16 @@ vi.mock("@/app/lib/services/searchStore", () => ({
 
 import { GET } from "./route";
 import { auth } from "@/app/lib/auth";
-import { scorePlaceGroups } from "@/app/lib/scoring";
-import { fetchPlaceGroups } from "@/app/lib/services/placeSearch";
+import { scoreLocation } from "@/app/lib/scoring";
+import { fetchNearbyPlacesByCategory } from "@/app/lib/services/placeSearch";
 import {
   findFreshSnapshot,
   saveSnapshot,
 } from "@/app/lib/services/searchStore";
 
 const getSession = vi.mocked(auth.api.getSession);
-const scoreGroups = vi.mocked(scorePlaceGroups);
-const fetchGroups = vi.mocked(fetchPlaceGroups);
+const scoreGroups = vi.mocked(scoreLocation);
+const fetchGroups = vi.mocked(fetchNearbyPlacesByCategory);
 const findSnapshot = vi.mocked(findFreshSnapshot);
 const persistSnapshot = vi.mocked(saveSnapshot);
 

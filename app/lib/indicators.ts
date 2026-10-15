@@ -177,7 +177,8 @@ export function buildWalkingIndicators(
   ];
 }
 
-export function buildDerivedIndicators(
+// All five indicators, for the AI analyst's context.
+export function buildAnalystIndicators(
   categoryScores: CategoryScore[],
   placeGroups: PlaceGroup[],
 ): Indicator[] {

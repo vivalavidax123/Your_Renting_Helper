@@ -3,7 +3,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/app/lib/db";
 import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
-import { scorePlaceGroups } from "@/app/lib/scoring";
+import { scoreLocation } from "@/app/lib/scoring";
 import type { CategoryScore, PlaceGroup, RecentSearch } from "@/app/lib/types";
 
 // Cached score results are reused for this long before Google is queried
@@ -211,7 +211,7 @@ export async function areLocationsSavedByUser(
 
 // Full category scores for one location, recalculated from the newest stored
 // place groups for the comparison view's selected mobility profile and preset.
-export async function getComparisonSide(
+export async function getScoredLocation(
   id: string,
   profile: WeightProfile,
   preset: WeightPreset,
@@ -222,7 +222,7 @@ export async function getComparisonSide(
     return null;
   }
 
-  const { overallScore, scores } = scorePlaceGroups(
+  const { overallScore, scores } = scoreLocation(
     stored.groups,
     profile,
     preset,

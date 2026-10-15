@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  analyzeLocation,
-  compareLocations,
+  answerLocationQuestion,
+  answerComparisonQuestion,
   getQuestionRefusal,
   isLocationQuestionInScope,
   isLocationQuestionSafe,
@@ -61,7 +61,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("analyzeLocation", () => {
+describe("answerLocationQuestion", () => {
   it("sends grounded application context and returns the model text", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       openAIStream(
@@ -75,7 +75,9 @@ describe("analyzeLocation", () => {
     );
 
     await expect(
-      readAnswer(analyzeLocation(context, "Is this suitable without a car?")),
+      readAnswer(
+        answerLocationQuestion(context, "Is this suitable without a car?"),
+      ),
     ).resolves.toBe("The transport data is strong.");
 
     const [, init] = fetchMock.mock.calls[0];
@@ -110,7 +112,9 @@ describe("analyzeLocation", () => {
     vi.stubEnv("OPENAI_API_KEY", "");
     const fetchMock = vi.spyOn(globalThis, "fetch");
 
-    await expect(analyzeLocation(context, "Why this score?")).rejects.toEqual(
+    await expect(
+      answerLocationQuestion(context, "Why this score?"),
+    ).rejects.toEqual(
       expect.objectContaining({
         message: "AI location analysis is not configured.",
         status: 500,
@@ -124,7 +128,9 @@ describe("analyzeLocation", () => {
       new Response("unauthorised", { status: 401 }),
     );
 
-    await expect(analyzeLocation(context, "Why this score?")).rejects.toEqual(
+    await expect(
+      answerLocationQuestion(context, "Why this score?"),
+    ).rejects.toEqual(
       expect.objectContaining({
         message: "The AI service is temporarily unavailable. Please try again.",
         status: 502,
@@ -136,7 +142,7 @@ describe("analyzeLocation", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(openAIStream());
 
     await expect(
-      readAnswer(analyzeLocation(context, "Why this score?")),
+      readAnswer(answerLocationQuestion(context, "Why this score?")),
     ).rejects.toEqual(expect.objectContaining({ status: 502 }));
   });
 
@@ -152,7 +158,7 @@ describe("analyzeLocation", () => {
     );
 
     await expect(
-      readAnswer(analyzeLocation(context, "Why this score?")),
+      readAnswer(answerLocationQuestion(context, "Why this score?")),
     ).rejects.toEqual(
       expect.objectContaining({
         message:
@@ -163,7 +169,7 @@ describe("analyzeLocation", () => {
   });
 });
 
-describe("compareLocations", () => {
+describe("answerComparisonQuestion", () => {
   it("labels both contexts and asks for a practical, conditional comparison", async () => {
     const secondContext: LocationAnalysisContext = {
       ...context,
@@ -183,7 +189,11 @@ describe("compareLocations", () => {
 
     await expect(
       readAnswer(
-        compareLocations(context, secondContext, "Which is more convenient?"),
+        answerComparisonQuestion(
+          context,
+          secondContext,
+          "Which is more convenient?",
+        ),
       ),
     ).resolves.toBe("Location B is more convenient for daily errands.");
 

@@ -383,7 +383,9 @@ function assignPlacesToPrimaryCategories(
   }));
 }
 
-export async function fetchPlaceGroups({
+// The main search: nearby places for every scoring category around one
+// point, each place listed under exactly one category.
+export async function fetchNearbyPlacesByCategory({
   apiKey,
   latitude,
   longitude,

@@ -34,7 +34,8 @@ export function formatReviewSummary(place: NearbyPlace) {
   return `${rating}${place.userRatingCount.toLocaleString()} ${reviewLabel}`;
 }
 
-export function formatGroupScope(group: PlaceGroup) {
+// One line saying what was searched for a category, shown under its list.
+export function formatSearchScope(group: PlaceGroup) {
   if (group.id === "transport") {
     return "bus stops within 1 km or closest found + nearest stations";
   }

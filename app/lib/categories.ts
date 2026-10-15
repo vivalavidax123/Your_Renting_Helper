@@ -272,7 +272,10 @@ export const weightPresetLabels: Record<WeightPreset, string> = {
 
 // Query string that carries the scoring choice between pages. The default
 // preset is left out so existing links keep their exact shape.
-export function scoringQuery(profile: WeightProfile, preset: WeightPreset) {
+export function buildScoringQuery(
+  profile: WeightProfile,
+  preset: WeightPreset,
+) {
   return (
     "profile=" + profile + (preset === "balanced" ? "" : "&preset=" + preset)
   );

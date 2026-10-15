@@ -2,12 +2,12 @@ import { parseScoringOptions } from "@/app/lib/categories";
 import { errorResponse, isJsonRecord, textResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
-  analyzeLocation,
+  answerLocationQuestion,
   getQuestionRefusal,
   LocationAnalystError,
   readQuestion,
 } from "@/app/lib/services/locationAnalyst";
-import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
+import { loadLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 
 export async function POST(
   request: Request,
@@ -57,7 +57,7 @@ export async function POST(
       );
     }
 
-    const context = await buildLocationAnalysisContext(
+    const context = await loadLocationAnalysisContext(
       locationId,
       profile,
       preset,
@@ -76,7 +76,7 @@ export async function POST(
       return textResponse(refusal);
     }
 
-    return textResponse(await analyzeLocation(context, question));
+    return textResponse(await answerLocationQuestion(context, question));
   } catch (error) {
     if (error instanceof LocationAnalystError) {
       return Response.json(
