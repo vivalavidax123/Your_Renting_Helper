@@ -69,6 +69,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available. The table uses A, B and Lead columns (for example "A +6") so it fits phone width; full addresses stay in the selectors and column tooltips.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
 - Evidence dates use Australian day/month format on every page. The rental-quality and distance disclaimers appear once, on the overview.
+- The page-by-page interface review behind the current result, compare, details, home, category and login layouts is recorded in [docs/ui-refresh-2026-10.md](./docs/ui-refresh-2026-10.md).
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
 - Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
@@ -249,7 +250,7 @@ steep. The lines are straight rather than road-following, so the result
 describes the surrounding land, not a specific road. Terrain is fetched per
 visit, not stored, and does not change category or overall scores.
 The design rationale is in
-[docs/terrain-design-zh.md](./docs/terrain-design-zh.md).
+[docs/terrain-design.md](./docs/terrain-design.md).
 
 Community rent estimates use reports with the same property type and bedroom
 count. The service selects the smallest 1, 3, 5, or 10 km radius containing at
@@ -341,7 +342,7 @@ Category priorities come from the active score-priority preset (`weightPresets` 
 | Fuel & Automotive    |        0 |       0 |      0 |        0 |
 | Services             |        3 |       2 |      4 |        3 |
 
-Balanced is the original weighting and the default. A preset changes only how much each category counts towards the overall score, never a category's own score. The preset travels in the URL as `preset=` next to `profile=`; Balanced is omitted from links. An unknown preset falls back to Balanced in the browser, while the compare and chat APIs reject it with 400.
+Balanced is the original weighting and the default. A preset changes only how much each category counts towards the overall score, never a category's own score. The preset travels in the URL as `preset=` next to `profile=`; Balanced is omitted from links. An unknown preset falls back to Balanced in the browser, while the compare and chat APIs reject it with 400. The design decisions are in [docs/score-presets.md](./docs/score-presets.md).
 
 Using identical weights across profiles keeps them directly comparable. The car-owner half-life is more distance-tolerant, so switching from no-car to car-owner can keep or improve every category score and cannot lower the overall score. Places within the 400 m walkable ring score equally for both profiles; farther amenities can score better for a car owner. Fuel remains visible context but does not affect either overall score.
 
