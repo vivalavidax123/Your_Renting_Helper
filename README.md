@@ -8,7 +8,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 
 - Start with a short usage guide and example suburbs, or search Australian addresses with autocomplete. No account is needed to search.
 - Open each category score to review its explanation, nearby places, and focused map.
-- Switch between no-car and car-owner views.
+- Switch between no-car and car-owner views, and pick score priorities (Balanced, Student, Family, Commuter) that reweight the overall score.
 - Explore category-coloured amenities on an interactive map.
 - Open the map in fullscreen and follow non-transport amenities into Google Maps.
 - Open a separate evidence page for walkability, transit access, amenity density, daily convenience, car reliance, CBD travel, terrain, and community rent.
@@ -17,7 +17,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - See like-for-like community rent medians and, when signed in, contribute a known weekly rent.
 - When signed in, ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting.
 - Use a persistent light or dark theme.
-- Create an account to keep recent searches, save locations, compare two results under one mobility profile, and ask AI-assisted comparison questions.
+- Create an account to keep recent searches, save locations, compare two results under one mobility profile and score preset, and ask AI-assisted comparison questions.
 
 ## Current Scope
 

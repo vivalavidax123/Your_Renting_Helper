@@ -19,14 +19,14 @@ Status reviewed against committed `HEAD` on 2026-09-14.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 105 tests across 21 test files                             |
+| Automated tests      | 111 tests across 21 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
 
 1. Search an Australian address or suburb.
 2. Geocode the query and retrieve nearby places.
-3. Calculate category and overall scores for a no-car or car-owner profile.
+3. Calculate category and overall scores for a no-car or car-owner profile and a score-priority preset.
 4. Review amenities, derived indicators, CBD travel, community rent evidence, and the interactive map.
 5. Sign in to keep history, save locations, submit known weekly rents, and use the AI analyst.
 6. Ask what one location's evidence means for day-to-day renting or compare two saved results with scores and AI analysis.
@@ -45,6 +45,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Eight amenity categories with category-level filtering and deduplication.
 - Clickable category scores with dedicated evidence routes, category navigation, nearby-place lists, and focused maps.
 - No-car and car-owner scoring profiles.
+- Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The preset selector sits beside the overview's category scores and on the comparison page.
 - Location overviews own the interactive profile selector; category and supporting-evidence pages show the active profile as read-only context. Comparison retains one shared selector because both locations must use the same profile.
 - Seven-day shared result cache.
 - Interactive Google map with searched-location and amenity markers.
@@ -187,7 +188,7 @@ This structure is sufficient for the current project. Do not add repositories, d
 2. useAutocomplete waits 250 ms after input, requests /api/autocomplete, and supports keyboard selection.
 3. Submitting the form requests /api/geocode.
 4. useLocationSearch requests /api/places with coordinates and location metadata.
-5. The matched address and amenity groups are committed together, and the formatted address replaces the submitted query in the search field. Persisted results navigate to /locations/[locationId]?profile=...; direct visits read stored evidence through GET /api/locations/[locationId] without a provider refresh.
+5. The matched address and amenity groups are committed together, and the formatted address replaces the submitted query in the search field. Persisted results navigate to /locations/[locationId]?profile=... (plus &preset=... when a non-default preset is active); direct visits read stored evidence through GET /api/locations/[locationId] without a provider refresh.
 6. The overview renders the address, overall and category scores, compact analyst, and map. Category links reuse the active groups and scoring profile without another provider or database request.
 7. CbdTravelCard, TerrainCard, and RentalInsights request /api/cbd-travel, /api/terrain, and /api/rent-estimates only after the supporting-evidence page opens.
 8. The client validates each API envelope before updating result state.
@@ -204,28 +205,28 @@ The shared-header logo cancels active search work, clears the active result and 
 5. If the visitor is signed in, the location is upserted into that user's recent-search history.
 6. Cache or persistence failures are logged and do not block a live provider result.
 
-Profile changes recalculate scores in the browser from the existing place groups. They do not call /api/places again or recreate the map.
+Profile and preset changes recalculate scores in the browser from the existing place groups. They do not call /api/places again or recreate the map.
 
 ## API Routes
 
-| Route                                 | Access                                       | Responsibility                                                                               |
-| ------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| GET /api/autocomplete                 | Public                                       | Australian Google Places suggestions                                                         |
-| GET /api/geocode                      | Public                                       | Address geocoding and provider error mapping                                                 |
-| GET /api/places                       | Public, session-aware                        | Cache lookup, provider retrieval, scoring, snapshot save, optional history write             |
-| GET /api/history                      | Public, session-aware                        | Current user's recent searches; signed-out users receive an empty list                       |
-| GET /api/favourites                   | Signed in                                    | Current user's saved locations                                                               |
-| POST /api/favourites                  | Signed in                                    | Save a known location                                                                        |
-| DELETE /api/favourites                | Signed in                                    | Remove a saved location                                                                      |
-| GET /api/compare                      | Signed in, saved-location ownership required | Recalculate two saved locations from stored evidence for one selected mobility profile       |
-| GET /api/locations/[locationId]       | Public                                       | Read stored location metadata, raw groups and timestamp without user history or paid refresh |
-| POST /api/locations/[locationId]/chat | Signed in                                    | Answer one grounded question about a stored location and selected mobility profile           |
-| POST /api/locations/compare/chat      | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations                            |
-| GET /api/cbd-travel                   | Public                                       | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD    |
-| GET /api/rent-estimates               | Public                                       | Like-for-like community median rent within an adaptive 1–10 km radius                        |
-| GET /api/terrain                      | Public                                       | Hilliness summary from one Google Elevation request                                          |
-| POST /api/rent-estimates              | Signed in                                    | Create or update the caller's rent report for a location/property combination                |
-| /api/auth/[...all]                    | Better Auth                                  | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks                                    |
+| Route                                 | Access                                       | Responsibility                                                                                    |
+| ------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| GET /api/autocomplete                 | Public                                       | Australian Google Places suggestions                                                              |
+| GET /api/geocode                      | Public                                       | Address geocoding and provider error mapping                                                      |
+| GET /api/places                       | Public, session-aware                        | Cache lookup, provider retrieval, scoring, snapshot save, optional history write                  |
+| GET /api/history                      | Public, session-aware                        | Current user's recent searches; signed-out users receive an empty list                            |
+| GET /api/favourites                   | Signed in                                    | Current user's saved locations                                                                    |
+| POST /api/favourites                  | Signed in                                    | Save a known location                                                                             |
+| DELETE /api/favourites                | Signed in                                    | Remove a saved location                                                                           |
+| GET /api/compare                      | Signed in, saved-location ownership required | Recalculate two saved locations from stored evidence for one selected mobility profile and preset |
+| GET /api/locations/[locationId]       | Public                                       | Read stored location metadata, raw groups and timestamp without user history or paid refresh      |
+| POST /api/locations/[locationId]/chat | Signed in                                    | Answer one grounded question about a stored location and selected mobility profile and preset     |
+| POST /api/locations/compare/chat      | Signed in, saved-location ownership required | Answer one grounded comparison question about two saved locations                                 |
+| GET /api/cbd-travel                   | Public                                       | Direct distance, Geoapify driving, and Google public-transport estimates to Melbourne CBD         |
+| GET /api/rent-estimates               | Public                                       | Like-for-like community median rent within an adaptive 1–10 km radius                             |
+| GET /api/terrain                      | Public                                       | Hilliness summary from one Google Elevation request                                               |
+| POST /api/rent-estimates              | Signed in                                    | Create or update the caller's rent report for a location/property combination                     |
+| /api/auth/[...all]                    | Better Auth                                  | Sign-up, sign-in, sign-out, sessions, and OAuth callbacks                                         |
 
 CBD driving calls use the server-only `GEOAPIFY_API_KEY`, request free-flow
 traffic, and round the result to the nearest five minutes. Public transport
@@ -324,22 +325,24 @@ The formula is 30 x (1 - exp(-count / k)).
 
 ### Category weights and mobility guarantee
 
-Both profiles use the same fixed category priorities, which sum to 100. Car ownership changes only the proximity decay described above.
+Category priorities come from the active score-priority preset (`weightPresets` in app/lib/categories.ts). Every preset sums to 100 and keeps fuel at 0. Both mobility profiles use the same preset weights; car ownership changes only the proximity decay described above.
 
-| Category             | Weight |
-| -------------------- | -----: |
-| Shopping Centres     |      8 |
-| Groceries            |     22 |
-| Food & Cafes         |     14 |
-| Transport            |     28 |
-| Health               |     15 |
-| Fitness & Recreation |     10 |
-| Fuel & Automotive    |      0 |
-| Services             |      3 |
+| Category             | Balanced | Student | Family | Commuter |
+| -------------------- | -------: | ------: | -----: | -------: |
+| Shopping Centres     |        8 |       6 |     12 |        5 |
+| Groceries            |       22 |      18 |     28 |       20 |
+| Food & Cafes         |       14 |      22 |      8 |       12 |
+| Transport            |       28 |      32 |     18 |       45 |
+| Health               |       15 |       6 |     24 |        8 |
+| Fitness & Recreation |       10 |      14 |      6 |        7 |
+| Fuel & Automotive    |        0 |       0 |      0 |        0 |
+| Services             |        3 |       2 |      4 |        3 |
 
-Using identical weights keeps the profiles directly comparable. The car-owner half-life is more distance-tolerant, so switching from no-car to car-owner can keep or improve every category score and cannot lower the overall score. Places within the 400 m walkable ring score equally for both profiles; farther amenities can score better for a car owner. Fuel remains visible context but does not affect either overall score.
+Balanced is the original weighting and the default. A preset changes only how much each category counts towards the overall score, never a category's own score. The preset travels in the URL as `preset=` next to `profile=`; Balanced is omitted from links. An unknown preset falls back to Balanced in the browser, while the compare and chat APIs reject it with 400.
 
-The overall score is the weighted average of the active category scores. No-car is the default and canonical stored profile. Raw place groups are retained in the snapshot, so another profile can be recalculated without new provider calls.
+Using identical weights across profiles keeps them directly comparable. The car-owner half-life is more distance-tolerant, so switching from no-car to car-owner can keep or improve every category score and cannot lower the overall score. Places within the 400 m walkable ring score equally for both profiles; farther amenities can score better for a car owner. Fuel remains visible context but does not affect either overall score.
+
+The overall score is the weighted average of the active category scores. No-car with Balanced weights is the default and canonical stored score. Raw place groups are retained in the snapshot, so another profile or preset can be recalculated without new provider calls.
 
 Any scoring or retrieval change that would make stored place groups or scores misleading requires deliberate ScoreSnapshot invalidation in each intended environment.
 
@@ -367,9 +370,9 @@ The result page includes a lightweight signed-in single-location chat panel, and
 ### Single-location request flow
 
 1. `/api/places` returns the persisted `SearchLocation` id with the score result.
-2. The signed-in client sends that id, the current mobility profile, and one question to `POST /api/locations/[locationId]/chat`.
+2. The signed-in client sends that id, the current mobility profile and preset, and one question to `POST /api/locations/[locationId]/chat`.
 3. The route verifies the Better Auth session and returns 401 without calling the analyst when no session exists.
-4. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile.
+4. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile and preset.
 5. The question passes OpenAI moderation before answer generation; flagged input receives a fixed refusal without reaching another model call.
 6. A structured scope classifier allows rental-location questions and returns a fixed refusal for unrelated requests without calling the analyst model.
 7. The context builder keeps the score breakdown and up to five nearest amenities per category.
@@ -377,8 +380,8 @@ The result page includes a lightweight signed-in single-location chat panel, and
 
 ### Saved-location comparison request flow
 
-1. The comparison panel sends its URL-backed location IDs and mobility profile to `GET /api/compare`; the route verifies the session and saved-location ownership before recalculating both score columns from stored place groups.
-2. The client sends both location IDs, the current profile, and one question to `POST /api/locations/compare/chat`.
+1. The comparison panel sends its URL-backed location IDs, mobility profile, and preset to `GET /api/compare`; the route verifies the session and saved-location ownership before recalculating both score columns from stored place groups.
+2. The client sends both location IDs, the current profile and preset, and one question to `POST /api/locations/compare/chat`.
 3. The route requires a session and verifies that both locations are saved by that user.
 4. The server builds the same grounded context independently for each location and labels them Location A and Location B.
 5. The question passes the same moderation and comparison-aware scope checks used by single-location analysis.
@@ -564,7 +567,8 @@ The current 96-test suite across 19 files covers:
 - grounded AI context construction, OpenAI request configuration, streamed response parsing, text-chunk accumulation, and failure mapping;
 - single-location and authenticated saved-location comparison chat routes;
 - analyst request payloads and rental hook API boundaries;
-- the invariant that the car-owner profile never lowers category or overall scores.
+- the invariant that the car-owner profile never lowers category or overall scores;
+- score-priority presets: each sums to 100, Balanced matches the original scores, and presets change only the overall score.
 
 The tests mock provider, auth, or database dependencies where appropriate. CI does not require a live database or external network calls.
 
