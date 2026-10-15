@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { analyzeLocation, compareLocations } from "./locationAnalyst";
+import {
+  analyzeLocation,
+  compareLocations,
+  isLocationQuestionInScope,
+  isLocationQuestionSafe,
+} from "./locationAnalyst";
 import type { LocationAnalysisContext } from "./locationAnalysis";
 
 function openAIStream(...events: object[]) {
@@ -194,5 +199,101 @@ describe("compareLocations", () => {
     expect(body.input).toContain("Location B data:");
     expect(body.input).toContain("2 Example Road, Melbourne VIC");
     expect(body.input).toContain("Which is more convenient?");
+  });
+});
+
+describe("isLocationQuestionSafe", () => {
+  it("returns false when moderation flags the question", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ results: [{ flagged: true }] }),
+    );
+
+    await expect(isLocationQuestionSafe("question")).resolves.toBe(false);
+  });
+
+  it("returns true for an unflagged question", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ results: [{ flagged: false }] }),
+    );
+
+    await expect(isLocationQuestionSafe("question")).resolves.toBe(true);
+  });
+
+  it("maps provider failures to friendly errors with a status", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("down", { status: 503 }),
+    );
+    await expect(isLocationQuestionSafe("question")).rejects.toMatchObject({
+      status: 502,
+      message:
+        "The AI safety check is temporarily unavailable. Please try again.",
+    });
+
+    const timeout = new Error("timed out");
+    timeout.name = "TimeoutError";
+    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(timeout);
+    await expect(isLocationQuestionSafe("question")).rejects.toMatchObject({
+      status: 504,
+      message: "The AI safety check took too long. Please try again.",
+    });
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      Response.json({ results: [] }),
+    );
+    await expect(isLocationQuestionSafe("question")).rejects.toMatchObject({
+      status: 502,
+      message:
+        "The AI safety check returned an invalid response. Please try again.",
+    });
+  });
+});
+
+describe("isLocationQuestionInScope", () => {
+  function classification(decision: string) {
+    return Response.json({
+      output: [
+        {
+          content: [
+            { type: "output_text", text: JSON.stringify({ decision }) },
+          ],
+        },
+      ],
+    });
+  }
+
+  it("reads the allow or reject decision", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      classification("allow"),
+    );
+    await expect(isLocationQuestionInScope("q", "single")).resolves.toBe(true);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      classification("reject"),
+    );
+    await expect(isLocationQuestionInScope("q", "comparison")).resolves.toBe(
+      false,
+    );
+  });
+
+  it("rejects an unexpected decision and provider failures", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      classification("maybe"),
+    );
+    await expect(
+      isLocationQuestionInScope("q", "single"),
+    ).rejects.toMatchObject({
+      status: 502,
+      message:
+        "The AI scope check returned an invalid response. Please try again.",
+    });
+
+    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new TypeError("down"));
+    await expect(
+      isLocationQuestionInScope("q", "single"),
+    ).rejects.toMatchObject({
+      status: 502,
+      message:
+        "The AI scope check is temporarily unavailable. Please try again.",
+    });
   });
 });
