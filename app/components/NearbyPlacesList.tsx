@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { NearbyPlace, PlaceGroup, RequestState } from "@/app/lib/types";
+import type { NearbyPlace, PlaceGroup } from "@/app/lib/types";
 import {
   formatGroupScope,
   formatDistance,
@@ -11,18 +11,16 @@ import {
 } from "@/app/lib/utils";
 
 type NearbyPlacesListProps = {
-  placesState: RequestState;
-  placesError: string;
   placeGroups: PlaceGroup[];
   selectedPlaceId: string | null;
   onSelectPlace: (placeId: string) => void;
-  singleColumn?: boolean;
 };
 
-const collapsedRowCount = 3;
+const collapsedRowCount = 10;
 
-// Compact single-line row. Address and place type are low-priority, so
-// they move to a hover tooltip instead of taking up rows of their own.
+// Two-line row: name and distance first, then type and reviews in small
+// text so neither squeezes the name. The address only appears once a place
+// is selected, which keeps ten rows short enough to scan.
 function PlaceRow({
   place,
   groupId,
@@ -40,33 +38,35 @@ function PlaceRow({
     (place.transportServices?.length ?? 0) > 0;
 
   return (
-    <li
-      id={`place-row-${place.id}`}
-      className="py-1 text-sm"
-      title={`${formatPlaceType(place.primaryType)} · ${place.address}`}
-    >
+    <li id={`place-row-${place.id}`} className="py-1 text-sm">
       <button
         type="button"
         onClick={() => onSelect(place.id)}
-        className={`flex w-full items-center gap-2 rounded-md px-1 py-1 text-left ${
+        className={`w-full rounded-md px-1 py-1 text-left ${
           selected ? "bg-accent-soft" : "hover:bg-hover"
         }`}
       >
-        <span
-          className={`min-w-0 flex-1 truncate ${
-            selected ? "font-medium text-accent-ink" : "text-ink-soft"
-          }`}
-        >
-          {place.name}
-        </span>
-        {groupId !== "transport" ? (
-          <span className="shrink-0 text-[11px] text-ink-faint">
-            {formatReviewSummary(place)}
+        <span className="flex items-center gap-2">
+          <span
+            className={`min-w-0 flex-1 truncate ${
+              selected ? "font-medium text-accent-ink" : "text-ink"
+            }`}
+          >
+            {place.name}
           </span>
-        ) : null}
-        <span className="shrink-0 text-xs font-medium text-ink-soft">
-          {formatDistance(place.distanceMeters)}
+          <span className="shrink-0 text-xs font-medium text-ink-soft">
+            {formatDistance(place.distanceMeters)}
+          </span>
         </span>
+        <span className="block truncate text-xs text-ink-muted">
+          <span className="capitalize">
+            {formatPlaceType(place.primaryType)}
+          </span>
+          {groupId !== "transport" ? " · " + formatReviewSummary(place) : ""}
+        </span>
+        {selected ? (
+          <span className="block text-xs text-ink-muted">{place.address}</span>
+        ) : null}
       </button>
       {showServices ? (
         <ul className="mt-1.5 space-y-1">
@@ -118,9 +118,9 @@ function CategorySection({
   const hiddenCount = group.places.length - collapsedRowCount;
 
   return (
-    <section className="rounded-lg border border-line bg-surface px-4 py-3">
+    <section>
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-semibold text-ink">{group.label}</h3>
+        <h3 className="text-sm font-semibold text-ink">Nearby places</h3>
         <span className="text-xs text-ink-faint">
           {formatGroupScope(group)}
         </span>
@@ -144,7 +144,9 @@ function CategorySection({
               onClick={() => setExpanded((value) => !value)}
               className="mt-1 w-full rounded-md py-1 text-xs font-medium text-ink-muted hover:text-ink"
             >
-              {expanded ? "Show top 3" : `Show all ${group.places.length}`}
+              {expanded
+                ? `Show top ${collapsedRowCount}`
+                : `Show all ${group.places.length}`}
             </button>
           ) : null}
         </>
@@ -156,72 +158,20 @@ function CategorySection({
 }
 
 export function NearbyPlacesList({
-  placesState,
-  placesError,
   placeGroups,
   selectedPlaceId,
   onSelectPlace,
-  singleColumn = false,
 }: NearbyPlacesListProps) {
-  const allPlaces = placeGroups.flatMap((group) => group.places);
-  const closestPlace = allPlaces.reduce<(typeof allPlaces)[number] | null>(
-    (closest, place) => {
-      if (!closest || place.distanceMeters < closest.distanceMeters) {
-        return place;
-      }
-
-      return closest;
-    },
-    null,
-  );
-
   return (
-    <div className="mt-6 border-t border-line pt-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-ink">Nearby amenities</h2>
-          {placesState === "success" ? (
-            <p className="mt-1 text-sm text-ink-soft">
-              {allPlaces.length} found
-              {closestPlace
-                ? ` / nearest ${formatDistance(closestPlace.distanceMeters)}`
-                : ""}
-            </p>
-          ) : null}
-        </div>
-        {placesState === "loading" ? (
-          <span className="w-fit rounded-full bg-surface-raised px-3 py-1 text-sm font-medium text-ink-soft">
-            Loading
-          </span>
-        ) : null}
-      </div>
-
-      {placesState === "idle" ? (
-        <p className="mt-3 rounded-lg border border-line bg-surface-subtle px-3 py-2.5 text-sm leading-6 text-ink-soft">
-          Search for a location to load nearby amenities.
-        </p>
-      ) : null}
-
-      {placesState === "error" ? (
-        <p className="mt-4 rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm font-medium text-danger-ink">
-          {placesError}
-        </p>
-      ) : null}
-
-      {placesState === "success" ? (
-        <div
-          className={`mt-4 grid gap-3 ${singleColumn ? "" : "lg:grid-cols-2"}`}
-        >
-          {placeGroups.map((group) => (
-            <CategorySection
-              key={group.id}
-              group={group}
-              selectedPlaceId={selectedPlaceId}
-              onSelectPlace={onSelectPlace}
-            />
-          ))}
-        </div>
-      ) : null}
+    <div className="mt-5 space-y-3 border-t border-line pt-5">
+      {placeGroups.map((group) => (
+        <CategorySection
+          key={group.id}
+          group={group}
+          selectedPlaceId={selectedPlaceId}
+          onSelectPlace={onSelectPlace}
+        />
+      ))}
     </div>
   );
 }

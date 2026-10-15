@@ -80,10 +80,10 @@ function SavedError() {
 
 // Without a title this is the overview header: the address, the overall
 // score and the save action together, so every result says what it is about.
-// With a title it heads a sub-page and keeps the address as context.
+// With a title it heads a sub-page: only the way back, the title and the
+// address, since saving belongs to the overview.
 export function LocationHeader({ title }: { title?: string }) {
-  const { location, locationId, profile, scoringParams, overallScore } =
-    useExplore();
+  const { location, locationId, scoringParams, overallScore } = useExplore();
 
   if (!location) return null;
 
@@ -121,8 +121,6 @@ export function LocationHeader({ title }: { title?: string }) {
     );
   }
 
-  const profileLabel = profile === "carOwner" ? "Car owner" : "No car";
-
   return (
     <div className="space-y-4">
       <Link
@@ -139,14 +137,6 @@ export function LocationHeader({ title }: { title?: string }) {
           {location.formattedAddress}
         </p>
       </div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="rounded-md bg-surface-raised px-3 py-2 text-xs text-ink-muted">
-          Profile:{" "}
-          <span className="font-semibold text-ink">{profileLabel}</span>
-        </p>
-        <SaveLocationControl />
-      </div>
-      <SavedError />
     </div>
   );
 }
