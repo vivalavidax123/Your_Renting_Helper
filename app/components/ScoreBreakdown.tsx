@@ -79,12 +79,6 @@ export function ScoreBreakdown({
                 "?" +
                 scoringParams
               }
-              aria-label={
-                category.label +
-                ", " +
-                category.score +
-                " out of 100, view details"
-              }
               className="rounded-lg border border-line bg-surface-subtle p-3 transition hover:border-accent hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {content}

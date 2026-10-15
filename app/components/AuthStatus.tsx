@@ -63,7 +63,6 @@ export function AuthStatus() {
         ref={triggerRef}
         type="button"
         aria-expanded={menuOpen}
-        aria-haspopup="menu"
         onClick={() => setMenuOpen((open) => !open)}
         className="flex max-w-44 items-center gap-1.5 rounded-md px-2 py-1 text-ink-muted hover:bg-hover hover:text-accent"
         title={session.user.email}
@@ -71,13 +70,11 @@ export function AuthStatus() {
         <span className="truncate">{session.user.email}</span>
       </button>
       {menuOpen ? (
-        <div
-          role="menu"
-          className="absolute right-0 z-20 mt-2 min-w-32 rounded-lg border border-line bg-surface p-1 shadow-lg"
-        >
+        // A plain disclosure, not role="menu": a menu promises arrow-key
+        // navigation, which one Sign out button does not need.
+        <div className="absolute right-0 z-20 mt-2 min-w-32 rounded-lg border border-line bg-surface p-1 shadow-lg">
           <button
             type="button"
-            role="menuitem"
             onClick={() => {
               setMenuOpen(false);
               void authClient.signOut();

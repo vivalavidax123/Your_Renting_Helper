@@ -42,6 +42,7 @@ function PlaceRow({
       <button
         type="button"
         onClick={() => onSelect(place.id)}
+        aria-pressed={selected}
         className={`w-full rounded-md px-1 py-1 text-left ${
           selected ? "bg-accent-soft" : "hover:bg-hover"
         }`}
@@ -142,6 +143,7 @@ function CategorySection({
             <button
               type="button"
               onClick={() => setExpanded((value) => !value)}
+              aria-expanded={expanded}
               className="mt-1 w-full rounded-md py-1 text-xs font-medium text-ink-muted hover:text-ink"
             >
               {expanded
