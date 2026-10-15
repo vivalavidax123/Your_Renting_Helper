@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-10-15.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 111 tests across 21 test files                             |
+| Automated tests      | 112 tests across 21 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -27,7 +27,7 @@ The core renter workflow is implemented:
 1. Search an Australian address or suburb.
 2. Geocode the query and retrieve nearby places.
 3. Calculate category and overall scores for a no-car or car-owner profile and a score-priority preset.
-4. Review amenities, derived indicators, CBD travel, community rent evidence, and the interactive map.
+4. Review amenities, walking times, CBD travel, terrain, community rent evidence, and the interactive map.
 5. Sign in to keep history, save locations, submit known weekly rents, and use the AI analyst.
 6. Ask what one location's evidence means for day-to-day renting or compare two saved results with scores and AI analysis.
 
@@ -54,7 +54,8 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Theme-aware map, markers, and custom popup styling.
 - Google Maps links in non-transport amenity popups.
 - Optional Transitland bus-stop, route, destination, and departure enrichment.
-- Derived walkability, transit, density, convenience, and car-reliance indicators.
+- Derived walkability, transit, density, convenience, and car-reliance indicators. The details page shows only walking times and car reliance; all five feed the AI analyst context.
+- Supporting-evidence page with four equal cards (commute, walking, rent, terrain): one column on phones, a 2x2 grid from `lg` up. Each card leads with its answer, keeps data sources visible, and folds method notes into a collapsed "How this is measured" section.
 - Direct distance, rounded Geoapify driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - Terrain card measuring how hilly the land within 1.5 km is, from Google Elevation samples. It is shown as separate evidence and does not change any score.
 - Radius-based community median rent estimates for matching property type and bedroom count.
@@ -154,7 +155,7 @@ app/
   (explore)/              Shared search workspace and direct location routes
     compare/              Dedicated saved-location comparison page
     locations/[locationId]/categories/[categoryId]/  Category evidence
-    locations/[locationId]/details/  Commute, rent, and derived indicators
+    locations/[locationId]/details/  Commute, walking, rent, and terrain
   components/ExploreProvider.tsx  Search/session state retained across workspace pages
   components/ConversationProvider.tsx  In-memory location/pair transcripts
   components/AnalystChat.tsx  Shared single-location and comparison chat interface
@@ -350,7 +351,7 @@ Any scoring or retrieval change that would make stored place groups or scores mi
 
 ## Derived Indicators
 
-app/lib/indicators.ts derives five indicators from the current place groups and category scores:
+app/lib/indicators.ts derives five indicators from the current place groups and category scores. `buildDerivedIndicators` returns all five for the AI analyst; `buildWalkingIndicators` returns walkability and car reliance for the details page, because the other three restate category scores (and amenity density is bounded by the 20-results-per-category provider limit):
 
 - **Walkability:** estimated minutes at 80 metres per minute for key destinations.
 - **Transit access:** transport score label, closest distance, and available departure count.
@@ -549,7 +550,7 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 111-test suite across 21 files covers:
+The current 112-test suite across 21 files covers:
 
 - scoring behaviour and invariants;
 - formatting, coordinate parsing, distance, and time utilities;

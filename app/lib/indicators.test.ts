@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDerivedIndicators } from "./indicators";
+import { buildDerivedIndicators, buildWalkingIndicators } from "./indicators";
 import type { CategoryScore, NearbyPlace, PlaceGroup } from "./types";
 
 function score(
@@ -83,5 +83,12 @@ describe("buildDerivedIndicators", () => {
       "Daily convenience",
       "Car reliance",
     ]);
+  });
+
+  it("keeps the on-screen walking indicators identical to the full list", () => {
+    const scores = [score("groceries", 80, 300), score("health", 60, 2000)];
+    const all = buildDerivedIndicators(scores, []);
+
+    expect(buildWalkingIndicators(scores, [])).toEqual([all[0], all[4]]);
   });
 });

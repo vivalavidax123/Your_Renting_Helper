@@ -39,11 +39,10 @@ export function RentalInsights({
   }
 
   return (
-    <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
+    <div className="h-full rounded-lg border border-line bg-surface p-5 shadow-sm">
       <h2 className="text-base font-semibold text-ink">Community rent</h2>
       <p className="mt-1 text-xs leading-5 text-ink-muted">
-        A median from rents reported by registered users — not scraped listings
-        or an official valuation.
+        Rents reported by users, not an official valuation.
       </p>
 
       {state === "idle" ? (
@@ -75,7 +74,7 @@ export function RentalInsights({
             <>
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-sm text-ink-soft">Reported median</span>
-                <strong className="text-lg text-ink">
+                <strong className="text-2xl font-semibold text-ink">
                   ${estimate.medianWeeklyRent.toLocaleString()}/wk
                 </strong>
               </div>

@@ -123,9 +123,10 @@ export function ExploreWorkspace() {
                 Explore more
               </h2>
               {[
-                { anchor: "commute", label: "Melbourne CBD commute" },
+                { anchor: "commute", label: "Commute to Melbourne CBD" },
+                { anchor: "walking", label: "Walking" },
                 { anchor: "rent", label: "Community rent" },
-                { anchor: "indicators", label: "Additional indicators" },
+                { anchor: "terrain", label: "Terrain" },
               ].map((item) => (
                 <Link
                   key={item.anchor}
