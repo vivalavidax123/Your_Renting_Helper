@@ -47,7 +47,16 @@ export function ScoreBreakdown({
                   /100
                 </span>
               </p>
-              <p className="mt-1 text-xs text-ink-muted">
+              <div
+                aria-hidden="true"
+                className="mt-2 h-1 overflow-hidden rounded-full bg-line"
+              >
+                <div
+                  className={"h-full rounded-full " + category.colorClass}
+                  style={{ width: category.score + "%" }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-ink-muted">
                 {category.count} nearby ·{" "}
                 {category.closestDistanceMeters === null
                   ? "No match"
