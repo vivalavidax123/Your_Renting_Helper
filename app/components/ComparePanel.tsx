@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { WeightProfile } from "@/app/lib/categories";
+import {
+  weightPresetLabels,
+  type WeightPreset,
+  type WeightProfile,
+} from "@/app/lib/categories";
 import { isJsonRecord, readApiResult } from "@/app/lib/api";
 import type { ComparisonSide, RecentSearch } from "@/app/lib/types";
 import { AnalystChat } from "./AnalystChat";
@@ -33,6 +37,7 @@ function isComparisonPayload(value: Record<string, unknown>) {
 type ComparePanelProps = {
   saved: RecentSearch[];
   profile: WeightProfile;
+  preset: WeightPreset;
 };
 
 const suggestedComparisonQuestions = [
@@ -107,7 +112,11 @@ function scoreCell(score: number, otherScore: number) {
   );
 }
 
-export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
+export function ComparePanel({
+  saved: allSaved,
+  profile,
+  preset,
+}: ComparePanelProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const saved = allSaved.filter((search) => search.overallScore !== null);
@@ -122,7 +131,7 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
     saved.some((search) => search.id === requestedBId)
       ? requestedBId
       : "";
-  const requestKey = `${effectiveAId}|${effectiveBId}|${profile}`;
+  const requestKey = `${effectiveAId}|${effectiveBId}|${profile}|${preset}`;
   const [result, setResult] = useState<{
     key: string;
     a: ComparisonSide;
@@ -156,6 +165,7 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
       a: effectiveAId,
       b: effectiveBId,
       profile,
+      preset,
     });
 
     fetch(`/api/compare?${query}`, { signal: controller.signal })
@@ -186,7 +196,7 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
       });
 
     return () => controller.abort();
-  }, [effectiveAId, effectiveBId, profile, requestKey]);
+  }, [effectiveAId, effectiveBId, profile, preset, requestKey]);
 
   const activeResult = result?.key === requestKey ? result : null;
   const retainedPairResult =
@@ -290,7 +300,8 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
             <table className="w-full min-w-[620px] border-collapse text-sm">
               <caption className="sr-only">
                 Category score comparison using the{" "}
-                {profile === "carFree" ? "No car" : "Car owner"} profile
+                {profile === "carFree" ? "No car" : "Car owner"} profile and{" "}
+                {weightPresetLabels[preset]} weighting
               </caption>
               <thead>
                 <tr className="border-b border-line-strong bg-surface-subtle text-xs uppercase tracking-wide text-ink-muted">
@@ -357,6 +368,7 @@ export function ComparePanel({ saved: allSaved, profile }: ComparePanelProps) {
           conversationKey={`comparison:${retainedPairResult.a.id}|${retainedPairResult.b.id}`}
           endpoint="/api/locations/compare/chat"
           profile={profile}
+          preset={preset}
           available={Boolean(activeResult)}
           locationIds={[retainedPairResult.a.id, retainedPairResult.b.id]}
           title="Ask about these locations"

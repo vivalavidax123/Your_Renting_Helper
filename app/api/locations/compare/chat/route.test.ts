@@ -173,8 +173,18 @@ describe("POST /api/locations/compare/chat", () => {
       "text/plain; charset=utf-8",
     );
     expect(body).toBe("Location A is easier without a car.");
-    expect(buildContext).toHaveBeenNthCalledWith(1, "location-1", "carFree");
-    expect(buildContext).toHaveBeenNthCalledWith(2, "location-2", "carFree");
+    expect(buildContext).toHaveBeenNthCalledWith(
+      1,
+      "location-1",
+      "carFree",
+      "balanced",
+    );
+    expect(buildContext).toHaveBeenNthCalledWith(
+      2,
+      "location-2",
+      "carFree",
+      "balanced",
+    );
     expect(compare).toHaveBeenCalledWith(
       contextA,
       contextB,

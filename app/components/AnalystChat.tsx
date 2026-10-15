@@ -18,6 +18,7 @@ export function AnalystChat({
   conversationKey,
   endpoint,
   profile,
+  preset,
   available,
   locationIds,
   title,
@@ -40,6 +41,7 @@ export function AnalystChat({
     conversationKey,
     endpoint,
     profile,
+    preset,
     available,
     locationIds,
   });

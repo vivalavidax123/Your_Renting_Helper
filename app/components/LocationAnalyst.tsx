@@ -1,6 +1,6 @@
 "use client";
 
-import type { WeightProfile } from "@/app/lib/categories";
+import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
 import type { RequestState } from "@/app/lib/types";
 import { AnalystChat } from "./AnalystChat";
 
@@ -12,12 +12,14 @@ const suggestedQuestions = [
 export function LocationAnalyst({
   locationId,
   profile,
+  preset,
   placesState,
   signedIn,
   sessionPending,
 }: {
   locationId: string | null;
   profile: WeightProfile;
+  preset: WeightPreset;
   placesState: RequestState;
   signedIn: boolean;
   sessionPending: boolean;
@@ -40,6 +42,7 @@ export function LocationAnalyst({
       conversationKey={"location:" + locationId}
       endpoint={"/api/locations/" + locationId + "/chat"}
       profile={profile}
+      preset={preset}
       available={available}
       title="Ask about this location"
       inputId="location-analyst-question"

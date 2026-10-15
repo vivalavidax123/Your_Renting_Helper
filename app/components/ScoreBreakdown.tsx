@@ -1,22 +1,27 @@
 import Link from "next/link";
 import type { CategoryScore } from "@/app/lib/types";
-import type { WeightProfile } from "@/app/lib/categories";
 import { formatDistance } from "@/app/lib/utils";
+import { PresetPicker } from "./PresetPicker";
 export function ScoreBreakdown({
   categoryScores,
   locationId,
-  profile,
+  scoringParams,
 }: {
   categoryScores: CategoryScore[];
   locationId: string | null;
-  profile: WeightProfile;
+  scoringParams: string;
 }) {
   return (
     <section>
-      <h2 className="text-base font-semibold text-ink">Category scores</h2>
-      <p className="mt-1 text-xs text-ink-muted">
-        Open a category to see the places and evidence behind its score.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-ink">Category scores</h2>
+          <p className="mt-1 text-xs text-ink-muted">
+            Open a category to see the places and evidence behind its score.
+          </p>
+        </div>
+        <PresetPicker />
+      </div>
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[...categoryScores]
           .sort((a, b) => b.weight - a.weight)
@@ -61,8 +66,8 @@ export function ScoreBreakdown({
                   locationId +
                   "/categories/" +
                   category.id +
-                  "?profile=" +
-                  profile
+                  "?" +
+                  scoringParams
                 }
                 aria-label={
                   category.label +

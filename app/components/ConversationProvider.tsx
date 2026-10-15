@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
-import type { WeightProfile } from "@/app/lib/categories";
+import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
 import { readApiResult, readTextStream } from "@/app/lib/api";
 
 type Message = {
@@ -24,6 +24,7 @@ export type UseConversationOptions = {
   conversationKey: string;
   endpoint: string;
   profile: WeightProfile;
+  preset: WeightPreset;
   available: boolean;
   locationIds?: string[];
 };
@@ -31,13 +32,15 @@ export type UseConversationOptions = {
 export function buildConversationRequestBody({
   question,
   profile,
+  preset,
   locationIds,
-}: Pick<UseConversationOptions, "profile" | "locationIds"> & {
+}: Pick<UseConversationOptions, "profile" | "preset" | "locationIds"> & {
   question: string;
 }) {
   return {
     question,
     profile,
+    preset,
     ...(locationIds ? { locationIds } : {}),
   };
 }
@@ -71,6 +74,7 @@ export function useConversation({
   conversationKey,
   endpoint,
   profile,
+  preset,
   available,
   locationIds,
 }: UseConversationOptions) {
@@ -135,6 +139,7 @@ export function useConversation({
           buildConversationRequestBody({
             question: text,
             profile,
+            preset,
             locationIds,
           }),
         ),

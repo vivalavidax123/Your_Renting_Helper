@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ComparePanel } from "@/app/components/ComparePanel";
 import { useExplore } from "@/app/components/ExploreProvider";
 import { MobilityProfile } from "@/app/components/MobilityProfile";
+import { PresetPicker } from "@/app/components/PresetPicker";
 
 export default function ComparePage() {
   const {
@@ -11,12 +12,14 @@ export default function ComparePage() {
     savedError,
     savedPending,
     profile,
+    preset,
+    scoringParams,
     canSave,
     sessionPending,
     locationId,
   } = useExplore();
   const returnHref = locationId
-    ? `/locations/${locationId}?profile=${profile}`
+    ? `/locations/${locationId}?${scoringParams}`
     : "/";
 
   return (
@@ -38,7 +41,10 @@ export default function ComparePage() {
         </p>
       ) : canSave ? (
         <>
-          <MobilityProfile />
+          <div className="flex flex-wrap items-center gap-3">
+            <MobilityProfile />
+            <PresetPicker />
+          </div>
           {savedError ? (
             <p
               role="alert"
@@ -47,7 +53,7 @@ export default function ComparePage() {
               {savedError}
             </p>
           ) : null}
-          <ComparePanel saved={saved} profile={profile} />
+          <ComparePanel saved={saved} profile={profile} preset={preset} />
         </>
       ) : (
         <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">

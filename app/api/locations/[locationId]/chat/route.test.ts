@@ -124,6 +124,7 @@ describe("POST /api/locations/[locationId]/chat", () => {
         JSON.stringify({
           question: "  Why this score?  ",
           profile: "carOwner",
+          preset: "student",
         }),
       ),
       routeContext,
@@ -135,7 +136,11 @@ describe("POST /api/locations/[locationId]/chat", () => {
       "text/plain; charset=utf-8",
     );
     expect(body).toBe("Transport is the strongest category.");
-    expect(buildContext).toHaveBeenCalledWith("location-1", "carOwner");
+    expect(buildContext).toHaveBeenCalledWith(
+      "location-1",
+      "carOwner",
+      "student",
+    );
     expect(analyze).toHaveBeenCalledWith(context, "Why this score?");
   });
 

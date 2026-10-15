@@ -7,10 +7,12 @@ describe("buildConversationRequestBody", () => {
       buildConversationRequestBody({
         question: "What should I verify?",
         profile: "carFree",
+        preset: "balanced",
       }),
     ).toEqual({
       question: "What should I verify?",
       profile: "carFree",
+      preset: "balanced",
     });
   });
 
@@ -19,11 +21,13 @@ describe("buildConversationRequestBody", () => {
       buildConversationRequestBody({
         question: "Which location is easier without a car?",
         profile: "carOwner",
+        preset: "family",
         locationIds: ["location-a", "location-b"],
       }),
     ).toEqual({
       question: "Which location is easier without a car?",
       profile: "carOwner",
+      preset: "family",
       locationIds: ["location-a", "location-b"],
     });
   });

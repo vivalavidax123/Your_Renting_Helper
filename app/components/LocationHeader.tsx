@@ -120,7 +120,8 @@ export function LocationScore() {
 }
 
 export function LocationHeader({ title }: { title?: string }) {
-  const { location, locationId, profile, savedError } = useExplore();
+  const { location, locationId, profile, scoringParams, savedError } =
+    useExplore();
 
   if (!location) return null;
 
@@ -133,7 +134,7 @@ export function LocationHeader({ title }: { title?: string }) {
   return (
     <div className="space-y-4">
       <Link
-        href={`/locations/${locationId}?profile=${profile}`}
+        href={`/locations/${locationId}?${scoringParams}`}
         className="text-sm text-accent-ink hover:underline"
       >
         ← Back to overview

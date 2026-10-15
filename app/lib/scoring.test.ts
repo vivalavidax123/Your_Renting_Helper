@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { getDistanceMeters, scorePlaceGroups } from "./scoring";
-import { rentScoreCategories } from "./categories";
+import {
+  isWeightPreset,
+  rentScoreCategories,
+  scoringQuery,
+  weightPresets,
+  type WeightPreset,
+} from "./categories";
 import type { NearbyPlace, PlaceGroup } from "./types";
 
 // The scoring pillars are private functions, so every test goes through the
@@ -213,6 +219,82 @@ describe("scorePlaceGroups", () => {
 
     expect(totalWeight).toBe(100);
     expect(overallScore).toBe(expected);
+  });
+});
+
+describe("weight presets", () => {
+  const presets = Object.keys(weightPresets) as WeightPreset[];
+
+  // A spread of categories at different distances so each preset's weights
+  // actually move the overall score.
+  const mixedGroups: PlaceGroup[] = [
+    {
+      id: "transport",
+      label: "Transport",
+      radiusMeters: 3000,
+      places: [makePlace({ distanceMeters: 200 })],
+    },
+    {
+      id: "health",
+      label: "Health",
+      radiusMeters: 3000,
+      places: [makePlace({ distanceMeters: 2500 })],
+    },
+  ];
+
+  it("gives every preset weights that sum to 100 with fuel excluded", () => {
+    for (const preset of presets) {
+      const weights = weightPresets[preset];
+      const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
+
+      expect(total, preset).toBe(100);
+      expect(weights.fuel, preset).toBe(0);
+      for (const category of rentScoreCategories) {
+        expect(weights[category.id], `${preset}.${category.id}`).toBeTypeOf(
+          "number",
+        );
+      }
+    }
+  });
+
+  it("keeps the original scores when no preset is given", () => {
+    expect(scorePlaceGroups(mixedGroups, "carFree")).toEqual(
+      scorePlaceGroups(mixedGroups, "carFree", "balanced"),
+    );
+  });
+
+  it("changes only the overall score, never a category's own score", () => {
+    const balanced = scorePlaceGroups(mixedGroups, "carFree", "balanced");
+
+    for (const preset of presets) {
+      const result = scorePlaceGroups(mixedGroups, "carFree", preset);
+
+      expect(result.scores.map((s) => s.score)).toEqual(
+        balanced.scores.map((s) => s.score),
+      );
+    }
+
+    // Close transport and far health: commuters should like this place more
+    // than families do.
+    expect(
+      scorePlaceGroups(mixedGroups, "carFree", "commuter").overallScore,
+    ).toBeGreaterThan(
+      scorePlaceGroups(mixedGroups, "carFree", "family").overallScore,
+    );
+  });
+
+  it("recognises only real preset names", () => {
+    expect(isWeightPreset("family")).toBe(true);
+    expect(isWeightPreset("toString")).toBe(false);
+    expect(isWeightPreset("unknown")).toBe(false);
+    expect(isWeightPreset(null)).toBe(false);
+  });
+
+  it("leaves the default preset out of shared links", () => {
+    expect(scoringQuery("carFree", "balanced")).toBe("profile=carFree");
+    expect(scoringQuery("carOwner", "family")).toBe(
+      "profile=carOwner&preset=family",
+    );
   });
 });
 

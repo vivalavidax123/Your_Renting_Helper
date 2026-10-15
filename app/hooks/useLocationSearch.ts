@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { WeightProfile } from "@/app/lib/categories";
+import {
+  scoringQuery,
+  type WeightPreset,
+  type WeightProfile,
+} from "@/app/lib/categories";
 import { isJsonRecord, readApiResult } from "@/app/lib/api";
 import { useAutocomplete } from "./useAutocomplete";
 import { scorePlaceGroups } from "@/app/lib/scoring";
@@ -32,7 +36,10 @@ function isResult(value: Record<string, unknown>) {
   );
 }
 
-export function useLocationSearch(profile: WeightProfile) {
+export function useLocationSearch(
+  profile: WeightProfile,
+  preset: WeightPreset,
+) {
   const router = useRouter();
   const [navigating, startTransition] = useTransition();
   const [result, setResult] = useState<LocationResult | null>(null);
@@ -159,9 +166,9 @@ export function useLocationSearch(profile: WeightProfile) {
           next.locationId
             ? "/locations/" +
                 encodeURIComponent(next.locationId) +
-                "?profile=" +
-                profile
-            : "/?profile=" + profile,
+                "?" +
+                scoringQuery(profile, preset)
+            : "/?" + scoringQuery(profile, preset),
         );
       });
     } catch (error) {
@@ -191,7 +198,7 @@ export function useLocationSearch(profile: WeightProfile) {
     returningToWelcomeRef.current = false;
   }, []);
 
-  const scored = scorePlaceGroups(result?.groups ?? [], profile);
+  const scored = scorePlaceGroups(result?.groups ?? [], profile, preset);
   return {
     autocomplete,
     result,

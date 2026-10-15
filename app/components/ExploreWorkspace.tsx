@@ -74,13 +74,13 @@ export function ExploreWorkspace() {
             <ScoreBreakdown
               categoryScores={search.categoryScores}
               locationId={search.locationId}
-              profile={search.profile}
+              scoringParams={search.scoringParams}
             />
           </div>
           <details className="mt-3 text-xs text-ink-muted">
             <summary className="cursor-pointer">How to use this result</summary>
             <ul className="mt-2 list-disc space-y-1 pl-4 leading-5">
-              <li>Choose a mobility profile.</li>
+              <li>Choose a mobility profile and score priorities.</li>
               <li>Open a category to explore nearby places.</li>
               <li>Ask about your daily routines.</li>
               <li>Save two locations to compare them.</li>
@@ -99,6 +99,7 @@ export function ExploreWorkspace() {
             key={search.locationId ?? "none"}
             locationId={search.locationId}
             profile={search.profile}
+            preset={search.preset}
             placesState={search.busy ? "loading" : search.placesState}
             signedIn={search.canSave}
             sessionPending={search.sessionPending}
@@ -143,8 +144,8 @@ export function ExploreWorkspace() {
                   key={item.anchor}
                   href={
                     base +
-                    "/details?profile=" +
-                    search.profile +
+                    "/details?" +
+                    search.scoringParams +
                     "#" +
                     item.anchor
                   }

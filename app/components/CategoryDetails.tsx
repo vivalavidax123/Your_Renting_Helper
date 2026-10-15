@@ -13,7 +13,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
     placeGroups,
     location,
     locationId,
-    profile,
+    scoringParams,
     fetchedAt,
     handleSearch,
     busy,
@@ -46,8 +46,8 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
                 locationId +
                 "/categories/" +
                 category.id +
-                "?profile=" +
-                profile
+                "?" +
+                scoringParams
               }
               className={
                 "rounded-full border px-3 py-2 text-xs " +
