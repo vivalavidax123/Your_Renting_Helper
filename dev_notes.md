@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-09-14.
+Status reviewed against committed `HEAD` on 2026-10-15.
 
 | Area                 | Current state                                              |
 | -------------------- | ---------------------------------------------------------- |
@@ -39,13 +39,13 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 - Guided welcome screen with example-suburb searches and an illustrative map preview; result panels stay hidden until a successful search.
 - Shared-header logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
-- Successful searches and direct location opens replace the search query with the matched formatted address; the result view keeps compact search, mobility, save, and overall-score controls together above the evidence.
+- Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header that shows the matched address, the save action, and the overall score together.
 - Signed-in users open the account email menu to access Sign out; Escape and outside clicks close the menu.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
-- Clickable category scores with dedicated evidence routes, category navigation, nearby-place lists, and focused maps.
+- Clickable category score cards in fixed category order, each with a score bar in its category colour, plus dedicated evidence routes, category navigation, nearby-place lists, and focused maps. Category and supporting-evidence pages show the address under their title.
 - No-car and car-owner scoring profiles.
-- Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The preset selector sits beside the overview's category scores and on the comparison page.
+- Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The mobility and preset selectors sit together above the overview's category cards and on the comparison page.
 - Location overviews own the interactive profile selector; category and supporting-evidence pages show the active profile as read-only context. Comparison retains one shared selector because both locations must use the same profile.
 - Seven-day shared result cache.
 - Interactive Google map with searched-location and amenity markers.
@@ -65,8 +65,9 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Reduced-motion preferences shorten interface transitions and loading animations.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
-- Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available.
+- Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available. The table uses A, B and Lead columns (for example "A +6") so it fits phone width; full addresses stay in the selectors and column tooltips.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
+- Evidence dates use Australian day/month format on every page. The rental-quality and distance disclaimers appear once, on the overview.
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
 - Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
@@ -76,7 +77,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 ### Partial or Deferred
 
-- Population, school, childcare, safety, and development data are placeholders only. Rent data is community-reported rather than an official market dataset.
+- Population, school, childcare, safety, and development data are not implemented. Rent data is community-reported rather than an official market dataset.
 - Walkability uses straight-line estimates, not route-aware walking times.
 - Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset is implemented with its manual inbox/password check pending. Account settings and account deletion are not implemented.
 - Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
@@ -233,7 +234,8 @@ traffic, and round the result to the nearest five minutes. Public transport
 temporarily uses the server-only `GOOGLE_MAPS_API_KEY` and a representative
 weekday at 8:00 am in `Australia/Melbourne`. The browser map key is never used
 for these web-service requests. Route durations are fetched per search and are
-not stored in the database.
+not stored in the database. When a key is missing, the server log names it and
+visitors see only a plain "unavailable" message.
 
 Terrain samples 81 points: the address plus every 150 m along eight compass
 lines out to 1.5 km. All points go to the Google Elevation API in one request
@@ -355,13 +357,6 @@ app/lib/indicators.ts derives five indicators from the current place groups and 
 - **Amenity density:** total place count across current groups.
 - **Daily convenience:** average of groceries, food, health, services, and shopping scores.
 - **Car reliance:** estimate based on core categories beyond 1.2 km, with a small fuel-score offset.
-
-The visible planned list is not live data:
-
-- population density;
-- schools and childcare;
-- safety;
-- planned development.
 
 ## AI Location Analyst
 
@@ -554,7 +549,7 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 96-test suite across 19 files covers:
+The current 111-test suite across 21 files covers:
 
 - scoring behaviour and invariants;
 - formatting, coordinate parsing, distance, and time utilities;
