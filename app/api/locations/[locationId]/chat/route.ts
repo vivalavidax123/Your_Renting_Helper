@@ -1,5 +1,5 @@
 import { isWeightPreset, isWeightProfile } from "@/app/lib/categories";
-import { isJsonRecord } from "@/app/lib/api";
+import { errorResponse, isJsonRecord } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   analyzeLocation,
@@ -136,9 +136,11 @@ export async function POST(
       );
     }
 
-    return Response.json(
-      { ok: false, error: "Could not analyse this location." },
-      { status: 500 },
+    return errorResponse(
+      500,
+      "Could not analyse this location.",
+      "Location analysis failed:",
+      error,
     );
   }
 }

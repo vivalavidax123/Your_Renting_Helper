@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { readApiResult } from "@/app/lib/api";
+import { getErrorMessage, readApiResult } from "@/app/lib/api";
 import type { RequestState, RecentSearch } from "@/app/lib/types";
 
 function isHistoryPayload(value: Record<string, unknown>) {
@@ -107,9 +107,7 @@ export function useSavedSearches(
         );
     } catch (error) {
       setToggleError(
-        error instanceof Error
-          ? error.message
-          : "Could not update saved locations.",
+        getErrorMessage(error, "Could not update saved locations."),
       );
     } finally {
       setRefreshKey((key) => key + 1);

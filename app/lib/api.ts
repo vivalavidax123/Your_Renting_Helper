@@ -6,6 +6,33 @@ export function isJsonRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+// A failed API response for visitors. Anything internal (database errors,
+// provider messages, missing key names) goes to the server log through
+// logDetails; the browser only ever receives the fixed, friendly message.
+export function errorResponse(
+  status: number,
+  message: string,
+  ...logDetails: unknown[]
+) {
+  if (logDetails.length > 0) {
+    console.error(...logDetails);
+  }
+
+  return Response.json({ ok: false, error: message }, { status });
+}
+
+// The text to show a visitor for a caught browser-side error. Errors this app
+// throws itself (including readApiResult's) carry friendly messages; fetch
+// network failures (TypeError: "Failed to fetch") and broken JSON
+// (SyntaxError) do not, so those fall back to the caller's message.
+export function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error &&
+    !(error instanceof TypeError) &&
+    !(error instanceof SyntaxError)
+    ? error.message
+    : fallback;
+}
+
 export async function readApiResult<T extends object>(
   response: Response,
   isSuccessPayload: (value: JsonRecord) => boolean,

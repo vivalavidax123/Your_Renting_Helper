@@ -1,15 +1,9 @@
+import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   listSavedLocations,
   setLocationSaved,
 } from "@/app/lib/services/searchStore";
-
-function errorResponse(error: unknown, fallback: string, status: number) {
-  return Response.json(
-    { ok: false, error: error instanceof Error ? error.message : fallback },
-    { status },
-  );
-}
 
 // Favourites are per-user, so every verb starts by resolving the session
 // cookie to a user id. No session answers 401 ("we don't know who you are"),
@@ -36,7 +30,12 @@ export async function GET(request: Request) {
     const searches = await listSavedLocations(userId);
     return Response.json({ ok: true, searches });
   } catch (error) {
-    return errorResponse(error, "Could not load saved locations.", 500);
+    return errorResponse(
+      500,
+      "Could not load saved locations.",
+      "Loading saved locations failed:",
+      error,
+    );
   }
 }
 
@@ -80,7 +79,12 @@ export async function POST(request: Request) {
 
     return Response.json({ ok: true });
   } catch (error) {
-    return errorResponse(error, "Could not save this location.", 500);
+    return errorResponse(
+      500,
+      "Could not save this location.",
+      "Saving a location failed:",
+      error,
+    );
   }
 }
 
@@ -113,6 +117,11 @@ export async function DELETE(request: Request) {
 
     return Response.json({ ok: true });
   } catch (error) {
-    return errorResponse(error, "Could not remove this saved location.", 500);
+    return errorResponse(
+      500,
+      "Could not remove this saved location.",
+      "Removing a saved location failed:",
+      error,
+    );
   }
 }

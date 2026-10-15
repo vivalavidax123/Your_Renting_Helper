@@ -1,4 +1,5 @@
 import type { WeightProfile } from "@/app/lib/categories";
+import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import { scorePlaceGroups } from "@/app/lib/scoring";
 import { fetchPlaceGroups } from "@/app/lib/services/placeSearch";
@@ -9,6 +10,8 @@ import {
   saveSnapshot,
 } from "@/app/lib/services/searchStore";
 import { parseCoordinate } from "@/app/lib/utils";
+
+const maxLabelLength = 300;
 
 function parseProfile(value: string | null): WeightProfile {
   return value === "carOwner" ? "carOwner" : "carFree";
@@ -30,9 +33,10 @@ export async function GET(request: Request) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
-    return Response.json(
-      { ok: false, error: "Missing GOOGLE_MAPS_API_KEY in .env.local." },
-      { status: 500 },
+    return errorResponse(
+      500,
+      "Search is temporarily unavailable.",
+      "GOOGLE_MAPS_API_KEY is not set.",
     );
   }
 
@@ -82,16 +86,20 @@ export async function GET(request: Request) {
         ? { overallScore, scores }
         : scorePlaceGroups(groups, "carFree");
     const fallbackLabel = `${latitude}, ${longitude}`;
+    // These labels come straight from the caller and are stored on the shared
+    // location record, so they are trimmed and capped like other user text.
+    const label = (name: string, fallback: string) =>
+      searchParams.get(name)?.trim().slice(0, maxLabelLength) || fallback;
     let locationId: string | null = null;
 
     try {
       locationId = await saveSnapshot({
         cacheKey,
         locationInput: {
-          query: searchParams.get("query") ?? fallbackLabel,
-          formattedAddress: searchParams.get("address") ?? fallbackLabel,
-          placeId: searchParams.get("placeId") ?? "",
-          locationType: searchParams.get("locationType") ?? "UNKNOWN",
+          query: label("query", fallbackLabel),
+          formattedAddress: label("address", fallbackLabel),
+          placeId: label("placeId", ""),
+          locationType: label("locationType", "UNKNOWN"),
           latitude,
           longitude,
         },
@@ -115,15 +123,11 @@ export async function GET(request: Request) {
       fetchedAt: new Date().toISOString(),
     });
   } catch (error) {
-    return Response.json(
-      {
-        ok: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Could not retrieve nearby places.",
-      },
-      { status: 502 },
+    return errorResponse(
+      502,
+      "Could not retrieve nearby places. Please try again.",
+      "Retrieving nearby places failed:",
+      error,
     );
   }
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { getErrorMessage } from "@/app/lib/api";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 import {
@@ -101,11 +103,7 @@ export function LocationMap({
         setMapRevision((revision) => revision + 1);
       } catch (error) {
         if (isMounted) {
-          setMapError(
-            error instanceof Error
-              ? error.message
-              : "Google Maps failed to load.",
-          );
+          setMapError(getErrorMessage(error, "Google Maps failed to load."));
         }
       }
     }

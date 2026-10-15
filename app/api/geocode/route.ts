@@ -1,3 +1,5 @@
+import { errorResponse } from "@/app/lib/api";
+
 type GoogleGeocodeResult = {
   formatted_address: string;
   place_id: string;
@@ -40,12 +42,10 @@ export async function GET(request: Request) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
-    return Response.json(
-      {
-        ok: false,
-        error: "Missing GOOGLE_MAPS_API_KEY in .env.local.",
-      },
-      { status: 500 },
+    return errorResponse(
+      500,
+      "Search is temporarily unavailable.",
+      "GOOGLE_MAPS_API_KEY is not set.",
     );
   }
 
@@ -69,14 +69,21 @@ export async function GET(request: Request) {
     const data = (await response.json()) as GoogleGeocodeResponse;
 
     if (data.status !== "OK") {
+      if (data.error_message) {
+        console.error(
+          "Google geocoding failed:",
+          data.status,
+          data.error_message,
+        );
+      }
+
       return Response.json(
         {
           ok: false,
           error:
-            data.error_message ??
-            (data.status === "ZERO_RESULTS"
+            data.status === "ZERO_RESULTS"
               ? "No matching location found."
-              : "Could not geocode this location."),
+              : "Could not geocode this location.",
           status: data.status,
         },
         { status: statusToCode[data.status] ?? 502 },

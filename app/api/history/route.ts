@@ -1,3 +1,4 @@
+import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import { listRecentSearches } from "@/app/lib/services/searchStore";
 
@@ -9,15 +10,11 @@ export async function GET(request: Request) {
     const searches = await listRecentSearches(session?.user.id ?? null);
     return Response.json({ ok: true, searches });
   } catch (error) {
-    return Response.json(
-      {
-        ok: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Could not load recent searches.",
-      },
-      { status: 500 },
+    return errorResponse(
+      500,
+      "Could not load recent searches.",
+      "Loading recent searches failed:",
+      error,
     );
   }
 }

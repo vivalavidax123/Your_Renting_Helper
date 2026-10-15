@@ -126,16 +126,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const session = await auth.api.getSession({ headers: request.headers });
-
-  if (!session) {
-    return Response.json(
-      { ok: false, error: "Sign in to contribute rental data." },
-      { status: 401 },
-    );
-  }
-
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+
+    if (!session) {
+      return Response.json(
+        { ok: false, error: "Sign in to contribute rental data." },
+        { status: 401 },
+      );
+    }
+
     const ownReport = await saveRentalReport({
       userId: session.user.id,
       formattedAddress: body.formattedAddress.trim(),

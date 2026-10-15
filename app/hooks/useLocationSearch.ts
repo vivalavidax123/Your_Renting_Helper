@@ -5,7 +5,7 @@ import {
   type WeightPreset,
   type WeightProfile,
 } from "@/app/lib/categories";
-import { isJsonRecord, readApiResult } from "@/app/lib/api";
+import { getErrorMessage, isJsonRecord, readApiResult } from "@/app/lib/api";
 import { useAutocomplete } from "./useAutocomplete";
 import { scorePlaceGroups } from "@/app/lib/scoring";
 import type {
@@ -93,11 +93,7 @@ export function useLocationSearch(
         setState("success");
       } catch (error) {
         if (!controller.signal.aborted) {
-          setError(
-            error instanceof Error
-              ? error.message
-              : "Could not open this location.",
-          );
+          setError(getErrorMessage(error, "Could not open this location."));
           setState("error");
         }
       }
@@ -174,11 +170,7 @@ export function useLocationSearch(
       });
     } catch (error) {
       if (!controller.signal.aborted) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Search failed. Please try again.",
-        );
+        setError(getErrorMessage(error, "Search failed. Please try again."));
         setState("error");
       }
     }

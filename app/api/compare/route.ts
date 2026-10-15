@@ -4,6 +4,7 @@ import {
   type WeightPreset,
   type WeightProfile,
 } from "@/app/lib/categories";
+import { errorResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   areLocationsSavedByUser,
@@ -90,10 +91,12 @@ export async function GET(request: Request) {
       { ok: true, a, b },
       { headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
-    return Response.json(
-      { ok: false, error: "Could not compare these locations." },
-      { status: 500 },
+  } catch (error) {
+    return errorResponse(
+      500,
+      "Could not compare these locations.",
+      "Comparing locations failed:",
+      error,
     );
   }
 }

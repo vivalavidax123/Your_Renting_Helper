@@ -1,3 +1,5 @@
+import { errorResponse } from "@/app/lib/api";
+
 type GoogleAutocompleteSuggestion = {
   placePrediction?: {
     placeId?: string;
@@ -38,42 +40,51 @@ export async function GET(request: Request) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
-    return Response.json(
-      {
-        ok: false,
-        error: "Missing GOOGLE_MAPS_API_KEY in .env.local.",
-      },
-      { status: 500 },
+    return errorResponse(
+      500,
+      "Suggestions are temporarily unavailable.",
+      "GOOGLE_MAPS_API_KEY is not set.",
     );
   }
 
-  const response = await fetch(
-    "https://places.googleapis.com/v1/places:autocomplete",
-    {
-      method: "POST",
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask":
-          "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text",
-      },
-      body: JSON.stringify({
-        input,
-        includedRegionCodes: ["au"],
-        includeQueryPredictions: false,
-      }),
-    },
-  );
-  const data = (await response.json()) as GoogleAutocompleteResponse;
+  let data: GoogleAutocompleteResponse;
 
-  if (!response.ok) {
-    return Response.json(
+  try {
+    const response = await fetch(
+      "https://places.googleapis.com/v1/places:autocomplete",
       {
-        ok: false,
-        error: data.error?.message ?? "Autocomplete failed.",
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask":
+            "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text",
+        },
+        body: JSON.stringify({
+          input,
+          includedRegionCodes: ["au"],
+          includeQueryPredictions: false,
+        }),
       },
-      { status: 502 },
+    );
+    data = (await response.json()) as GoogleAutocompleteResponse;
+
+    if (!response.ok) {
+      return errorResponse(
+        502,
+        "Suggestions are temporarily unavailable.",
+        "Google autocomplete failed:",
+        response.status,
+        data.error?.message,
+      );
+    }
+  } catch (error) {
+    return errorResponse(
+      502,
+      "Suggestions are temporarily unavailable.",
+      "Google autocomplete request failed:",
+      error,
     );
   }
 

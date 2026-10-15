@@ -1,5 +1,5 @@
 import { isWeightPreset, isWeightProfile } from "@/app/lib/categories";
-import { isJsonRecord } from "@/app/lib/api";
+import { errorResponse, isJsonRecord } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   compareLocations,
@@ -167,9 +167,11 @@ export async function POST(request: Request) {
       );
     }
 
-    return Response.json(
-      { ok: false, error: "Could not compare these locations." },
-      { status: 500 },
+    return errorResponse(
+      500,
+      "Could not compare these locations.",
+      "Location comparison chat failed:",
+      error,
     );
   }
 }
