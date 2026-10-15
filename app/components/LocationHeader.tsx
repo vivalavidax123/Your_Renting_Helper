@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
-import { MobilityProfile } from "./MobilityProfile";
+import { formatEvidenceDate } from "@/app/lib/utils";
 
 export function LocationEvidenceNotes() {
   const { fetchedAt, resultFromCache } = useExplore();
@@ -11,9 +11,7 @@ export function LocationEvidenceNotes() {
       {fetchedAt ? (
         <li>
           {resultFromCache ? "Saved evidence" : "Evidence collected"}:{" "}
-          {new Date(fetchedAt).toLocaleDateString("en-AU", {
-            timeZone: "UTC",
-          })}
+          {formatEvidenceDate(fetchedAt)}
         </li>
       ) : null}
       <li>A convenience indicator, not a rating of rental quality.</li>
@@ -88,7 +86,6 @@ export function LocationActions() {
 
   return (
     <div className="flex h-full w-28 flex-col justify-between gap-2">
-      <MobilityProfile />
       <SaveLocationControl compact />
       {savedError ? (
         <p role="alert" className="text-sm text-danger-ink">

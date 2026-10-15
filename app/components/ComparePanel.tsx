@@ -10,6 +10,7 @@ import {
 } from "@/app/lib/categories";
 import { isJsonRecord, readApiResult } from "@/app/lib/api";
 import type { ComparisonSide, RecentSearch } from "@/app/lib/types";
+import { formatEvidenceDate } from "@/app/lib/utils";
 import { AnalystChat } from "./AnalystChat";
 
 function isComparisonSide(value: unknown): value is ComparisonSide {
@@ -355,9 +356,8 @@ export function ComparePanel({
           </div>
 
           <p className="mt-3 text-xs leading-5 text-ink-muted">
-            Evidence collected{" "}
-            {new Date(activeResult.a.fetchedAt).toLocaleDateString()} for A and{" "}
-            {new Date(activeResult.b.fetchedAt).toLocaleDateString()} for B.
+            Evidence collected {formatEvidenceDate(activeResult.a.fetchedAt)}{" "}
+            for A and {formatEvidenceDate(activeResult.b.fetchedAt)} for B.
           </p>
         </>
       ) : null}

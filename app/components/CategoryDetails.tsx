@@ -6,7 +6,7 @@ import { LocationHeader } from "./LocationHeader";
 import { NearbyPlacesList } from "./NearbyPlacesList";
 import { LocationMap } from "./LocationMap";
 import { rentScoreCategories } from "@/app/lib/categories";
-import { formatGroupScope } from "@/app/lib/utils";
+import { formatEvidenceDate, formatGroupScope } from "@/app/lib/utils";
 export function CategoryDetails({ categoryId }: { categoryId: string }) {
   const {
     categoryScores,
@@ -102,9 +102,7 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
       </div>
       {fetchedAt ? (
         <p className="text-xs text-ink-muted">
-          Evidence from{" "}
-          {new Date(fetchedAt).toLocaleDateString("en-AU", { timeZone: "UTC" })}
-          .{" "}
+          Evidence from {formatEvidenceDate(fetchedAt)}.{" "}
           <button
             disabled={busy}
             className="underline disabled:opacity-50"

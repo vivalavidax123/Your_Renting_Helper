@@ -8,13 +8,6 @@ export type Indicator = {
   detailItems?: { label: string; value: string }[];
 };
 
-export const plannedIndicators = [
-  "Population density",
-  "Schools / childcare",
-  "Safety",
-  "Planned development",
-];
-
 const majorGroceryPatterns = ["Coles", "Woolworths", "Aldi", "IGA"].map(
   (brand) => ({ brand, pattern: new RegExp(`\\b${brand}\\b`, "i") }),
 );

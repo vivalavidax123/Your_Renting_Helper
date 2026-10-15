@@ -6,6 +6,12 @@ export function formatDistance(distanceMeters: number) {
     : `${(distanceMeters / 1000).toFixed(1)} km`;
 }
 
+// Evidence dates are shown in Australian day/month order everywhere, whatever
+// the browser locale, so the same date never reads differently across pages.
+export function formatEvidenceDate(value: string) {
+  return new Date(value).toLocaleDateString("en-AU", { timeZone: "UTC" });
+}
+
 export function formatRadius(radiusMeters: number) {
   return radiusMeters < 1000
     ? `${radiusMeters} m`

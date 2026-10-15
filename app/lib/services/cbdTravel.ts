@@ -215,9 +215,14 @@ export async function getCbdTravel(
     !geoapifyApiKey ? "GEOAPIFY_API_KEY for driving" : null,
     !googleMapsApiKey ? "GOOGLE_MAPS_API_KEY for public transport" : null,
   ].filter((value): value is string => value !== null);
+  if (missingKeys.length > 0) {
+    console.error(`CBD travel times need ${missingKeys.join(" and ")}.`);
+  }
+
+  // Key names go to the server log only; visitors get a plain message.
   const warning =
-    missingKeys.length > 0
-      ? `Travel times need ${missingKeys.join(" and ")}.`
+    driveMinutes === null && transitMinutes === null
+      ? "Travel times are unavailable right now."
       : driveMinutes === null || transitMinutes === null
         ? "Some travel times are temporarily unavailable."
         : null;
