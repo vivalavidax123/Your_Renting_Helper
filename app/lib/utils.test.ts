@@ -5,6 +5,7 @@ import {
   normalizeStationName,
   normalizeText,
   parseCoordinate,
+  safeNextPath,
 } from "./utils";
 
 // Formatters and parsers are the classic unit-test sweet spot: lots of edge
@@ -73,4 +74,26 @@ describe("formatDepartureTime", () => {
   // The ISO-date branch is deliberately untested here: its output goes
   // through toLocaleTimeString, which depends on the machine's locale and
   // timezone — asserting it would make the suite fail on other machines.
+});
+
+describe("safeNextPath", () => {
+  it("keeps same-site paths with their query", () => {
+    expect(safeNextPath("/locations/abc?profile=carOwner")).toBe(
+      "/locations/abc?profile=carOwner",
+    );
+  });
+
+  it("falls back to the home page for anything that could leave the site", () => {
+    for (const value of [
+      null,
+      "",
+      "https://evil.example",
+      "evil.example",
+      "//evil.example",
+      "/\\evil.example",
+      "/\t/evil.example",
+    ]) {
+      expect(safeNextPath(value)).toBe("/");
+    }
+  });
 });
