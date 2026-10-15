@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
 import { formatEvidenceDate } from "@/app/lib/utils";
-import { useLoginHref } from "@/app/hooks/useLoginHref";
 
 export function LocationEvidenceNotes() {
   const { fetchedAt, resultFromCache } = useExplore();
@@ -32,21 +31,13 @@ function SaveLocationControl() {
     saved,
     toggleSaved,
   } = useExplore();
-  const loginHref = useLoginHref();
 
-  if (!location || !locationId) return null;
+  // Saving needs an account; signed-out visitors learn that on the home page.
+  if (!location || !locationId || !canSave) return null;
 
   const favourite = saved.find((item) => item.id === locationId);
   const className =
     "inline-flex min-h-10 items-center justify-center rounded-lg border border-line px-3 text-sm transition hover:bg-hover disabled:opacity-50";
-
-  if (!canSave) {
-    return (
-      <Link className={className + " text-accent-ink"} href={loginHref}>
-        Sign in to save
-      </Link>
-    );
-  }
 
   return (
     <button
