@@ -143,7 +143,7 @@ app/
     services/             Google, Transitland, and persistence services
     api.ts                Runtime API-envelope validation
     auth.ts               Better Auth server configuration
-    categories.ts         Category metadata and profile weights
+    categories.ts         Category metadata, preset weights and profile factors
     indicators.ts         Pure derived-indicator calculations
     scoring.ts            Pure scoring and distance calculations
     terrain.ts            Pure terrain sample points and hilliness summary
@@ -257,7 +257,7 @@ updates the existing row.
 
 ## Place Retrieval and Categories
 
-Category configuration lives in app/lib/categories.ts and is the single source of truth for labels, search radii, colour classes, rating baselines, brand terms, included place types, excluded primary types, and profile weights.
+Category configuration lives in app/lib/categories.ts and is the single source of truth for labels, search radii, colour classes, rating baselines, brand terms, included place types, excluded primary types, score-priority preset weights, and mobility-profile proximity factors.
 
 Current category order also defines cross-category deduplication priority:
 
