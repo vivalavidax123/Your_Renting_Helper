@@ -129,7 +129,7 @@ describe("buildLocationAnalysisContext", () => {
     expect(locationSource).toHaveBeenCalledWith("location-1");
     expect(context).toMatchObject({
       locationId: "location-1",
-      preferences: { mobilityProfile: "carOwner" },
+      preferences: { mobilityProfile: "carOwner", weightPreset: "balanced" },
       dataAsOf: "2026-08-30T00:00:00.000Z",
     });
   });

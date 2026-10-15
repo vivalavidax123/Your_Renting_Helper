@@ -42,7 +42,7 @@ const context: LocationAnalysisContext = {
       detail: "0 core categories likely need a longer walk or drive",
     },
   ],
-  preferences: { mobilityProfile: "carFree" },
+  preferences: { mobilityProfile: "carFree", weightPreset: "balanced" },
   dataAsOf: "2026-08-30T00:00:00.000Z",
 };
 

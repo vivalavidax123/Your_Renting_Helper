@@ -1,4 +1,4 @@
-import type { WeightProfile } from "@/app/lib/categories";
+import { isWeightPreset, isWeightProfile } from "@/app/lib/categories";
 import { isJsonRecord } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
@@ -11,10 +11,6 @@ import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysi
 import { areLocationsSavedByUser } from "@/app/lib/services/searchStore";
 
 const maxQuestionLength = 1_000;
-
-function isWeightProfile(value: unknown): value is WeightProfile {
-  return value === "carFree" || value === "carOwner";
-}
 
 function readLocationIds(value: unknown): [string, string] | null {
   if (
@@ -80,7 +76,18 @@ export async function POST(request: Request) {
     );
   }
 
+  if (body.preset !== undefined && !isWeightPreset(body.preset)) {
+    return Response.json(
+      {
+        ok: false,
+        error: "Preset must be balanced, student, family or commuter.",
+      },
+      { status: 400 },
+    );
+  }
+
   const profile = body.profile ?? "carFree";
+  const preset = body.preset ?? "balanced";
 
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -106,7 +113,7 @@ export async function POST(request: Request) {
 
     const [locationA, locationB] = await Promise.all(
       locationIds.map((locationId) =>
-        buildLocationAnalysisContext(locationId, profile),
+        buildLocationAnalysisContext(locationId, profile, preset),
       ),
     );
 

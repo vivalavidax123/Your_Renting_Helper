@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/app/lib/db";
-import type { WeightProfile } from "@/app/lib/categories";
+import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
 import { scorePlaceGroups } from "@/app/lib/scoring";
 import type { CategoryScore, PlaceGroup, RecentSearch } from "@/app/lib/types";
 
@@ -227,8 +227,12 @@ export async function areLocationsSavedByUser(
 }
 
 // Full category scores for one location, recalculated from the newest stored
-// place groups for the comparison view's selected mobility profile.
-export async function getComparisonSide(id: string, profile: WeightProfile) {
+// place groups for the comparison view's selected mobility profile and preset.
+export async function getComparisonSide(
+  id: string,
+  profile: WeightProfile,
+  preset: WeightPreset,
+) {
   const location = await prisma.searchLocation.findUnique({
     where: { id },
     include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
@@ -241,7 +245,7 @@ export async function getComparisonSide(id: string, profile: WeightProfile) {
   }
 
   const groups = JSON.parse(snapshot.groupsJson) as PlaceGroup[];
-  const { overallScore, scores } = scorePlaceGroups(groups, profile);
+  const { overallScore, scores } = scorePlaceGroups(groups, profile, preset);
 
   return {
     id: location.id,

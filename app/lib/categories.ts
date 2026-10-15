@@ -176,20 +176,81 @@ export const rentScoreCategories: RentScoreCategory[] = [
 
 export type WeightProfile = "carFree" | "carOwner";
 
-// Profile scores must be directly comparable, so both use one fixed set of
-// category priorities. Car ownership changes only how strongly distance is
-// penalised below. These weights sum to 100; fuel remains useful context but
-// is not part of the everyday-convenience score.
-export const baseCategoryWeights: Record<string, number> = {
-  shopping_centres: 8,
-  groceries: 22,
-  food: 14,
-  transport: 28,
-  health: 15,
-  fitness: 10,
-  fuel: 0,
-  services: 3,
+export function isWeightProfile(value: unknown): value is WeightProfile {
+  return value === "carFree" || value === "carOwner";
+}
+
+export type WeightPreset = "balanced" | "student" | "family" | "commuter";
+
+export function isWeightPreset(value: unknown): value is WeightPreset {
+  return typeof value === "string" && Object.hasOwn(weightPresets, value);
+}
+
+// Category priorities for each preset; every preset sums to 100. Presets
+// change only how much each category counts towards the overall score, never
+// a category's own score, so mobility (distance tolerance) and preset stay
+// independent. Fuel remains useful context but is never part of the overall
+// score. "balanced" is the original fixed weighting and the stored default.
+export const weightPresets: Record<WeightPreset, Record<string, number>> = {
+  balanced: {
+    shopping_centres: 8,
+    groceries: 22,
+    food: 14,
+    transport: 28,
+    health: 15,
+    fitness: 10,
+    fuel: 0,
+    services: 3,
+  },
+  // Lives on public transport, eats out, uses the gym.
+  student: {
+    shopping_centres: 6,
+    groceries: 18,
+    food: 22,
+    transport: 32,
+    health: 6,
+    fitness: 14,
+    fuel: 0,
+    services: 2,
+  },
+  // Weekly shop and doctors matter most.
+  family: {
+    shopping_centres: 12,
+    groceries: 28,
+    food: 8,
+    transport: 18,
+    health: 24,
+    fitness: 6,
+    fuel: 0,
+    services: 4,
+  },
+  // Getting to work dominates everything else.
+  commuter: {
+    shopping_centres: 5,
+    groceries: 20,
+    food: 12,
+    transport: 45,
+    health: 8,
+    fitness: 7,
+    fuel: 0,
+    services: 3,
+  },
 };
+
+export const weightPresetLabels: Record<WeightPreset, string> = {
+  balanced: "Balanced",
+  student: "Student",
+  family: "Family",
+  commuter: "Commuter",
+};
+
+// Query string that carries the scoring choice between pages. The default
+// preset is left out so existing links keep their exact shape.
+export function scoringQuery(profile: WeightProfile, preset: WeightPreset) {
+  return (
+    "profile=" + profile + (preset === "balanced" ? "" : "&preset=" + preset)
+  );
+}
 
 // How sharply the proximity pillar decays past the walkable ring: the score
 // halves every (factor × category radius). Distance genuinely hurts more

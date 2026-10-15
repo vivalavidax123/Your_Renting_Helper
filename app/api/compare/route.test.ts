@@ -43,6 +43,15 @@ describe("GET /api/compare", () => {
     expect(getSession).not.toHaveBeenCalled();
   });
 
+  it("rejects an unknown score preset", async () => {
+    const response = await GET(
+      request("a=location-1&b=location-2&profile=carFree&preset=luxury"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(getSession).not.toHaveBeenCalled();
+  });
+
   it("requires a signed-in user", async () => {
     getSession.mockResolvedValue(null);
 
@@ -66,7 +75,7 @@ describe("GET /api/compare", () => {
     expect(getSide).not.toHaveBeenCalled();
   });
 
-  it("loads both sides with the same selected profile", async () => {
+  it("loads both sides with the same selected profile and preset", async () => {
     const sideA = { id: "location-1" } as Awaited<
       ReturnType<typeof getComparisonSide>
     >;
@@ -78,12 +87,22 @@ describe("GET /api/compare", () => {
     getSide.mockResolvedValueOnce(sideA).mockResolvedValueOnce(sideB);
 
     const response = await GET(
-      request("a=location-1&b=location-2&profile=carOwner"),
+      request("a=location-1&b=location-2&profile=carOwner&preset=family"),
     );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
-    expect(getSide).toHaveBeenNthCalledWith(1, "location-1", "carOwner");
-    expect(getSide).toHaveBeenNthCalledWith(2, "location-2", "carOwner");
+    expect(getSide).toHaveBeenNthCalledWith(
+      1,
+      "location-1",
+      "carOwner",
+      "family",
+    );
+    expect(getSide).toHaveBeenNthCalledWith(
+      2,
+      "location-2",
+      "carOwner",
+      "family",
+    );
   });
 });

@@ -1,7 +1,8 @@
 import {
   rentScoreCategories,
-  baseCategoryWeights,
+  weightPresets,
   proximityHalfLifeFactor,
+  type WeightPreset,
   type WeightProfile,
 } from "./categories";
 import type { PlaceGroup, NearbyPlace } from "./types";
@@ -93,7 +94,9 @@ function getExplanation(count: number, closestDistanceMeters: number | null) {
 export function scorePlaceGroups(
   groups: PlaceGroup[],
   profile: WeightProfile = "carFree",
+  preset: WeightPreset = "balanced",
 ) {
+  const weights = weightPresets[preset];
   const halfLifeFactor = proximityHalfLifeFactor[profile];
   const scores = rentScoreCategories.map((category) => {
     const group = groups.find((candidate) => candidate.id === category.id);
@@ -121,7 +124,7 @@ export function scorePlaceGroups(
       id: category.id,
       label: category.label,
       score,
-      weight: baseCategoryWeights[category.id] ?? 0,
+      weight: weights[category.id] ?? 0,
       colorClass: category.colorClass,
       detail: category.detail,
       count: places.length,

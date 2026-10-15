@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { WeightProfile } from "@/app/lib/categories";
+import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
 import { buildDerivedIndicators } from "@/app/lib/indicators";
 import { scorePlaceGroups } from "@/app/lib/scoring";
 import type { Indicator } from "@/app/lib/indicators";
@@ -48,6 +48,7 @@ export type LocationAnalysisContext = {
   practicalIndicators: Indicator[];
   preferences: {
     mobilityProfile: WeightProfile;
+    weightPreset: WeightPreset;
   };
   dataAsOf: string;
 };
@@ -70,15 +71,17 @@ export function assembleLocationAnalysisContext({
   address,
   groups,
   profile,
+  preset = "balanced",
   dataAsOf,
 }: {
   locationId: string;
   address: string;
   groups: PlaceGroup[];
   profile: WeightProfile;
+  preset?: WeightPreset;
   dataAsOf: string;
 }): LocationAnalysisContext {
-  const { overallScore, scores } = scorePlaceGroups(groups, profile);
+  const { overallScore, scores } = scorePlaceGroups(groups, profile, preset);
   const practicalIndicators = buildDerivedIndicators(scores, groups);
 
   return {
@@ -124,7 +127,7 @@ export function assembleLocationAnalysisContext({
       };
     }),
     practicalIndicators,
-    preferences: { mobilityProfile: profile },
+    preferences: { mobilityProfile: profile, weightPreset: preset },
     dataAsOf,
   };
 }
@@ -132,6 +135,7 @@ export function assembleLocationAnalysisContext({
 export async function buildLocationAnalysisContext(
   locationId: string,
   profile: WeightProfile = "carFree",
+  preset: WeightPreset = "balanced",
 ) {
   const source = await getLocationAnalysisSource(locationId);
 
@@ -144,6 +148,7 @@ export async function buildLocationAnalysisContext(
     address: source.formattedAddress,
     groups: source.groups,
     profile,
+    preset,
     dataAsOf: source.fetchedAt,
   });
 }

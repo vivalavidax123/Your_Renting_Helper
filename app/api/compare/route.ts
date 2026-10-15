@@ -1,19 +1,21 @@
-import type { WeightProfile } from "@/app/lib/categories";
+import {
+  isWeightPreset,
+  isWeightProfile,
+  type WeightPreset,
+  type WeightProfile,
+} from "@/app/lib/categories";
 import { auth } from "@/app/lib/auth";
 import {
   areLocationsSavedByUser,
   getComparisonSide,
 } from "@/app/lib/services/searchStore";
 
-function isWeightProfile(value: string | null): value is WeightProfile {
-  return value === "carFree" || value === "carOwner";
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const aId = searchParams.get("a")?.trim();
   const bId = searchParams.get("b")?.trim();
   const requestedProfile = searchParams.get("profile");
+  const requestedPreset = searchParams.get("preset");
 
   if (!aId || !bId) {
     return Response.json(
@@ -36,7 +38,18 @@ export async function GET(request: Request) {
     );
   }
 
+  if (requestedPreset !== null && !isWeightPreset(requestedPreset)) {
+    return Response.json(
+      {
+        ok: false,
+        error: "Preset must be balanced, student, family or commuter.",
+      },
+      { status: 400 },
+    );
+  }
+
   const profile: WeightProfile = requestedProfile ?? "carFree";
+  const preset: WeightPreset = requestedPreset ?? "balanced";
 
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -62,8 +75,8 @@ export async function GET(request: Request) {
     }
 
     const [a, b] = await Promise.all([
-      getComparisonSide(aId, profile),
-      getComparisonSide(bId, profile),
+      getComparisonSide(aId, profile, preset),
+      getComparisonSide(bId, profile, preset),
     ]);
 
     if (!a || !b) {
