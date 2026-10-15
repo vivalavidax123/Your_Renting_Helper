@@ -1,3 +1,5 @@
+import "server-only";
+
 import { getDistanceMeters } from "@/app/lib/scoring";
 import type { CbdTravel } from "@/app/lib/types";
 

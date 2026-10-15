@@ -1,3 +1,5 @@
+import "server-only";
+
 import { prisma } from "@/app/lib/db";
 import { getDistanceMeters } from "@/app/lib/scoring";
 import { buildCacheKey } from "./searchStore";

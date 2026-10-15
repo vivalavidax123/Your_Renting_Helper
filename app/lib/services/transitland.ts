@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { TransportService } from "@/app/lib/types";
 import { normalizeText } from "@/app/lib/utils";
 import { getDistanceMeters } from "@/app/lib/scoring";
@@ -130,6 +132,7 @@ async function fetchTransitlandJson<T>({
     headers: {
       apikey: apiKey,
     },
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) {

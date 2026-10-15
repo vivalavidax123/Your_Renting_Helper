@@ -40,9 +40,12 @@ export async function GET(request: Request) {
     .getSession({ headers: request.headers })
     .catch(() => null);
   const userId = session?.user.id ?? null;
-  const recordSearch = async () => {
-    if (userId) {
-      await recordUserSearch(userId, cacheKey).catch((error) => {
+  // Awaited rather than deferred: the browser reloads its recent-search list
+  // as soon as this response lands, so the history row must already exist.
+  // Without a location row (saving failed) there is nothing to attach it to.
+  const recordSearch = async (locationId: string | null) => {
+    if (userId && locationId) {
+      await recordUserSearch(userId, locationId).catch((error) => {
         console.error("Recording search history failed:", error);
       });
     }
@@ -52,7 +55,7 @@ export async function GET(request: Request) {
     const cachedResult = await findFreshSnapshot(cacheKey);
 
     if (cachedResult) {
-      await recordSearch();
+      await recordSearch(cachedResult.locationId);
 
       return Response.json({
         ok: true,
@@ -97,7 +100,7 @@ export async function GET(request: Request) {
       console.error("Saving search result failed:", error);
     }
 
-    await recordSearch();
+    await recordSearch(locationId);
 
     return Response.json({
       ok: true,

@@ -1,3 +1,5 @@
+import "server-only";
+
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/app/lib/db";
 import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
@@ -171,23 +173,12 @@ export async function listRecentSearches(
 }
 
 // Called after a successful search by a signed-in user. Upserts so
-// re-searching a spot bumps it to the top instead of duplicating it. The
-// location row is created by saveSnapshot; if that failed (or the cache row
-// vanished) there is nothing to attach history to, so it is a silent no-op.
-export async function recordUserSearch(userId: string, cacheKey: string) {
-  const location = await prisma.searchLocation.findUnique({
-    where: { cacheKey },
-    select: { id: true },
-  });
-
-  if (!location) {
-    return;
-  }
-
+// re-searching a spot bumps it to the top instead of duplicating it.
+export async function recordUserSearch(userId: string, locationId: string) {
   await prisma.userSearch.upsert({
-    where: { userId_locationId: { userId, locationId: location.id } },
+    where: { userId_locationId: { userId, locationId } },
     update: { lastSearchedAt: new Date() },
-    create: { userId, locationId: location.id },
+    create: { userId, locationId },
   });
 }
 

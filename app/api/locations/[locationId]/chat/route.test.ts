@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
 vi.mock("@/app/lib/auth", () => ({
   auth: { api: { getSession: vi.fn() } },
 }));

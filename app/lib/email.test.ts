@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { sendMock } = vi.hoisted(() => ({ sendMock: vi.fn() }));
 
-vi.mock("server-only", () => ({}));
 vi.mock("resend", () => ({
   Resend: class {
     emails = { send: sendMock };

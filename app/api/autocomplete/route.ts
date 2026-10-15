@@ -66,6 +66,8 @@ export async function GET(request: Request) {
           includedRegionCodes: ["au"],
           includeQueryPredictions: false,
         }),
+        // Suggestions are only useful while the visitor is typing.
+        signal: AbortSignal.timeout(5000),
       },
     );
     data = (await response.json()) as GoogleAutocompleteResponse;
