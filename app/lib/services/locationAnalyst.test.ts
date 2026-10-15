@@ -5,8 +5,10 @@ vi.mock("server-only", () => ({}));
 import {
   analyzeLocation,
   compareLocations,
+  getQuestionRefusal,
   isLocationQuestionInScope,
   isLocationQuestionSafe,
+  readQuestion,
 } from "./locationAnalyst";
 import type { LocationAnalysisContext } from "./locationAnalysis";
 
@@ -295,5 +297,56 @@ describe("isLocationQuestionInScope", () => {
       message:
         "The AI scope check is temporarily unavailable. Please try again.",
     });
+  });
+});
+
+describe("readQuestion", () => {
+  it("trims the question and rejects empty or overlong text", () => {
+    expect(readQuestion("  Is it quiet?  ")).toEqual({
+      question: "Is it quiet?",
+    });
+    expect(readQuestion("   ")).toEqual({ error: "Question is required." });
+    expect(readQuestion(42)).toEqual({ error: "Question is required." });
+    expect(readQuestion("a".repeat(1_001))).toEqual({
+      error: "Question must be 1,000 characters or fewer.",
+    });
+  });
+});
+
+describe("getQuestionRefusal", () => {
+  function scopeDecision(decision: string) {
+    return Response.json({
+      output: [
+        {
+          content: [
+            { type: "output_text", text: JSON.stringify({ decision }) },
+          ],
+        },
+      ],
+    });
+  }
+
+  it("refuses a flagged question without running the scope check", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({ results: [{ flagged: true }] }));
+
+    await expect(getQuestionRefusal("q", "single")).resolves.toBe(
+      "I can’t help with that request. Ask about the selected location or renting instead.",
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses an off-topic question and allows an on-topic one", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({ results: [{ flagged: false }] }))
+      .mockResolvedValueOnce(scopeDecision("reject"))
+      .mockResolvedValueOnce(Response.json({ results: [{ flagged: false }] }))
+      .mockResolvedValueOnce(scopeDecision("allow"));
+
+    await expect(getQuestionRefusal("q", "comparison")).resolves.toBe(
+      "I can only answer questions about the selected locations, nearby amenities, transport, rental evidence, and renting trade-offs.",
+    );
+    await expect(getQuestionRefusal("q", "comparison")).resolves.toBeNull();
   });
 });

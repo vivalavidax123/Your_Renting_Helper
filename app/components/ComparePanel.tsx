@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   weightPresetLabels,
+  weightProfileLabels,
   type WeightPreset,
   type WeightProfile,
 } from "@/app/lib/categories";
@@ -322,7 +323,7 @@ export function ComparePanel({
             <table className="w-full border-collapse text-sm">
               <caption className="sr-only">
                 Category score comparison using the{" "}
-                {profile === "carFree" ? "No car" : "Car owner"} profile and{" "}
+                {weightProfileLabels[profile]} profile and{" "}
                 {weightPresetLabels[preset]} weighting
               </caption>
               <thead>

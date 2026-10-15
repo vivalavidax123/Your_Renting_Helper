@@ -180,10 +180,36 @@ export function isWeightProfile(value: unknown): value is WeightProfile {
   return value === "carFree" || value === "carOwner";
 }
 
+export const weightProfileLabels: Record<WeightProfile, string> = {
+  carFree: "No car",
+  carOwner: "Car owner",
+};
+
 export type WeightPreset = "balanced" | "student" | "family" | "commuter";
 
 export function isWeightPreset(value: unknown): value is WeightPreset {
   return typeof value === "string" && Object.hasOwn(weightPresets, value);
+}
+
+// Reads the optional profile and preset an API request sent. A missing value
+// (null from a query string, undefined from a JSON body) uses the default;
+// an unknown value returns the message the route sends back with a 400.
+export function parseScoringOptions(
+  profile: unknown,
+  preset: unknown,
+): { profile: WeightProfile; preset: WeightPreset } | { error: string } {
+  const requestedProfile = profile ?? "carFree";
+  const requestedPreset = preset ?? "balanced";
+
+  if (!isWeightProfile(requestedProfile)) {
+    return { error: "Profile must be carFree or carOwner." };
+  }
+
+  if (!isWeightPreset(requestedPreset)) {
+    return { error: "Preset must be balanced, student, family or commuter." };
+  }
+
+  return { profile: requestedProfile, preset: requestedPreset };
 }
 
 // Category priorities for each preset; every preset sums to 100. Presets

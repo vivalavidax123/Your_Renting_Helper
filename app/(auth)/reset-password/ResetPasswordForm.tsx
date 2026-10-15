@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { authClient } from "@/app/lib/authClient";
+import { inputClass, primaryButtonClass, primaryLinkClass } from "../styles";
 
 type ResetPasswordFormProps = {
   token: string | null;
@@ -24,10 +25,7 @@ export function ResetPasswordForm({ token, invalid }: ResetPasswordFormProps) {
           This password-reset link is invalid or has expired. Request a new link
           to continue.
         </p>
-        <Link
-          href="/forgot-password"
-          className="mt-5 inline-flex w-full justify-center rounded-md bg-action py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover"
-        >
+        <Link href="/forgot-password" className={primaryLinkClass}>
           Request another link
         </Link>
       </div>
@@ -42,10 +40,7 @@ export function ResetPasswordForm({ token, invalid }: ResetPasswordFormProps) {
           Your old password and existing sessions are no longer valid. Sign in
           with your new password.
         </p>
-        <Link
-          href="/login"
-          className="mt-5 inline-flex w-full justify-center rounded-md bg-action py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover"
-        >
+        <Link href="/login" className={primaryLinkClass}>
           Back to sign in
         </Link>
       </div>
@@ -104,7 +99,7 @@ export function ResetPasswordForm({ token, invalid }: ResetPasswordFormProps) {
             placeholder="New password"
             autoComplete="new-password"
             disabled={pending}
-            className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent disabled:text-ink-faint"
+            className={inputClass}
           />
         </div>
         <div>
@@ -122,7 +117,7 @@ export function ResetPasswordForm({ token, invalid }: ResetPasswordFormProps) {
             placeholder="Confirm new password"
             autoComplete="new-password"
             disabled={pending}
-            className="w-full rounded-md border border-line-strong bg-control px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent disabled:text-ink-faint"
+            className={inputClass}
           />
         </div>
 
@@ -132,11 +127,7 @@ export function ResetPasswordForm({ token, invalid }: ResetPasswordFormProps) {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-md bg-action py-2 text-sm font-semibold text-action-ink transition hover:bg-action-hover disabled:bg-action-disabled"
-        >
+        <button type="submit" disabled={pending} className={primaryButtonClass}>
           {pending ? "Updating password..." : "Update password"}
         </button>
       </form>

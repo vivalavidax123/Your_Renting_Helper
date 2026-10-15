@@ -1,5 +1,6 @@
 import { prisma } from "@/app/lib/db";
 import { getDistanceMeters } from "@/app/lib/scoring";
+import { buildCacheKey } from "./searchStore";
 import type {
   RentalEstimate,
   RentalPropertyProfile,
@@ -18,6 +19,12 @@ export const rentalPropertyTypes: RentalPropertyType[] = [
   "unit",
   "other",
 ];
+
+export function isRentalPropertyType(
+  value: unknown,
+): value is RentalPropertyType {
+  return rentalPropertyTypes.includes(value as RentalPropertyType);
+}
 
 function median(values: number[]) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -119,9 +126,7 @@ export async function getSuggestedRentalProfile(
 
   for (const report of nearby) {
     if (
-      !rentalPropertyTypes.includes(
-        report.propertyType as RentalPropertyType,
-      ) ||
+      !isRentalPropertyType(report.propertyType) ||
       !Number.isInteger(report.bedrooms) ||
       report.bedrooms < 0 ||
       report.bedrooms > 10
@@ -181,7 +186,9 @@ export async function saveRentalReport({
   propertyType: RentalPropertyType;
   bedrooms: number;
 }) {
-  const locationKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}:${propertyType}:${bedrooms}`;
+  // Same rounding as the search cache, so one address maps to one report
+  // per property type and bedroom count.
+  const locationKey = `${buildCacheKey(latitude, longitude)}:${propertyType}:${bedrooms}`;
 
   return prisma.rentalReport.upsert({
     where: { userId_locationKey: { userId, locationKey } },
@@ -205,23 +212,20 @@ export async function getLatestRentalReport(
   latitude: number,
   longitude: number,
 ): Promise<RentalReportSummary | null> {
-  const locationKeyPrefix = `${latitude.toFixed(4)},${longitude.toFixed(4)}:`;
+  const locationKeyPrefix = `${buildCacheKey(latitude, longitude)}:`;
   const report = await prisma.rentalReport.findFirst({
     where: { userId, locationKey: { startsWith: locationKeyPrefix } },
     orderBy: { updatedAt: "desc" },
     select: { weeklyRent: true, propertyType: true, bedrooms: true },
   });
 
-  if (
-    !report ||
-    !rentalPropertyTypes.includes(report.propertyType as RentalPropertyType)
-  ) {
+  if (!report || !isRentalPropertyType(report.propertyType)) {
     return null;
   }
 
   return {
     weeklyRent: report.weeklyRent,
-    propertyType: report.propertyType as RentalPropertyType,
+    propertyType: report.propertyType,
     bedrooms: report.bedrooms,
   };
 }

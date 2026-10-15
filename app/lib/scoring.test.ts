@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getDistanceMeters, scorePlaceGroups } from "./scoring";
 import {
   isWeightPreset,
+  parseScoringOptions,
   rentScoreCategories,
   scoringQuery,
   weightPresets,
@@ -288,6 +289,23 @@ describe("weight presets", () => {
     expect(isWeightPreset("toString")).toBe(false);
     expect(isWeightPreset("unknown")).toBe(false);
     expect(isWeightPreset(null)).toBe(false);
+  });
+
+  it("parses request scoring options with defaults", () => {
+    expect(parseScoringOptions(null, undefined)).toEqual({
+      profile: "carFree",
+      preset: "balanced",
+    });
+    expect(parseScoringOptions("carOwner", "family")).toEqual({
+      profile: "carOwner",
+      preset: "family",
+    });
+    expect(parseScoringOptions("bike", null)).toEqual({
+      error: "Profile must be carFree or carOwner.",
+    });
+    expect(parseScoringOptions(null, "toString")).toEqual({
+      error: "Preset must be balanced, student, family or commuter.",
+    });
   });
 
   it("leaves the default preset out of shared links", () => {

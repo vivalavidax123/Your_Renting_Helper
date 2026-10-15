@@ -1,16 +1,14 @@
-import { isWeightPreset, isWeightProfile } from "@/app/lib/categories";
-import { errorResponse, isJsonRecord } from "@/app/lib/api";
+import { parseScoringOptions } from "@/app/lib/categories";
+import { errorResponse, isJsonRecord, textResponse } from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   compareLocations,
-  isLocationQuestionInScope,
-  isLocationQuestionSafe,
+  getQuestionRefusal,
   LocationAnalystError,
+  readQuestion,
 } from "@/app/lib/services/locationAnalyst";
 import { buildLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 import { areLocationsSavedByUser } from "@/app/lib/services/searchStore";
-
-const maxQuestionLength = 1_000;
 
 function readLocationIds(value: unknown): [string, string] | null {
   if (
@@ -53,41 +51,20 @@ export async function POST(request: Request) {
     );
   }
 
-  if (typeof body.question !== "string" || !body.question.trim()) {
-    return Response.json(
-      { ok: false, error: "Question is required." },
-      { status: 400 },
-    );
+  const input = readQuestion(body.question);
+
+  if ("error" in input) {
+    return Response.json({ ok: false, error: input.error }, { status: 400 });
   }
 
-  const question = body.question.trim();
+  const options = parseScoringOptions(body.profile, body.preset);
 
-  if (question.length > maxQuestionLength) {
-    return Response.json(
-      { ok: false, error: "Question must be 1,000 characters or fewer." },
-      { status: 400 },
-    );
+  if ("error" in options) {
+    return Response.json({ ok: false, error: options.error }, { status: 400 });
   }
 
-  if (body.profile !== undefined && !isWeightProfile(body.profile)) {
-    return Response.json(
-      { ok: false, error: "Profile must be carFree or carOwner." },
-      { status: 400 },
-    );
-  }
-
-  if (body.preset !== undefined && !isWeightPreset(body.preset)) {
-    return Response.json(
-      {
-        ok: false,
-        error: "Preset must be balanced, student, family or commuter.",
-      },
-      { status: 400 },
-    );
-  }
-
-  const profile = body.profile ?? "carFree";
-  const preset = body.preset ?? "balanced";
+  const { question } = input;
+  const { profile, preset } = options;
 
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -124,41 +101,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!(await isLocationQuestionSafe(question))) {
-      return new Response(
-        "I can’t help with that request. Ask about the selected locations or renting instead.",
-        {
-          headers: {
-            "Cache-Control": "no-cache",
-            "Content-Type": "text/plain; charset=utf-8",
-            "X-Content-Type-Options": "nosniff",
-          },
-        },
-      );
+    const refusal = await getQuestionRefusal(question, "comparison");
+
+    if (refusal) {
+      return textResponse(refusal);
     }
 
-    if (!(await isLocationQuestionInScope(question, "comparison"))) {
-      return new Response(
-        "I can only answer questions about the selected locations, nearby amenities, transport, rental evidence, and renting trade-offs.",
-        {
-          headers: {
-            "Cache-Control": "no-cache",
-            "Content-Type": "text/plain; charset=utf-8",
-            "X-Content-Type-Options": "nosniff",
-          },
-        },
-      );
-    }
-
-    const answerStream = await compareLocations(locationA, locationB, question);
-
-    return new Response(answerStream, {
-      headers: {
-        "Cache-Control": "no-cache",
-        "Content-Type": "text/plain; charset=utf-8",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
+    return textResponse(await compareLocations(locationA, locationB, question));
   } catch (error) {
     if (error instanceof LocationAnalystError) {
       return Response.json(

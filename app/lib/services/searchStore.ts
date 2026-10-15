@@ -225,27 +225,25 @@ export async function getComparisonSide(
   profile: WeightProfile,
   preset: WeightPreset,
 ) {
-  const location = await prisma.searchLocation.findUnique({
-    where: { id },
-    include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
-  });
+  const stored = await getStoredLocation(id);
 
-  const snapshot = location?.snapshots[0];
-
-  if (!location || !snapshot) {
+  if (!stored) {
     return null;
   }
 
-  const groups = JSON.parse(snapshot.groupsJson) as PlaceGroup[];
-  const { overallScore, scores } = scorePlaceGroups(groups, profile, preset);
+  const { overallScore, scores } = scorePlaceGroups(
+    stored.groups,
+    profile,
+    preset,
+  );
 
   return {
-    id: location.id,
-    query: location.query,
-    formattedAddress: location.formattedAddress,
+    id: stored.locationId,
+    query: stored.location.query,
+    formattedAddress: stored.location.formattedAddress,
     overallScore,
     scores,
-    fetchedAt: snapshot.createdAt.toISOString(),
+    fetchedAt: stored.fetchedAt,
   };
 }
 
@@ -283,7 +281,9 @@ export async function setLocationSaved(
   }
 }
 
-// Read-only evidence access never triggers paid provider calls or records history.
+// A location and its newest place snapshot. Every page, the comparison and
+// the AI analyst read stored evidence through this one query. It never calls
+// a paid provider or records history.
 export async function getStoredLocation(id: string) {
   const location = await prisma.searchLocation.findUnique({
     where: { id },

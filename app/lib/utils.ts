@@ -69,14 +69,34 @@ export function formatDepartureTime(value: string | null) {
   });
 }
 
-export function parseCoordinate(value: string | null) {
-  if (!value) {
+function toCoordinate(value: unknown) {
+  // Number("") is 0, so an empty query value must not become a coordinate.
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : NaN;
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// Reads a latitude and longitude from a query string ("-37.81") or a JSON
+// body (-37.81). Returns null unless both are finite numbers in range.
+export function parseLatLng(lat: unknown, lng: unknown) {
+  const latitude = toCoordinate(lat);
+  const longitude = toCoordinate(lng);
+
+  if (
+    latitude === null ||
+    longitude === null ||
+    Math.abs(latitude) > 90 ||
+    Math.abs(longitude) > 180
+  ) {
     return null;
   }
 
-  const parsed = Number(value);
-
-  return Number.isFinite(parsed) ? parsed : null;
+  return { latitude, longitude };
 }
 
 export function normalizeText(value: string) {

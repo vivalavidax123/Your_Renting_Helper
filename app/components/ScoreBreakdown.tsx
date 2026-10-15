@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { CategoryScore } from "@/app/lib/types";
 import { formatDistance } from "@/app/lib/utils";
-import { MobilityProfile } from "./MobilityProfile";
-import { PresetPicker } from "./PresetPicker";
+import { MobilityProfile, PresetPicker } from "./ScoringControls";
 export function ScoreBreakdown({
   categoryScores,
   locationId,

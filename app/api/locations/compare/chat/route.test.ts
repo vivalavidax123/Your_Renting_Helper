@@ -18,8 +18,7 @@ vi.mock("@/app/lib/services/locationAnalyst", async () => {
   return {
     ...actual,
     compareLocations: vi.fn(),
-    isLocationQuestionInScope: vi.fn().mockResolvedValue(true),
-    isLocationQuestionSafe: vi.fn().mockResolvedValue(true),
+    getQuestionRefusal: vi.fn().mockResolvedValue(null),
   };
 });
 
@@ -227,7 +226,7 @@ describe("POST /api/locations/compare/chat", () => {
       .mockResolvedValueOnce(contextB);
     compare.mockRejectedValue(
       new LocationAnalystError(
-        "The AI service took too long to respond. Please try again.",
+        "The AI service took too long. Please try again.",
         504,
       ),
     );

@@ -12,11 +12,10 @@ import {
   fetchPlacesForTypes,
   type GooglePlace,
 } from "./googlePlaces";
-import { fetchTransitlandBusStops } from "./transitland";
+import { fetchTransitlandBusStops, maxTransportBusStops } from "./transitland";
 
 const transportBusRadiusMeters = 1000;
 const transportBusFallbackRadiusMeters = 5000;
-const maxTransportBusStops = 4;
 
 let vlineStationNamesPromise: Promise<Set<string>> | null = null;
 

@@ -8,21 +8,22 @@ import {
   recordUserSearch,
   saveSnapshot,
 } from "@/app/lib/services/searchStore";
-import { parseCoordinate } from "@/app/lib/utils";
+import { parseLatLng } from "@/app/lib/utils";
 
 const maxLabelLength = 300;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const latitude = parseCoordinate(searchParams.get("lat"));
-  const longitude = parseCoordinate(searchParams.get("lng"));
+  const point = parseLatLng(searchParams.get("lat"), searchParams.get("lng"));
 
-  if (latitude === null || longitude === null) {
+  if (!point) {
     return Response.json(
       { ok: false, error: "Latitude and longitude are required." },
       { status: 400 },
     );
   }
+
+  const { latitude, longitude } = point;
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 

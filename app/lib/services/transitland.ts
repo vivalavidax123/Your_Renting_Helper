@@ -43,7 +43,7 @@ type TransitlandStopsResponse = {
   stops?: TransitlandStop[];
 };
 
-const maxTransportBusStops = 4;
+export const maxTransportBusStops = 4;
 const maxTransportBusServicesPerStop = 4;
 const transitlandDepartureWindowSeconds = 7200;
 const transitlandBaseUrl = "https://transit.land/api/v2/rest";
