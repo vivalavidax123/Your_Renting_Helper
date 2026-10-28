@@ -4,6 +4,15 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 
 [Open the live demo](https://rent-score-prototype.vercel.app/)
 
+![Location result for Brunswick VIC with category scores, the Student priority preset, and the amenity map](docs/images/result-page.png)
+
+<details>
+<summary>Home page</summary>
+
+![Home page with address search, example suburbs, and an example result](docs/images/home-page.png)
+
+</details>
+
 ## What You Can Do
 
 - Search Australian addresses with autocomplete, or start from an example suburb. No account is needed to search.
