@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-10-15.
+Status reviewed against committed `HEAD` on 2026-10-28.
 
 | Area                 | Current state                                              |
 | -------------------- | ---------------------------------------------------------- |
@@ -114,6 +114,7 @@ Versions are taken from the current package manifest and deployment files.
 | Authentication       | Better Auth 1.6.23 with Prisma adapter                          |
 | Maps and places      | Google Maps JavaScript API, Places API (New), and Geocoding API |
 | Transport enrichment | Transitland v2 REST API, optional                               |
+| CBD driving estimate | Geoapify Routing API                                            |
 | Analytics            | Vercel Analytics                                                |
 | Tests                | Vitest 4.1.11                                                   |
 | Static checks        | ESLint 9 and TypeScript                                         |
