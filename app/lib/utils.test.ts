@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  estimateWalkMinutes,
+  formatCompactCount,
   formatDepartureTime,
   formatEvidenceDate,
   formatDistance,
@@ -9,6 +11,23 @@ import {
   safeNextPath,
   scoreBand,
 } from "./utils";
+
+describe("formatCompactCount", () => {
+  it("keeps small counts exact and shortens thousands", () => {
+    expect(formatCompactCount(950)).toBe("950");
+    expect(formatCompactCount(1000)).toBe("1k");
+    expect(formatCompactCount(1240)).toBe("1.2k");
+    expect(formatCompactCount(14400)).toBe("14k");
+  });
+});
+
+describe("estimateWalkMinutes", () => {
+  it("uses 80 metres per minute and never reports zero minutes", () => {
+    expect(estimateWalkMinutes(30)).toBe(1);
+    expect(estimateWalkMinutes(240)).toBe(3);
+    expect(estimateWalkMinutes(1200)).toBe(15);
+  });
+});
 
 describe("scoreBand", () => {
   it("places each boundary score in the higher band", () => {
