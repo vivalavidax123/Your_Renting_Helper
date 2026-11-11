@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-10-28.
+Status reviewed against committed `HEAD` on 2026-11-11.
 
 | Area                 | Current state                                              |
 | -------------------- | ---------------------------------------------------------- |
@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-10-28.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 124 tests across 21 test files                             |
+| Automated tests      | 128 tests across 21 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -38,17 +38,19 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 ### Implemented
 
 - Search-first welcome screen with a one-line scope note (best for Melbourne), four example-suburb searches, signed-in users' saved and recent locations shown directly (signed-out visitors see a one-line "Sign in to save addresses" prompt there instead), and a desktop-only static "Example result" preview built from the real category labels and colours; result panels stay hidden until a successful search.
-- Shared-header logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
-- Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header that shows the matched address, the save action (signed-in visitors only), and the overall score together.
-- Signed-in users open the account email dropdown (a plain disclosure button, not an ARIA menu) to access Sign out; Escape and outside clicks close it.
+- The shared header is one line at every width: logo mark and name, Compare, theme toggle, and account. It is sticky below `lg` and static from `lg` up. The logo returns to a clean welcome state without starting a provider request; comparison has one entry point in the header.
+- Successful searches and direct location opens replace the search query with the matched formatted address; the result view has a full-width compact search row, then a result header with the overall score as a ring coloured by score band, the matched address, the band word (Excellent 80+, Good 70-79, Fair 50-69, Limited under 50, from `scoreBand` in `utils.ts`), the evidence date, the match type, the save action (signed-in visitors only), and a Copy link button whose small toast confirms the copy.
+- Signed-in users see an initial avatar; it opens a plain disclosure (not an ARIA menu) showing the account email and Sign out. Escape and outside clicks close it.
+- The search box has a search icon, a clear button, a `/` shortcut, and a spinner while searching; on phones the button is icon-only. It is an ARIA combobox (`aria-expanded`, `aria-activedescendant`) and suggestions bold the typed prefix. Saved and recent chips drop ", Australia" and show the score in its band colour with a star toggle.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
-- Clickable category score cards in fixed category order, each with a score bar in its category colour, plus dedicated evidence routes. A category page shows its score with the same bar, category navigation (one sideways-scrolling row on phones), up to ten nearby places before "Show all" (name and distance, then type and reviews; the address appears once a place is selected), and a focused map that stays in view on desktop. Category and supporting-evidence pages show only a back link, the title, and the address in their header; saving stays on the overview.
+- Category score rows in fixed category order: an icon tile in the category colour, the weight, count and nearest distance, a bar and number in the score-band colour, and a link to dedicated evidence. A category page shows its score as a ring with the band word, category navigation (one sideways-scrolling row on phones), a sortable place list (most reviewed, closest, highest rated) with up to ten places before "Show all" (a place selected on the map stays visible), and a focused map that stays in view on desktop. Place rows show rating and compact review count, distance, type and address, and an estimated walk at 80 m per minute; stops show bus or train icons and route badges. Category and supporting-evidence pages show only a back link, the title, and the address in their header; saving stays on the overview.
 - No-car and car-owner scoring profiles.
 - Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The mobility and preset selectors sit together above the overview's category cards and on the comparison page.
 - Location overviews own the interactive profile selector; category pages show the active profile as read-only context next to the category weight. Comparison retains one shared selector because both locations must use the same profile.
 - Seven-day shared result cache.
-- Interactive Google map with searched-location and amenity markers.
+- Interactive Google map with an accent pin for the searched location and category-coloured amenity markers; the selected marker grows above its neighbours.
+- Map overlays: a Walk rings toggle (straight-line 5, 10 and 15 minute rings), per-category marker toggles when the map shows more than one category, and a recentre button. Without a Maps key the card shows a drawn placeholder.
 - Fullscreen map control.
 - List-to-map selection, automatic map scrolling, and a return-to-row button.
 - Theme-aware map, markers, and custom popup styling.
@@ -66,10 +68,12 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Reduced-motion preferences shorten interface transitions and loading animations.
 - Better Auth email/password accounts and Google OAuth.
 - Per-user recent searches and saved locations.
-- Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available. The table uses A, B and Lead columns (for example "A +6") so it fits phone width; full addresses stay in the selectors and column tooltips.
+- Dedicated two-location comparison page with URL-backed selections, profile-consistent scores, and guidance before enough saved locations are available. Both overall scores show as rings, followed by one sentence naming up to two categories where each side leads by 5 or more points (`summarizeComparison`). The table uses A, B and Lead columns (for example "A +6") so it fits phone width; full addresses stay in the selectors and column tooltips.
 - A compact location overview; longer amenity, commute, rent, indicator, and comparison content lives on dedicated routes.
 - Evidence dates use Australian day/month format in Melbourne time on every page. The rental-quality and distance disclaimers appear once, on the overview.
-- The page-by-page interface review behind the current result, compare, details, home, category and login layouts is recorded in [docs/ui-refresh-2026-10.md](./docs/ui-refresh-2026-10.md).
+- A How it works page (`/how-it-works`, linked from the category scores) explains the score bands, the three pillars, the mobility factor, and the preset weights. The weights table is rendered from `categories.ts`, so it cannot drift from the code.
+- Styled not-found and error pages inside the workspace, a root `global-error.tsx` with inline styles, and print styles that always use light colours and keep score colours on paper.
+- The page-by-page interface review behind the current result, compare, details, home, category and login layouts is recorded in [docs/ui-refresh-2026-10.md](./docs/ui-refresh-2026-10.md); the November port of the refresh design is recorded in [docs/ui-refresh-2026-11.md](./docs/ui-refresh-2026-11.md).
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
 - Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations.
 - PostgreSQL persistence on Neon for hosted environments.
@@ -160,6 +164,7 @@ app/
   layout.tsx              Metadata, fonts, analytics, and theme bootstrap
   (explore)/              Shared search workspace and direct location routes
     compare/              Dedicated saved-location comparison page
+    how-it-works/         Plain-language scoring explanation
     locations/[locationId]/categories/[categoryId]/  Category evidence
     locations/[locationId]/details/  Commute, walking, rent, and terrain
   components/ExploreProvider.tsx  Search/session state retained across workspace pages
@@ -184,7 +189,8 @@ The project deliberately uses a small number of direct boundaries:
 - **Components** focus on rendering and user intent.
 - **app/lib/types.ts** owns shared domain contracts. Provider wire types stay beside their Google or Transitland adapter; local component or hook state types remain local when no other module needs them.
 - **app/lib/api.ts** validates the common success/error envelope before API data enters UI state.
-- **app/lib/maps/googleMaps.ts** is marked client-only and owns SDK loading, marker construction, popup HTML escaping, and map-specific types.
+- **app/lib/maps/googleMaps.ts** is marked client-only and owns SDK loading, marker construction (amenity, home pin, selected state), walk rings, popup HTML escaping, and map-specific types.
+- **app/components/icons.tsx** holds the shared inline SVG icons, including one icon per category; **ScoreRing** draws every score ring.
 
 This structure is sufficient for the current project. Do not add repositories, dependency-injection layers, duplicate DTOs, generic state frameworks, or other abstractions without a concrete current need.
 
@@ -267,7 +273,7 @@ updates the existing row.
 
 ## Place Retrieval and Categories
 
-Category configuration lives in app/lib/categories.ts and is the single source of truth for labels, search radii, colour classes, rating baselines, brand terms, included place types, excluded primary types, score-priority preset weights, and mobility-profile proximity factors.
+Category configuration lives in app/lib/categories.ts and is the single source of truth for labels, search radii, category colours (one hex value each, read through `categoryColor` by UI and map markers alike), rating baselines, brand terms, included place types, excluded primary types, score-priority preset weights, and mobility-profile proximity factors.
 
 Current category order also defines cross-category deduplication priority:
 
@@ -452,15 +458,16 @@ LocationMap uses the browser-exposed NEXT_PUBLIC_MAPS_API_KEY and the Google Map
 
 Current behaviour:
 
-- one labelled marker for the searched location;
-- category-coloured amenity markers;
+- an accent pin for the searched location, drawn above everything else;
+- category-coloured amenity markers; the selected one is drawn 1.5 times larger;
 - larger markers for locally recognised brand matches;
 - up to eight initial markers per category, with on-demand marker creation when a later list row is selected;
 - only one custom amenity popup open at a time;
-- popup name, category, distance, and address;
+- popup category, name, rating and compact review count, distance with an estimated walk, address, and the next two departures for bus stops;
 - a Google Maps search link for non-transport amenities using query and Google Place ID;
 - no custom Google Maps link for transport because Transitland stop IDs are not Google Place IDs;
 - built-in fullscreen control;
+- a Walk rings toggle, per-category marker toggles when more than one category is shown (map-only state), and a recentre button;
 - list-row selection that pans, opens the popup, and scrolls to the map when necessary;
 - a floating return button after automatic scrolling.
 
@@ -559,10 +566,10 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 124-test suite across 21 files covers:
+The current 128-test suite across 21 files covers:
 
 - scoring behaviour and invariants;
-- formatting (including Melbourne-time evidence dates), coordinate parsing and range checks, distance, and time utilities, plus the same-site check for sign-in return paths;
+- formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the comparison summary, plus the same-site check for sign-in return paths;
 - request parsing for scoring options and chat questions;
 - API-envelope validation;
 - derived indicators;

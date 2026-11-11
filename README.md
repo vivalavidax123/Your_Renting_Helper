@@ -18,8 +18,10 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - Search Australian addresses with autocomplete, or start from an example suburb. No account is needed to search.
 - Open each category score to review its explanation, nearby places, and focused map.
 - Switch between no-car and car-owner views, and pick score priorities (Balanced, Student, Family, Commuter) that reweight the overall score.
-- Explore category-coloured amenities on an interactive map.
+- Explore category-coloured amenities on an interactive map, show 5, 10 and 15 minute walking rings, and switch categories on or off.
+- Sort a category's places by reviews, distance or rating, and see each place's rating and estimated walk.
 - Open the map in fullscreen and follow non-transport amenities into Google Maps.
+- Copy a result's link to share it, and read a plain-language page on how the score works.
 - Open a separate evidence page for walking times, car reliance, CBD travel, terrain, and community rent.
 - See direct distance, indicative driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - Check how hilly the area is (average and steepest slopes within 1.5 km), useful if hills matter for your car, bike, or walks.
