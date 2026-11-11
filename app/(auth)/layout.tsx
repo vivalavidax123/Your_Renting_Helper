@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
+import { LogoIcon } from "@/app/components/icons";
 
 // Shared frame for the account pages (sign in, password reset, email
 // verification): a centred card with the theme toggle and a way home.
@@ -12,10 +13,14 @@ export default function AuthLayout({
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center gap-5 bg-page px-4 py-10 text-ink">
       <ThemeToggle className="absolute right-5 top-5" />
-      <Link href="/" className="text-lg font-bold tracking-tight text-ink">
+      <Link
+        href="/"
+        className="focus-ring flex items-center gap-2 rounded-md text-lg font-bold tracking-tight text-ink"
+      >
+        <LogoIcon className="size-6 text-accent" />
         Your Renting Helper
       </Link>
-      <div className="w-full max-w-sm rounded-lg border border-line bg-surface p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-6 shadow-sm">
         {children}
       </div>
     </main>

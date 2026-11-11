@@ -1,19 +1,18 @@
 "use client";
 import Link from "next/link";
 import { useExplore } from "./ExploreProvider";
-import { formatEvidenceDate } from "@/app/lib/utils";
+import {
+  formatEvidenceDate,
+  scoreBand,
+  scoreBandClasses,
+} from "@/app/lib/utils";
+import { StarIcon } from "./icons";
+import { ScoreRing } from "./ScoreRing";
 
+// The evidence date is in the header beside the score; these are the caveats.
 export function LocationEvidenceNotes() {
-  const { fetchedAt, resultFromCache } = useExplore();
-
   return (
     <ul className="list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-muted">
-      {fetchedAt ? (
-        <li>
-          {resultFromCache ? "Saved evidence" : "Evidence collected"}:{" "}
-          {formatEvidenceDate(fetchedAt)}
-        </li>
-      ) : null}
       <li>A convenience indicator, not a rating of rental quality.</li>
       <li>Distances are direct estimates.</li>
     </ul>
@@ -36,14 +35,13 @@ function SaveLocationControl() {
   if (!location || !locationId || !canSave) return null;
 
   const favourite = saved.find((item) => item.id === locationId);
-  const className =
-    "inline-flex min-h-10 items-center justify-center rounded-lg border border-line px-3 text-sm transition hover:bg-hover disabled:opacity-50";
 
   return (
     <button
       type="button"
       disabled={busy}
-      className={className + " text-ink-soft"}
+      aria-pressed={!!favourite}
+      className="focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-medium text-ink-soft transition hover:bg-surface-raised hover:text-ink disabled:opacity-50"
       onClick={() =>
         void toggleSaved(
           favourite ?? {
@@ -56,7 +54,11 @@ function SaveLocationControl() {
         )
       }
     >
-      {favourite ? "★ Saved · remove" : "☆ Save location"}
+      <StarIcon
+        filled={!!favourite}
+        className={"size-4 " + (favourite ? "text-amber-500" : "")}
+      />
+      {favourite ? "Saved" : "Save"}
     </button>
   );
 }
@@ -76,40 +78,63 @@ function SavedError() {
 // With a title it heads a sub-page: only the way back, the title and the
 // address, since saving belongs to the overview.
 export function LocationHeader({ title }: { title?: string }) {
-  const { location, locationId, scoringParams, overallScore } = useExplore();
+  const {
+    location,
+    locationId,
+    scoringParams,
+    overallScore,
+    fetchedAt,
+    resultFromCache,
+  } = useExplore();
 
   if (!location) return null;
 
   if (!title) {
+    const band = overallScore === null ? null : scoreBand(overallScore);
+
+    // The ring is the page's focal point; the band word sits beside it so
+    // the score never relies on colour alone.
     return (
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
-            Location result
-          </p>
-          <h1 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">
+      <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+        <ScoreRing score={overallScore} className="size-22 sm:size-28" />
+        <div className="min-w-0 flex-1">
+          <h1 className="break-words text-xl font-bold leading-snug tracking-tight text-ink sm:text-2xl">
             {location.formattedAddress}
           </h1>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+            {band ? (
+              <>
+                <span
+                  className={
+                    "font-semibold " + scoreBandClasses[band.band].text
+                  }
+                >
+                  {band.label}
+                </span>
+                <span aria-hidden="true">·</span>
+              </>
+            ) : null}
+            <span>
+              {fetchedAt
+                ? (resultFromCache ? "Saved evidence from " : "Collected ") +
+                  formatEvidenceDate(fetchedAt)
+                : "Overall score out of 100"}
+            </span>
+          </p>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            Matched as{" "}
+            {location.locationType.toLowerCase().replaceAll("_", " ")}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <SaveLocationControl />
-          {overallScore !== null ? (
-            <div
-              role="img"
-              aria-label={`Overall score ${overallScore} out of 100`}
-              className="flex min-h-16 flex-col items-center justify-center rounded-lg border border-accent bg-accent-soft px-4 py-2 text-accent-ink"
-            >
-              <p className="whitespace-nowrap leading-none">
-                <span className="text-3xl font-bold">{overallScore}</span>
-                <span className="ml-1 text-xs font-semibold">/100</span>
-              </p>
-              <p className="mt-1 text-xs font-medium">Overall score</p>
-            </div>
-          ) : null}
-        </div>
+        <SaveLocationControl />
         <div className="w-full empty:hidden">
           <SavedError />
         </div>
+        <p className="sr-only" aria-live="polite">
+          {band
+            ? `Overall score ${overallScore} out of 100, ${band.label}.`
+            : ""}
+        </p>
       </div>
     );
   }
