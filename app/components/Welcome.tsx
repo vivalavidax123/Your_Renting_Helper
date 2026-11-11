@@ -25,7 +25,7 @@ const exampleScores = (
   ] as const
 ).map(([id, score]) => {
   const category = rentScoreCategories.find((item) => item.id === id)!;
-  return { label: category.label, colorClass: category.colorClass, score };
+  return { label: category.label, color: category.color, score };
 });
 
 function ExampleResult() {
@@ -58,8 +58,8 @@ function ExampleResult() {
             </div>
             <div className="mt-1 h-1 overflow-hidden rounded-full bg-line">
               <div
-                className={"h-full rounded-full " + item.colorClass}
-                style={{ width: item.score + "%" }}
+                className="h-full rounded-full"
+                style={{ width: item.score + "%", backgroundColor: item.color }}
               />
             </div>
           </li>

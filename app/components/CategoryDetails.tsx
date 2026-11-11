@@ -5,7 +5,11 @@ import { useExplore } from "./ExploreProvider";
 import { LocationHeader } from "./LocationHeader";
 import { NearbyPlacesList } from "./NearbyPlacesList";
 import { LocationMap } from "./LocationMap";
-import { rentScoreCategories, weightProfileLabels } from "@/app/lib/categories";
+import {
+  categoryColor,
+  rentScoreCategories,
+  weightProfileLabels,
+} from "@/app/lib/categories";
 import { formatEvidenceDate } from "@/app/lib/utils";
 export function CategoryDetails({ categoryId }: { categoryId: string }) {
   const {
@@ -82,8 +86,11 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
             aria-hidden="true"
           >
             <div
-              className={"h-full rounded-full " + score.colorClass}
-              style={{ width: score.score + "%" }}
+              className="h-full rounded-full"
+              style={{
+                width: score.score + "%",
+                backgroundColor: categoryColor(score.id),
+              }}
             />
           </div>
           <p className="mt-2 text-sm text-ink-muted">
