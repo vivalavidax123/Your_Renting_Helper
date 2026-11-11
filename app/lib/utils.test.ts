@@ -10,7 +10,9 @@ import {
   parseLatLng,
   safeNextPath,
   scoreBand,
+  summarizeComparison,
 } from "./utils";
+import type { CategoryScore } from "./types";
 
 describe("formatCompactCount", () => {
   it("keeps small counts exact and shortens thousands", () => {
@@ -26,6 +28,44 @@ describe("estimateWalkMinutes", () => {
     expect(estimateWalkMinutes(30)).toBe(1);
     expect(estimateWalkMinutes(240)).toBe(3);
     expect(estimateWalkMinutes(1200)).toBe(15);
+  });
+});
+
+describe("summarizeComparison", () => {
+  function scores(values: Record<string, number>): CategoryScore[] {
+    return Object.entries(values).map(([id, score]) => ({
+      id,
+      label: id,
+      score,
+      weight: 1,
+      detail: "",
+      count: 1,
+      closestDistanceMeters: 100,
+      radiusMeters: 3000,
+      explanation: "",
+    }));
+  }
+
+  it("lists each side's two widest leads and ignores small gaps", () => {
+    const a = scores({
+      transport: 90,
+      groceries: 80,
+      food: 70,
+      fitness: 40,
+      health: 62,
+    });
+    const b = scores({
+      transport: 60,
+      groceries: 65,
+      food: 60,
+      fitness: 75,
+      health: 60,
+    });
+
+    expect(summarizeComparison(a, b)).toEqual({
+      aLeads: ["transport", "groceries"],
+      bLeads: ["fitness"],
+    });
   });
 });
 

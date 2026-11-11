@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
+import { useCallback, useState } from "react";
 import { useExplore } from "./ExploreProvider";
 import {
   formatEvidenceDate,
   scoreBand,
   scoreBandClasses,
 } from "@/app/lib/utils";
-import { StarIcon } from "./icons";
+import { LinkIcon, StarIcon } from "./icons";
+import { Toast, type ToastMessage } from "./Toast";
 import { ScoreRing } from "./ScoreRing";
 
 // The evidence date is in the header beside the score; these are the caveats.
@@ -60,6 +62,36 @@ function SaveLocationControl() {
       />
       {favourite ? "Saved" : "Save"}
     </button>
+  );
+}
+
+// Every result already has its own address (/locations/...), so sharing is
+// copying that link. The toast confirms it, since nothing else changes.
+function CopyLinkControl() {
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const dismiss = useCallback(() => setToast(null), []);
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setToast({ message: "Link copied" });
+    } catch {
+      setToast({ message: "Could not copy. Copy the address bar instead." });
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => void copyLink()}
+        className="focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-medium text-ink-soft transition hover:bg-surface-raised hover:text-ink"
+      >
+        <LinkIcon className="size-4" />
+        <span className="max-sm:sr-only">Copy link</span>
+      </button>
+      <Toast toast={toast} onDismiss={dismiss} />
+    </>
   );
 }
 
@@ -126,7 +158,10 @@ export function LocationHeader({ title }: { title?: string }) {
             {location.locationType.toLowerCase().replaceAll("_", " ")}
           </p>
         </div>
-        <SaveLocationControl />
+        <div className="flex gap-2">
+          <SaveLocationControl />
+          <CopyLinkControl />
+        </div>
         <div className="w-full empty:hidden">
           <SavedError />
         </div>

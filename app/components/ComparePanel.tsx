@@ -11,8 +11,56 @@ import {
 } from "@/app/lib/categories";
 import { isJsonRecord, readApiResult } from "@/app/lib/api";
 import type { ComparisonSide, RecentSearch } from "@/app/lib/types";
-import { formatEvidenceDate } from "@/app/lib/utils";
+import { formatEvidenceDate, summarizeComparison } from "@/app/lib/utils";
 import { AnalystChat } from "./AnalystChat";
+import { ScoreRing } from "./ScoreRing";
+
+function joinLabels(labels: string[]) {
+  return labels.length === 2 ? `${labels[0]} and ${labels[1]}` : labels[0];
+}
+
+// Both overall scores as rings, then one sentence naming where each side
+// clearly leads, so the table below is detail rather than the answer.
+function ComparisonSummary({ a, b }: { a: ComparisonSide; b: ComparisonSide }) {
+  const { aLeads, bLeads } = summarizeComparison(a.scores, b.scores);
+
+  return (
+    <div className="mt-5">
+      <div className="grid grid-cols-2 gap-3">
+        {[a, b].map((side, index) => (
+          <div
+            key={side.id}
+            className="flex items-center gap-3 rounded-lg bg-surface-subtle px-3 py-2"
+          >
+            <ScoreRing
+              score={Math.round(side.overallScore)}
+              name={`Location ${index === 0 ? "A" : "B"} overall score`}
+              className="size-14 sm:size-16"
+            />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-ink-muted">
+                {index === 0 ? "A" : "B"}
+              </p>
+              <p className="line-clamp-2 text-xs font-medium text-ink">
+                {side.formattedAddress.replace(/, Australia$/, "")}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-sm text-ink-soft">
+        {aLeads.length === 0 && bLeads.length === 0
+          ? "These two locations score about the same in every category."
+          : [
+              aLeads.length > 0 ? `A is better for ${joinLabels(aLeads)}.` : "",
+              bLeads.length > 0 ? `B is better for ${joinLabels(bLeads)}.` : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+      </p>
+    </div>
+  );
+}
 
 function isComparisonSide(value: unknown): value is ComparisonSide {
   return (
@@ -314,11 +362,12 @@ export function ComparePanel({
 
       {activeResult ? (
         <>
+          <ComparisonSummary a={activeResult.a} b={activeResult.b} />
           <div
             role="region"
             aria-label="Location score comparison"
             tabIndex={0}
-            className="mt-5 overflow-x-auto rounded-lg border border-line"
+            className="mt-4 overflow-x-auto rounded-lg border border-line"
           >
             <table className="w-full border-collapse text-sm">
               <caption className="sr-only">
