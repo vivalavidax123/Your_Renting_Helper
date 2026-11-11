@@ -1,4 +1,5 @@
 import "client-only";
+import { categoryColor } from "@/app/lib/categories";
 import type { Theme } from "@/app/lib/theme";
 import type { NearbyPlace, PlaceGroup } from "@/app/lib/types";
 import { formatDistance } from "@/app/lib/utils";
@@ -11,17 +12,6 @@ declare global {
     rentScoreGoogleMapsReady?: () => void;
   }
 }
-
-const categoryColors: Record<string, string> = {
-  shopping_centres: "#14b8a6",
-  groceries: "#10b981",
-  food: "#f59e0b",
-  transport: "#0ea5e9",
-  health: "#f43f5e",
-  fitness: "#8b5cf6",
-  fuel: "#f97316",
-  services: "#6366f1",
-};
 
 let googleMapsPromise: Promise<GoogleMapsApi> | null = null;
 
@@ -84,7 +74,7 @@ export function createPlaceMarker(
   theme: Theme,
   onMarkerClick: (entry: MarkerEntry) => void,
 ): MarkerEntry {
-  const color = categoryColors[group.id] ?? "#334155";
+  const color = categoryColor(group.id);
   const position = { lat: place.latitude, lng: place.longitude };
   const googleMapsUrl =
     group.id === "transport"

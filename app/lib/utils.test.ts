@@ -7,7 +7,20 @@ import {
   normalizeText,
   parseLatLng,
   safeNextPath,
+  scoreBand,
 } from "./utils";
+
+describe("scoreBand", () => {
+  it("places each boundary score in the higher band", () => {
+    expect(scoreBand(80)).toEqual({ band: "high", label: "Excellent" });
+    expect(scoreBand(79)).toEqual({ band: "high", label: "Good" });
+    expect(scoreBand(70)).toEqual({ band: "high", label: "Good" });
+    expect(scoreBand(69)).toEqual({ band: "mid", label: "Fair" });
+    expect(scoreBand(50)).toEqual({ band: "mid", label: "Fair" });
+    expect(scoreBand(49)).toEqual({ band: "low", label: "Limited" });
+    expect(scoreBand(0)).toEqual({ band: "low", label: "Limited" });
+  });
+});
 
 // Formatters and parsers are the classic unit-test sweet spot: lots of edge
 // cases, zero dependencies, and bugs here are silent (a wrong label renders

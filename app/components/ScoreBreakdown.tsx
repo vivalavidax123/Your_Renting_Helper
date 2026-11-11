@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { categoryColor } from "@/app/lib/categories";
 import type { CategoryScore } from "@/app/lib/types";
 import { formatDistance } from "@/app/lib/utils";
 import { MobilityProfile, PresetPicker } from "./ScoringControls";
@@ -31,9 +32,8 @@ export function ScoreBreakdown({
             <>
               <div className="flex items-center gap-1.5">
                 <span
-                  className={
-                    "size-2 shrink-0 rounded-full " + category.colorClass
-                  }
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: categoryColor(category.id) }}
                 />
                 <h3 className="text-xs font-medium text-ink-soft">
                   {category.label}
@@ -51,8 +51,11 @@ export function ScoreBreakdown({
                 className="mt-2 h-1 overflow-hidden rounded-full bg-line"
               >
                 <div
-                  className={"h-full rounded-full " + category.colorClass}
-                  style={{ width: category.score + "%" }}
+                  className="h-full rounded-full"
+                  style={{
+                    width: category.score + "%",
+                    backgroundColor: categoryColor(category.id),
+                  }}
                 />
               </div>
               <p className="mt-2 text-xs text-ink-muted">

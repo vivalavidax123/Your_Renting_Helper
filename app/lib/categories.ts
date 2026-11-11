@@ -2,7 +2,8 @@ export type RentScoreCategory = {
   id: string;
   label: string;
   radiusMeters: number;
-  colorClass: string;
+  // Single source for the category hue: UI dots, score bars and map markers.
+  color: string;
   detail: string;
   // Typical Google rating for this kind of place (banks trend ~2-3.5,
   // gyms ~4.5-5). Quality scoring compares against this baseline so a
@@ -22,7 +23,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
     id: "shopping_centres",
     label: "Shopping Centres",
     radiusMeters: 10000,
-    colorClass: "bg-teal-500",
+    color: "#14b8a6",
     typicalRating: 4.2,
     detail: "Major shopping centres and retail hubs within a broader area",
     brandTerms: [
@@ -37,7 +38,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
   {
     id: "groceries",
     label: "Groceries",
-    colorClass: "bg-emerald-500",
+    color: "#10b981",
     typicalRating: 4.2,
     radiusMeters: defaultSearchRadiusMeters,
     detail: "Supermarkets and everyday grocery options nearby",
@@ -48,7 +49,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
     id: "food",
     label: "Food & Cafes",
     radiusMeters: defaultSearchRadiusMeters,
-    colorClass: "bg-amber-500",
+    color: "#f59e0b",
     typicalRating: 4.3,
     detail: "Cafes, restaurants, and casual food options nearby",
     brandTerms: [
@@ -65,7 +66,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
     id: "transport",
     label: "Transport",
     radiusMeters: defaultSearchRadiusMeters,
-    colorClass: "bg-sky-500",
+    color: "#0ea5e9",
     typicalRating: 3.8,
     detail:
       "Bus stops within 1 km, or closest bus stops if none are found nearby, plus the nearest metro/train and V/Line stations",
@@ -81,7 +82,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
     id: "health",
     label: "Health",
     radiusMeters: defaultSearchRadiusMeters,
-    colorClass: "bg-rose-500",
+    color: "#f43f5e",
     typicalRating: 4.2,
     detail: "Pharmacies, clinics, and everyday health services nearby",
     brandTerms: [
@@ -96,7 +97,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
     id: "fitness",
     label: "Fitness & Recreation",
     radiusMeters: defaultSearchRadiusMeters,
-    colorClass: "bg-violet-500",
+    color: "#8b5cf6",
     // Blended baseline: boutique gyms trend ~4.7 but public pools and
     // recreation centres trend ~4.2-4.4, so the mixed category sits lower.
     typicalRating: 4.5,
@@ -141,7 +142,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
     id: "fuel",
     label: "Fuel & Automotive",
     radiusMeters: defaultSearchRadiusMeters,
-    colorClass: "bg-orange-500",
+    color: "#f97316",
     typicalRating: 4.0,
     detail: "Fuel stations and major automotive parts stores nearby",
     brandTerms: [
@@ -160,7 +161,7 @@ export const rentScoreCategories: RentScoreCategory[] = [
     id: "services",
     label: "Services",
     radiusMeters: defaultSearchRadiusMeters,
-    colorClass: "bg-indigo-500",
+    color: "#6366f1",
     typicalRating: 3.3,
     detail: "Banks, post offices, and practical services nearby",
     brandTerms: [
@@ -173,6 +174,13 @@ export const rentScoreCategories: RentScoreCategory[] = [
     placeTypes: ["post_office", "bank"],
   },
 ];
+
+export function categoryColor(categoryId: string) {
+  return (
+    rentScoreCategories.find((category) => category.id === categoryId)?.color ??
+    "#64748b"
+  );
+}
 
 export type WeightProfile = "carFree" | "carOwner";
 

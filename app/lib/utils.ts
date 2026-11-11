@@ -34,6 +34,39 @@ export function formatReviewSummary(place: NearbyPlace) {
   return `${rating}${place.userRatingCount.toLocaleString()} ${reviewLabel}`;
 }
 
+export type ScoreBand = "high" | "mid" | "low";
+
+// One rule for how a 0-100 score reads everywhere it is shown, so a 72 is
+// the same colour and word in the header, the bars and the comparison.
+export function scoreBand(score: number): { band: ScoreBand; label: string } {
+  if (score >= 80) return { band: "high", label: "Excellent" };
+  if (score >= 70) return { band: "high", label: "Good" };
+  if (score >= 50) return { band: "mid", label: "Fair" };
+  return { band: "low", label: "Limited" };
+}
+
+// Full class names (not built from strings) so Tailwind generates them.
+export const scoreBandClasses: Record<
+  ScoreBand,
+  { text: string; bg: string; stroke: string }
+> = {
+  high: {
+    text: "text-score-high",
+    bg: "bg-score-high",
+    stroke: "stroke-score-high",
+  },
+  mid: {
+    text: "text-score-mid",
+    bg: "bg-score-mid",
+    stroke: "stroke-score-mid",
+  },
+  low: {
+    text: "text-score-low",
+    bg: "bg-score-low",
+    stroke: "stroke-score-low",
+  },
+};
+
 // One line saying what was searched for a category, shown under its list.
 export function formatSearchScope(group: PlaceGroup) {
   if (group.id === "transport") {
