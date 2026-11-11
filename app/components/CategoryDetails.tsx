@@ -5,12 +5,13 @@ import { useExplore } from "./ExploreProvider";
 import { LocationHeader } from "./LocationHeader";
 import { NearbyPlacesList } from "./NearbyPlacesList";
 import { LocationMap } from "./LocationMap";
+import { rentScoreCategories, weightProfileLabels } from "@/app/lib/categories";
 import {
-  categoryColor,
-  rentScoreCategories,
-  weightProfileLabels,
-} from "@/app/lib/categories";
-import { formatEvidenceDate } from "@/app/lib/utils";
+  formatEvidenceDate,
+  scoreBand,
+  scoreBandClasses,
+} from "@/app/lib/utils";
+import { ScoreRing } from "./ScoreRing";
 export function CategoryDetails({ categoryId }: { categoryId: string }) {
   const {
     categoryScores,
@@ -77,21 +78,23 @@ export function CategoryDetails({ categoryId }: { categoryId: string }) {
       </section>
       <div className="grid items-start gap-5 lg:grid-cols-2">
         <section className="min-w-0 rounded-xl border border-line bg-surface p-5">
-          <p className="text-4xl font-bold text-accent-ink">
-            {score.score}
-            <span className="text-sm font-normal"> /100</span>
-          </p>
-          <div
-            className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-raised"
-            aria-hidden="true"
-          >
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: score.score + "%",
-                backgroundColor: categoryColor(score.id),
-              }}
+          <div className="flex items-center gap-4">
+            <ScoreRing
+              score={score.score}
+              name={score.label + " score"}
+              className="size-20"
             />
+            <div>
+              <p className="text-sm text-ink-muted">Category score</p>
+              <p
+                className={
+                  "text-lg font-semibold " +
+                  scoreBandClasses[scoreBand(score.score).band].text
+                }
+              >
+                {scoreBand(score.score).label}
+              </p>
+            </div>
           </div>
           <p className="mt-2 text-sm text-ink-muted">
             {score.weight
