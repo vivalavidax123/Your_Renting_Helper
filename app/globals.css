@@ -129,13 +129,40 @@ html {
 }
 
 .map-info-window {
-  max-width: 220px;
+  max-width: 240px;
+  padding: 2px 4px 4px;
   background: var(--surface);
   color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.map-info-window strong {
+  font-size: 15px;
+}
+
+.map-info-window-category {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.map-info-window-category span {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+}
+
+.map-info-window-meta strong {
+  font-size: inherit;
 }
 
 .map-info-window-address {
-  margin-top: 4px;
+  margin: 4px 0;
   color: var(--ink-soft);
 }
 
@@ -156,6 +183,12 @@ html {
 .gm-style .gm-style-iw-d,
 .gm-style .gm-style-iw-tc::after {
   background: var(--surface) !important;
+}
+
+/* Google always reserves scrollbars in the popup; only show them when the
+   content is taller than the popup. */
+.gm-style .gm-style-iw-d {
+  overflow: auto !important;
 }
 
 :root[data-theme="dark"] .gm-style .gm-style-iw-chr button {

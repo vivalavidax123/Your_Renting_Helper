@@ -34,6 +34,25 @@ export function formatReviewSummary(place: NearbyPlace) {
   return `${rating}${place.userRatingCount.toLocaleString()} ${reviewLabel}`;
 }
 
+// Compact review counts for dense rows: 950, 1.2k, 14k.
+export function formatCompactCount(count: number) {
+  if (count < 1000) {
+    return String(count);
+  }
+
+  const thousands = count / 1000;
+
+  return thousands < 10
+    ? `${thousands.toFixed(1).replace(/\.0$/, "")}k`
+    : `${Math.round(thousands)}k`;
+}
+
+// Straight-line walking estimate at 80 metres per minute, never below one
+// minute. Shared by the place rows and the map popups.
+export function estimateWalkMinutes(distanceMeters: number) {
+  return Math.max(1, Math.round(distanceMeters / 80));
+}
+
 export type ScoreBand = "high" | "mid" | "low";
 
 // One rule for how a 0-100 score reads everywhere it is shown, so a 72 is
