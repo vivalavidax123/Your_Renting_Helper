@@ -205,3 +205,52 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Paper is always light: re-declare the light tokens so a dark-theme
+   visitor does not print pale text on white. */
+@media print {
+  :root,
+  :root[data-theme="dark"] {
+    color-scheme: light;
+    --page: #ffffff;
+    --surface: #ffffff;
+    --surface-subtle: #f8fafc;
+    --surface-raised: #f1f5f9;
+    --control: #ffffff;
+    --hover: #f8fafc;
+    --line-soft: #f1f5f9;
+    --line: #e2e8f0;
+    --line-strong: #cbd5e1;
+    --ink: #0f172a;
+    --ink-soft: #475569;
+    --ink-muted: #64748b;
+    --ink-faint: #94a3b8;
+    --accent: #059669;
+    --accent-hover: #047857;
+    --accent-soft: #ecfdf5;
+    --accent-line: #a7f3d0;
+    --accent-ink: #064e3b;
+    --accent-ring: #d1fae5;
+    --action: #1e293b;
+    --action-hover: #334155;
+    --action-disabled: #94a3b8;
+    --action-ink: #ffffff;
+    --danger-soft: #fef2f2;
+    --danger-line: #fecaca;
+    --danger-ink: #b91c1c;
+    --warning-soft: #fffbeb;
+    --warning-line: #fde68a;
+    --warning-ink: #92400e;
+    --score-high: #059669;
+    --score-mid: #d97706;
+    --score-low: #e11d48;
+    --score-track: #e2e8f0;
+    --overlay: rgb(15 23 42 / 0.4);
+  }
+
+  /* Bars and rings carry meaning, so keep their colours on paper. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
