@@ -1,6 +1,11 @@
 "use client";
 
 import type { RecentSearch } from "@/app/lib/types";
+import { scoreBand, scoreBandClasses } from "@/app/lib/utils";
+import { StarIcon } from "./icons";
+
+// Every result is Australian, so the country adds nothing to a chip.
+const shortAddress = (address: string) => address.replace(/, Australia$/, "");
 
 // Purely presentational: the lists live in useSavedSearches and arrive as
 // props, so this component and the comparison panel can never disagree.
@@ -30,19 +35,29 @@ function SearchChip({
   onToggleSaved,
 }: SearchChipProps) {
   const isSaved = search.savedAt !== null;
+  const score =
+    search.overallScore === null ? null : Math.round(search.overallScore);
 
   return (
-    <div className="flex items-center rounded-full border border-line bg-surface text-xs font-medium text-ink-soft transition hover:border-accent-line">
+    <div className="flex min-h-9 items-center rounded-full border border-line bg-surface text-xs font-medium text-ink-soft transition hover:border-accent-line">
       <button
         type="button"
         onClick={() => onSelect(search)}
         disabled={disabled}
-        className="flex items-center gap-2 rounded-l-full py-1.5 pl-3 pr-1 hover:bg-accent-soft disabled:opacity-50"
+        title={search.formattedAddress}
+        className="focus-ring flex min-h-9 items-center gap-2 rounded-l-full pl-3 pr-1 hover:bg-accent-soft disabled:opacity-50"
       >
-        <span className="max-w-52 truncate">{search.formattedAddress}</span>
-        {search.overallScore !== null ? (
-          <span className="rounded-full bg-accent-soft px-1.5 py-0.5 font-semibold text-accent-ink">
-            {Math.round(search.overallScore)}
+        <span className="max-w-60 truncate">
+          {shortAddress(search.formattedAddress)}
+        </span>
+        {score !== null ? (
+          <span
+            className={
+              "font-semibold tabular-nums " +
+              scoreBandClasses[scoreBand(score).band].text
+            }
+          >
+            {score}
           </span>
         ) : null}
       </button>
@@ -53,11 +68,15 @@ function SearchChip({
         aria-label={
           isSaved ? "Remove from saved locations" : "Save this location"
         }
-        className="rounded-r-full py-1.5 pl-1 pr-2.5 text-sm leading-none hover:bg-warning-soft disabled:opacity-50"
+        aria-pressed={isSaved}
+        className="focus-ring flex size-9 items-center justify-center rounded-r-full hover:bg-warning-soft disabled:opacity-50"
       >
-        <span className={isSaved ? "text-amber-500" : "text-ink-faint"}>
-          {isSaved ? "★" : "☆"}
-        </span>
+        <StarIcon
+          filled={isSaved}
+          className={
+            "size-4 " + (isSaved ? "text-amber-500" : "text-ink-faint")
+          }
+        />
       </button>
     </div>
   );

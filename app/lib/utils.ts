@@ -1,4 +1,4 @@
-import type { NearbyPlace, PlaceGroup } from "./types";
+import type { CategoryScore, NearbyPlace, PlaceGroup } from "./types";
 
 export function formatDistance(distanceMeters: number) {
   return distanceMeters < 1000
@@ -85,6 +85,26 @@ export const scoreBandClasses: Record<
     stroke: "stroke-score-low",
   },
 };
+
+// The (up to) two categories where each side leads by the widest margin,
+// ignoring leads under 5 points. Drives the one-line comparison summary.
+export function summarizeComparison(a: CategoryScore[], b: CategoryScore[]) {
+  const differences = a.flatMap((scoreA) => {
+    const scoreB = b.find((candidate) => candidate.id === scoreA.id);
+
+    return scoreB
+      ? [{ label: scoreA.label, difference: scoreA.score - scoreB.score }]
+      : [];
+  });
+  const leaders = (direction: 1 | -1) =>
+    differences
+      .filter((entry) => entry.difference * direction >= 5)
+      .sort((x, y) => (y.difference - x.difference) * direction)
+      .slice(0, 2)
+      .map((entry) => entry.label);
+
+  return { aLeads: leaders(1), bLeads: leaders(-1) };
+}
 
 // One line saying what was searched for a category, shown under its list.
 export function formatSearchScope(group: PlaceGroup) {
