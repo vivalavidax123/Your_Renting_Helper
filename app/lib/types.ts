@@ -93,6 +93,7 @@ export type CategoryScore = {
   label: string;
   score: number;
   weight: number;
+  colorClass: string;
   detail: string;
   count: number;
   closestDistanceMeters: number | null;

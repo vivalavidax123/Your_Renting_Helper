@@ -31,13 +31,6 @@
   --danger-line: #fecaca;
   --danger-ink: #b91c1c;
   --warning-soft: #fffbeb;
-  --warning-line: #fde68a;
-  --warning-ink: #92400e;
-  --score-high: #059669;
-  --score-mid: #d97706;
-  --score-low: #e11d48;
-  --score-track: #e2e8f0;
-  --overlay: rgb(15 23 42 / 0.4);
 }
 
 :root[data-theme="dark"] {
@@ -69,13 +62,6 @@
   --danger-line: #6b2a30;
   --danger-ink: #fca5a5;
   --warning-soft: #2b2111;
-  --warning-line: #5c4515;
-  --warning-ink: #fcd34d;
-  --score-high: #34d399;
-  --score-mid: #fbbf24;
-  --score-low: #fb7185;
-  --score-track: #263142;
-  --overlay: rgb(0 0 0 / 0.6);
 }
 
 @theme inline {
@@ -106,22 +92,7 @@
   --color-danger-line: var(--danger-line);
   --color-danger-ink: var(--danger-ink);
   --color-warning-soft: var(--warning-soft);
-  --color-warning-line: var(--warning-line);
-  --color-warning-ink: var(--warning-ink);
-  --color-score-high: var(--score-high);
-  --color-score-mid: var(--score-mid);
-  --color-score-low: var(--score-low);
-  --color-score-track: var(--score-track);
-  --color-overlay: var(--overlay);
   --font-sans: var(--font-geist-sans);
-}
-
-/* One focus treatment for every interactive element. */
-@utility focus-ring {
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
 }
 
 html {
@@ -129,40 +100,13 @@ html {
 }
 
 .map-info-window {
-  max-width: 240px;
-  padding: 2px 4px 4px;
+  max-width: 220px;
   background: var(--surface);
   color: var(--ink);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.map-info-window strong {
-  font-size: 15px;
-}
-
-.map-info-window-category {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 2px;
-  color: var(--ink-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.map-info-window-category span {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-}
-
-.map-info-window-meta strong {
-  font-size: inherit;
 }
 
 .map-info-window-address {
-  margin: 4px 0;
+  margin-top: 4px;
   color: var(--ink-soft);
 }
 
@@ -185,12 +129,6 @@ html {
   background: var(--surface) !important;
 }
 
-/* Google always reserves scrollbars in the popup; only show them when the
-   content is taller than the popup. */
-.gm-style .gm-style-iw-d {
-  overflow: auto !important;
-}
-
 :root[data-theme="dark"] .gm-style .gm-style-iw-chr button {
   filter: invert(1) brightness(1.5);
 }
@@ -203,54 +141,5 @@ html {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-}
-
-/* Paper is always light: re-declare the light tokens so a dark-theme
-   visitor does not print pale text on white. */
-@media print {
-  :root,
-  :root[data-theme="dark"] {
-    color-scheme: light;
-    --page: #ffffff;
-    --surface: #ffffff;
-    --surface-subtle: #f8fafc;
-    --surface-raised: #f1f5f9;
-    --control: #ffffff;
-    --hover: #f8fafc;
-    --line-soft: #f1f5f9;
-    --line: #e2e8f0;
-    --line-strong: #cbd5e1;
-    --ink: #0f172a;
-    --ink-soft: #475569;
-    --ink-muted: #64748b;
-    --ink-faint: #94a3b8;
-    --accent: #059669;
-    --accent-hover: #047857;
-    --accent-soft: #ecfdf5;
-    --accent-line: #a7f3d0;
-    --accent-ink: #064e3b;
-    --accent-ring: #d1fae5;
-    --action: #1e293b;
-    --action-hover: #334155;
-    --action-disabled: #94a3b8;
-    --action-ink: #ffffff;
-    --danger-soft: #fef2f2;
-    --danger-line: #fecaca;
-    --danger-ink: #b91c1c;
-    --warning-soft: #fffbeb;
-    --warning-line: #fde68a;
-    --warning-ink: #92400e;
-    --score-high: #059669;
-    --score-mid: #d97706;
-    --score-low: #e11d48;
-    --score-track: #e2e8f0;
-    --overlay: rgb(15 23 42 / 0.4);
-  }
-
-  /* Bars and rings carry meaning, so keep their colours on paper. */
-  * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 }

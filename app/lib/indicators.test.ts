@@ -12,6 +12,7 @@ function score(
     label: id,
     score: value,
     weight: 1,
+    colorClass: "",
     detail: "",
     count: 1,
     closestDistanceMeters: distance,

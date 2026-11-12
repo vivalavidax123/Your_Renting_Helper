@@ -1,4 +1,4 @@
-import type { CategoryScore, NearbyPlace, PlaceGroup } from "./types";
+import type { NearbyPlace, PlaceGroup } from "./types";
 
 export function formatDistance(distanceMeters: number) {
   return distanceMeters < 1000
@@ -32,78 +32,6 @@ export function formatReviewSummary(place: NearbyPlace) {
   const reviewLabel = place.userRatingCount === 1 ? "review" : "reviews";
 
   return `${rating}${place.userRatingCount.toLocaleString()} ${reviewLabel}`;
-}
-
-// Compact review counts for dense rows: 950, 1.2k, 14k.
-export function formatCompactCount(count: number) {
-  if (count < 1000) {
-    return String(count);
-  }
-
-  const thousands = count / 1000;
-
-  return thousands < 10
-    ? `${thousands.toFixed(1).replace(/\.0$/, "")}k`
-    : `${Math.round(thousands)}k`;
-}
-
-// Straight-line walking estimate at 80 metres per minute, never below one
-// minute. Shared by the place rows and the map popups.
-export function estimateWalkMinutes(distanceMeters: number) {
-  return Math.max(1, Math.round(distanceMeters / 80));
-}
-
-export type ScoreBand = "high" | "mid" | "low";
-
-// One rule for how a 0-100 score reads everywhere it is shown, so a 72 is
-// the same colour and word in the header, the bars and the comparison.
-export function scoreBand(score: number): { band: ScoreBand; label: string } {
-  if (score >= 80) return { band: "high", label: "Excellent" };
-  if (score >= 70) return { band: "high", label: "Good" };
-  if (score >= 50) return { band: "mid", label: "Fair" };
-  return { band: "low", label: "Limited" };
-}
-
-// Full class names (not built from strings) so Tailwind generates them.
-export const scoreBandClasses: Record<
-  ScoreBand,
-  { text: string; bg: string; stroke: string }
-> = {
-  high: {
-    text: "text-score-high",
-    bg: "bg-score-high",
-    stroke: "stroke-score-high",
-  },
-  mid: {
-    text: "text-score-mid",
-    bg: "bg-score-mid",
-    stroke: "stroke-score-mid",
-  },
-  low: {
-    text: "text-score-low",
-    bg: "bg-score-low",
-    stroke: "stroke-score-low",
-  },
-};
-
-// The (up to) two categories where each side leads by the widest margin,
-// ignoring leads under 5 points. Drives the one-line comparison summary.
-export function summarizeComparison(a: CategoryScore[], b: CategoryScore[]) {
-  const differences = a.flatMap((scoreA) => {
-    const scoreB = b.find((candidate) => candidate.id === scoreA.id);
-
-    return scoreB
-      ? [{ label: scoreA.label, difference: scoreA.score - scoreB.score }]
-      : [];
-  });
-  const leaders = (direction: 1 | -1) =>
-    differences
-      .filter((entry) => entry.difference * direction >= 5)
-      .sort((x, y) => (y.difference - x.difference) * direction)
-      .slice(0, 2)
-      .map((entry) => entry.label);
-
-  return { aLeads: leaders(1), bLeads: leaders(-1) };
 }
 
 // One line saying what was searched for a category, shown under its list.

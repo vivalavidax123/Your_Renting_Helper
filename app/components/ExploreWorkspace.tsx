@@ -102,9 +102,16 @@ export function ExploreWorkspace() {
               selectedPlace={null}
               onAutoScroll={noScroll}
             />
-            <p className="mt-3 text-xs leading-5 text-ink-muted">
-              Category colours connect places to their scores.
-            </p>
+            <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-muted">
+              <li>
+                Matched as{" "}
+                {search.result.location.locationType
+                  .toLowerCase()
+                  .replaceAll("_", " ")}
+                .
+              </li>
+              <li>Category colours connect places to their scores.</li>
+            </ul>
           </section>
           {search.locationId ? (
             <nav
