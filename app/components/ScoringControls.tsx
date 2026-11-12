@@ -8,7 +8,9 @@ import {
 } from "@/app/lib/categories";
 
 // A row of toggle buttons where exactly one is pressed. Both scoring choices
-// live in the URL, so picking one rescores without a new search.
+// live in the URL, so picking one rescores without a new search. On phones
+// the row spans the card and each button is as wide as its own label, so four
+// options still fit a 360px screen; from sm up the columns are equal.
 function SegmentedControl<T extends string>({
   label,
   labels,
@@ -26,7 +28,7 @@ function SegmentedControl<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className="inline-grid auto-cols-fr grid-flow-col gap-0.5 rounded-lg bg-surface-raised p-1"
+      className="flex gap-0.5 rounded-lg bg-surface-raised p-1 max-sm:w-full sm:inline-grid sm:auto-cols-fr sm:grid-flow-col"
     >
       {(Object.keys(labels) as T[]).map((id) => (
         <button
@@ -36,7 +38,7 @@ function SegmentedControl<T extends string>({
           aria-pressed={value === id}
           onClick={() => onChange(id)}
           className={
-            "focus-ring whitespace-nowrap rounded-md px-2 py-1.5 text-sm transition disabled:opacity-50 sm:px-3 " +
+            "focus-ring whitespace-nowrap rounded-md px-1.5 py-1.5 text-sm transition disabled:opacity-50 max-sm:flex-auto sm:px-3 " +
             (value === id
               ? "bg-surface font-medium text-ink shadow-sm"
               : "text-ink-muted hover:text-ink")

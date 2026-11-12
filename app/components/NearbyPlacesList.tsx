@@ -336,7 +336,7 @@ export function NearbyPlacesList({
           <div
             role="group"
             aria-label="Show categories"
-            className="-mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 print:hidden"
+            className="-mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] scroll-rail sm:mx-0 sm:flex-wrap sm:px-0 print:hidden"
           >
             <button
               type="button"

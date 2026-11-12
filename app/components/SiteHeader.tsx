@@ -6,12 +6,13 @@ import { useExplore } from "./ExploreProvider";
 import { LogoIcon } from "./icons";
 
 // Sticky on phones, where the result tabs sit right under it; static from
-// lg up, where the map column is the sticky element instead.
+// lg up, where the map column is the sticky element instead. The background
+// is opaque so page text never shows through while it scrolls underneath.
 export function SiteHeader() {
   const { returnToWelcome } = useExplore();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-page/85 px-4 backdrop-blur sm:px-6 lg:static lg:px-8 print:hidden">
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-page px-4 sm:px-6 lg:static lg:px-8 print:hidden">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3">
         <Link
           href="/"

@@ -126,6 +126,8 @@ export function AnalystChat({
           <label htmlFor={inputId} className="sr-only">
             {title}
           </label>
+          {/* On phones the Send button sits under the text, not beside it,
+              so a long placeholder has the full width and is not cut off. */}
           <textarea
             id={inputId}
             value={question}
@@ -135,7 +137,7 @@ export function AnalystChat({
             rows={2}
             disabled={!available || status === "loading"}
             placeholder={available ? placeholder : unavailablePlaceholder}
-            className="block w-full resize-none bg-transparent px-3 py-3 pr-24 text-sm leading-6 text-ink outline-none placeholder:text-ink-muted disabled:cursor-not-allowed disabled:opacity-70"
+            className="block w-full resize-none bg-transparent px-3 py-3 text-sm max-sm:h-32 max-sm:pb-14 sm:pr-24 leading-6 text-ink outline-none placeholder:text-ink-muted disabled:cursor-not-allowed disabled:opacity-70"
           />
           <button
             type="submit"

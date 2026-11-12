@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { getCoverage } from "@/app/lib/indicators";
 import type { RecentSearch } from "@/app/lib/types";
 import { AdditionalIndicators } from "./AdditionalIndicators";
@@ -143,6 +143,16 @@ export function ExploreWorkspace() {
   const hasResult = placesState === "success" && location !== null;
   const coverage = hasResult ? getCoverage(placeGroups) : null;
   const savedEntry = saved.find((item) => item.id === locationId) ?? null;
+
+  // On phones the search card fills most of the first screen, so a new
+  // result would land out of sight. Bring the score to the top instead;
+  // scroll-padding-top in globals.css keeps it clear of the sticky header.
+  // From lg up the result already sits beside the map, so nothing moves.
+  useEffect(() => {
+    if (hasResult && !window.matchMedia("(min-width: 1024px)").matches) {
+      document.getElementById("result-header")?.scrollIntoView();
+    }
+  }, [hasResult, location]);
 
   function handleToggleSaved(entry: RecentSearch) {
     const wasSaved = entry.savedAt !== null;
@@ -292,7 +302,7 @@ export function ExploreWorkspace() {
                 role="tablist"
                 aria-label="Result sections"
                 onKeyDown={handleTabKeyDown}
-                className="sticky top-14 z-30 -mx-4 grid grid-cols-3 gap-1 border-b border-line-soft bg-page/90 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden print:hidden"
+                className="sticky top-14 z-30 -mx-4 grid grid-cols-3 gap-1 border-b border-line-soft bg-page px-4 py-2 sm:-mx-6 sm:px-6 lg:hidden print:hidden"
               >
                 {mobileTabs.map((tab) => (
                   <button
