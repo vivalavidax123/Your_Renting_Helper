@@ -42,7 +42,7 @@ export function RentalInsights({
   }
 
   return (
-    <div className="h-full rounded-lg border border-line bg-surface p-5 shadow-sm">
+    <div className="h-full rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5">
       <h2 className="text-base font-semibold text-ink">Community rent</h2>
       <p className="mt-1 text-xs leading-5 text-ink-muted">
         Rents reported by users, not an official valuation.

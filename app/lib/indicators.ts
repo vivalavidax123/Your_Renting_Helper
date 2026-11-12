@@ -16,6 +16,29 @@ const majorGroceryPatterns = ["Coles", "Woolworths", "Aldi", "IGA"].map(
   (brand) => ({ brand, pattern: new RegExp(`\\b${brand}\\b`, "i") }),
 );
 
+export type Coverage = {
+  level: "good" | "limited" | "sparse";
+  thinCategories: string[];
+};
+
+// How much the result can be trusted: a category with fewer than three
+// places gives the score very little to work with.
+export function getCoverage(placeGroups: PlaceGroup[]): Coverage {
+  const thinCategories = placeGroups
+    .filter((group) => group.places.length < 3)
+    .map((group) => group.label);
+
+  return {
+    level:
+      thinCategories.length <= 1
+        ? "good"
+        : thinCategories.length <= 3
+          ? "limited"
+          : "sparse",
+    thinCategories,
+  };
+}
+
 function getCategoryScore(categoryScores: CategoryScore[], id: string) {
   return categoryScores.find((category) => category.id === id);
 }
@@ -165,19 +188,7 @@ function buildCarReliance(categoryScores: CategoryScore[]): Indicator {
   };
 }
 
-// The two indicators the details page shows. The other three only restate
-// category scores, so they stay in the AI analyst context but not on screen.
-export function buildWalkingIndicators(
-  categoryScores: CategoryScore[],
-  placeGroups: PlaceGroup[],
-): Indicator[] {
-  return [
-    buildWalkability(categoryScores, placeGroups),
-    buildCarReliance(categoryScores),
-  ];
-}
-
-// All five indicators, for the AI analyst's context.
+// All five indicators, for the indicator tiles and the AI analyst's context.
 export function buildAnalystIndicators(
   categoryScores: CategoryScore[],
   placeGroups: PlaceGroup[],

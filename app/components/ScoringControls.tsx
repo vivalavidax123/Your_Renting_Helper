@@ -36,9 +36,9 @@ function SegmentedControl<T extends string>({
           aria-pressed={value === id}
           onClick={() => onChange(id)}
           className={
-            "min-h-8 whitespace-nowrap rounded-md px-2 py-1 text-xs disabled:opacity-50 " +
+            "focus-ring whitespace-nowrap rounded-md px-2 py-1.5 text-sm transition disabled:opacity-50 sm:px-3 " +
             (value === id
-              ? "bg-surface font-semibold text-ink shadow-sm"
+              ? "bg-surface font-medium text-ink shadow-sm"
               : "text-ink-muted hover:text-ink")
           }
         >

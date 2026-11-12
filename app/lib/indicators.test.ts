@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAnalystIndicators, buildWalkingIndicators } from "./indicators";
+import { buildAnalystIndicators } from "./indicators";
 import type { CategoryScore, NearbyPlace, PlaceGroup } from "./types";
 
 function score(
@@ -12,7 +12,6 @@ function score(
     label: id,
     score: value,
     weight: 1,
-    colorClass: "",
     detail: "",
     count: 1,
     closestDistanceMeters: distance,
@@ -83,12 +82,5 @@ describe("buildAnalystIndicators", () => {
       "Daily convenience",
       "Car reliance",
     ]);
-  });
-
-  it("keeps the on-screen walking indicators identical to the full list", () => {
-    const scores = [score("groceries", 80, 300), score("health", 60, 2000)];
-    const all = buildAnalystIndicators(scores, []);
-
-    expect(buildWalkingIndicators(scores, [])).toEqual([all[0], all[4]]);
   });
 });

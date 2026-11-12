@@ -76,7 +76,7 @@ export function CbdTravelCard({ location }: { location: GeocodeLocation }) {
   }, [location]);
 
   return (
-    <div className="h-full rounded-lg border border-line bg-surface p-5 shadow-sm">
+    <div className="h-full rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5">
       <h2 className="text-base font-semibold text-ink">
         Commute to Melbourne CBD
       </h2>
