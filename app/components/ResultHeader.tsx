@@ -90,6 +90,7 @@ export function ResultHeader({
 
   return (
     <section
+      id="result-header"
       aria-label="Overall score"
       className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
     >
@@ -188,15 +189,17 @@ export function ResultHeader({
                   : "text-ink-muted hover:text-ink"
               }`}
             >
-              <Icon />
+              <span className="max-[379px]:hidden">
+                <Icon />
+              </span>
               {label}
             </button>
           ))}
         </div>
-        <PresetPicker />
-
+        {/* Before the preset picker so that on phones the actions share the
+            profile row instead of taking a line of their own. */}
         {hasResult ? (
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex gap-2 sm:order-last">
             {saved !== null ? (
               <button
                 type="button"
@@ -224,13 +227,14 @@ export function ResultHeader({
             <button
               type="button"
               onClick={() => window.print()}
-              className={actionButtonClass}
+              className={`${actionButtonClass} max-sm:hidden`}
             >
               <PrinterIcon />
               <span className="sr-only">Print or save as PDF</span>
             </button>
           </div>
         ) : null}
+        <PresetPicker />
       </div>
 
       {activeProfile ? (

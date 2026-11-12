@@ -130,6 +130,20 @@ html {
   scroll-padding-top: 4.5rem;
 }
 
+/* A row that scrolls sideways on phones. The right edge fades out to hint
+   that more is off-screen; the extra end padding lets the last item scroll
+   clear of the fade. From sm up these rows wrap, so nothing is hidden. */
+@media (max-width: 639px) {
+  .scroll-rail {
+    padding-right: 2.5rem;
+    mask-image: linear-gradient(
+      to right,
+      #000 calc(100% - 2.5rem),
+      transparent
+    );
+  }
+}
+
 .map-info-window {
   max-width: 240px;
   padding: 2px 4px 4px;

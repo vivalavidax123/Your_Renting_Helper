@@ -103,7 +103,7 @@ function ChipRow({
         {title}
       </h2>
       {/* One scrolling line on phones; wraps where there is room. */}
-      <ul className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+      <ul className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] scroll-rail sm:mx-0 sm:flex-wrap sm:px-0">
         {searches.map((search) => (
           <li key={search.id} className="shrink-0">
             <SearchChip search={search} {...chipProps} />

@@ -228,7 +228,7 @@ export function ComparePanel({
             {weightProfileLabels[profile]} profile and{" "}
             {weightPresetLabels[preset]} priorities chosen above.
           </p>
-          <ul className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+          <ul className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {saved.map((search) => {
               const side =
                 search.id === effectiveAId
@@ -238,13 +238,13 @@ export function ComparePanel({
                     : null;
 
               return (
-                <li key={search.id} className="shrink-0">
+                <li key={search.id} className="min-w-0">
                   <button
                     type="button"
                     role="checkbox"
                     aria-checked={side !== null}
                     onClick={() => toggleSelected(search.id)}
-                    className={`focus-ring flex w-44 items-start gap-2 rounded-lg border-2 px-3 py-2 text-left transition ${
+                    className={`focus-ring flex w-full items-start gap-2 rounded-lg border-2 px-3 py-2 text-left transition sm:w-44 ${
                       side
                         ? side.border
                         : "border-line hover:border-line-strong"
@@ -258,7 +258,7 @@ export function ComparePanel({
                       {side ? side.letter : "+"}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-ink">
+                      <span className="line-clamp-2 text-sm font-medium leading-snug text-ink">
                         {shortAddress(search.formattedAddress)}
                       </span>
                       <span className="text-xs tabular-nums text-ink-muted">
@@ -312,7 +312,7 @@ export function ComparePanel({
             {[activeResult.a, activeResult.b].map((side, index) => (
               <div
                 key={side.id}
-                className="flex items-center gap-3 rounded-lg bg-surface-subtle px-3 py-2"
+                className="flex items-center gap-2 rounded-lg bg-surface-subtle px-2 py-2 sm:gap-3 sm:px-3"
               >
                 <ScoreRing
                   score={Math.round(side.overallScore)}
@@ -325,7 +325,7 @@ export function ComparePanel({
                   >
                     {sideStyles[index].letter}
                   </span>
-                  <p className="truncate text-xs font-medium text-ink">
+                  <p className="line-clamp-2 text-xs font-medium text-ink">
                     {shortAddress(side.formattedAddress)}
                   </p>
                 </div>
@@ -405,7 +405,7 @@ export function ComparePanel({
                           categoryId={scoreA.id}
                           className="size-4 shrink-0 text-ink-muted"
                         />
-                        <span className="truncate">{scoreA.label}</span>
+                        <span className="leading-tight">{scoreA.label}</span>
                       </span>
                     </th>
                     <ScoreCell
