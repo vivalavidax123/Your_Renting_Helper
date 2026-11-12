@@ -123,12 +123,16 @@ export function scoreLocation(
       label: category.label,
       score,
       weight: weights[category.id] ?? 0,
-      colorClass: category.colorClass,
       detail: category.detail,
       count: places.length,
       closestDistanceMeters,
       radiusMeters: category.radiusMeters,
       explanation: getExplanation(places.length, closestDistanceMeters),
+      pillars: {
+        proximity: Math.round(proximityScore),
+        variety: Math.round(varietyScore),
+        quality: Math.round(qualityScore),
+      },
     };
   });
 

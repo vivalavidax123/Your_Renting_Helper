@@ -93,12 +93,14 @@ export type CategoryScore = {
   label: string;
   score: number;
   weight: number;
-  colorClass: string;
   detail: string;
   count: number;
   closestDistanceMeters: number | null;
   radiusMeters: number;
   explanation: string;
+  // Points earned per scoring pillar (max 50 / 30 / 20). Optional because
+  // the compare API returns scores without it.
+  pillars?: { proximity: number; variety: number; quality: number };
 };
 
 export type RecentSearch = {

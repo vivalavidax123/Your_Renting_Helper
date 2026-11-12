@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   weightPresetLabels,
@@ -11,8 +9,10 @@ import {
 } from "@/app/lib/categories";
 import { isJsonRecord, readApiResult } from "@/app/lib/api";
 import type { ComparisonSide, RecentSearch } from "@/app/lib/types";
-import { formatEvidenceDate } from "@/app/lib/utils";
+import { formatEvidenceDate, summarizeComparison } from "@/app/lib/utils";
 import { AnalystChat } from "./AnalystChat";
+import { CategoryIcon, CheckIcon, StarIcon } from "./icons";
+import { ScoreRing } from "./ScoreRing";
 
 function isComparisonSide(value: unknown): value is ComparisonSide {
   return (
@@ -38,6 +38,7 @@ function isComparisonPayload(value: Record<string, unknown>) {
 
 type ComparePanelProps = {
   saved: RecentSearch[];
+  signedIn: boolean;
   profile: WeightProfile;
   preset: WeightPreset;
 };
@@ -49,108 +50,76 @@ const suggestedComparisonQuestions = [
   "Which better suits frequent café and gym use?",
 ];
 
-type LocationSelectProps = {
-  label: string;
-  value: string;
-  otherValue: string;
-  saved: RecentSearch[];
-  onChange: (id: string) => void;
-};
+// Fixed hues for the two sides, used for the letter badges and bars.
+const sideStyles = [
+  {
+    letter: "A",
+    badge: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+    bar: "bg-sky-500",
+    border: "border-sky-500",
+  },
+  {
+    letter: "B",
+    badge: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+    bar: "bg-orange-500",
+    border: "border-orange-500",
+  },
+];
 
-function LocationSelect({
-  label,
-  value,
-  otherValue,
-  saved,
-  onChange,
-}: LocationSelectProps) {
+const shortAddress = (address: string) => address.replace(/, Australia$/, "");
+
+const joinLabels = (labels: string[]) => labels.join(" and ").toLowerCase();
+
+function ScoreCell({
+  score,
+  otherScore,
+  barClass,
+}: {
+  score: number;
+  otherScore: number;
+  barClass: string;
+}) {
+  const isWinner = Math.round(score) > Math.round(otherScore);
+
   return (
-    <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-xs font-semibold text-ink-muted">
-      {label}
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        disabled={saved.length === 0}
-        className="w-full rounded-md border border-line bg-control px-3 py-2.5 text-sm font-normal text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent-ring"
+    <td className="px-2 py-2 align-middle">
+      <span
+        className={`flex items-center gap-1 tabular-nums ${
+          isWinner ? "font-bold text-ink" : "text-ink-soft"
+        }`}
       >
-        <option value="">
-          {saved.length === 0
-            ? "No scored saved locations"
-            : "Choose a saved location…"}
-        </option>
-        {saved.map((search) => (
-          <option
-            key={search.id}
-            value={search.id}
-            disabled={search.id === otherValue}
-          >
-            {search.formattedAddress}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function scoreCell(score: number, otherScore: number) {
-  const isWinner = score > otherScore;
-  const isTie = score === otherScore;
-
-  return (
-    <td
-      className={`px-3 py-2.5 text-right tabular-nums ${
-        isWinner
-          ? "font-bold text-accent"
-          : isTie
-            ? "font-semibold text-ink"
-            : "text-ink-soft"
-      }`}
-      aria-label={`${Math.round(score)}${
-        isTie ? ", tie" : isWinner ? ", higher score" : ""
-      }`}
-    >
-      {Math.round(score)}
-    </td>
-  );
-}
-
-// "A +6", "B +3" or "Tie": which side leads and by how much, so the reader
-// doesn't have to subtract the two columns.
-function differenceCell(scoreA: number, scoreB: number) {
-  const difference = Math.round(scoreA) - Math.round(scoreB);
-
-  return (
-    <td className="px-3 py-2.5 text-right tabular-nums text-ink-muted">
-      {difference === 0
-        ? "Tie"
-        : (difference > 0 ? "A +" : "B +") + Math.abs(difference)}
+        {Math.round(score)}
+        {isWinner ? (
+          <>
+            <CheckIcon className="size-3.5 text-accent" />
+            <span className="sr-only">higher</span>
+          </>
+        ) : null}
+      </span>
+      <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-score-track">
+        <span
+          className={`block h-full rounded-full ${barClass}`}
+          style={{ width: `${score}%` }}
+        />
+      </span>
     </td>
   );
 }
 
 export function ComparePanel({
   saved: allSaved,
+  signedIn,
   profile,
   preset,
 }: ComparePanelProps) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  // Comparison needs stored scores, so only offer locations that have a
+  // snapshot; scoreless favourites reappear here after being re-searched.
   const saved = allSaved.filter((search) => search.overallScore !== null);
-  const unavailableCount = allSaved.length - saved.length;
-  const requestedAId = searchParams.get("a") ?? "";
-  const requestedBId = searchParams.get("b") ?? "";
-  const effectiveAId = saved.some((search) => search.id === requestedAId)
-    ? requestedAId
-    : "";
-  const effectiveBId =
-    requestedBId !== effectiveAId &&
-    saved.some((search) => search.id === requestedBId)
-      ? requestedBId
-      : "";
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   // Retry bumps attempt, which changes the key: the old error no longer
   // matches, so the panel shows loading and the effect fetches again.
   const [attempt, setAttempt] = useState(0);
-  const requestKey = `${effectiveAId}|${effectiveBId}|${profile}|${preset}|${attempt}`;
   const [result, setResult] = useState<{
     key: string;
     a: ComparisonSide;
@@ -161,18 +130,13 @@ export function ComparePanel({
     message: string;
   } | null>(null);
 
-  function changeSelection(side: "a" | "b", id: string) {
-    const next = new URLSearchParams(searchParams.toString());
-
-    if (id) {
-      next.set(side, id);
-    } else {
-      next.delete(side);
-    }
-
-    next.set("profile", profile);
-    window.history.replaceState(null, "", `${pathname}?${next.toString()}`);
-  }
+  // Derive stale selections instead of synchronizing them in another effect.
+  const [effectiveAId = "", effectiveBId = ""] = selectedIds.filter((id) =>
+    saved.some((search) => search.id === id),
+  );
+  // Both sides are rescored for the profile and priorities chosen in the
+  // result header, so they are part of what identifies a request.
+  const requestKey = `${effectiveAId}|${effectiveBId}|${profile}|${preset}|${attempt}`;
 
   useEffect(() => {
     if (!effectiveAId || !effectiveBId) {
@@ -218,6 +182,8 @@ export function ComparePanel({
   }, [effectiveAId, effectiveBId, profile, preset, requestKey]);
 
   const activeResult = result?.key === requestKey ? result : null;
+  // Keeps the chat (and its transcript) mounted while a profile or
+  // priority change rescored the same pair.
   const retainedPairResult =
     result && result.a.id === effectiveAId && result.b.id === effectiveBId
       ? result
@@ -227,71 +193,99 @@ export function ComparePanel({
   const isLoading =
     Boolean(effectiveAId && effectiveBId) && !activeResult && !activeError;
 
-  return (
-    <section className="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-6">
-      <h2 className="text-lg font-semibold text-ink">Choose two locations</h2>
-      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm leading-6 text-ink-soft">
-        <li>
-          The table recalculates both locations for the selected mobility
-          profile.
-        </li>
-        <li>The higher score in each row is highlighted.</li>
-      </ul>
+  // Picking a third location replaces B, so A stays put as the reference.
+  function toggleSelected(id: string) {
+    setSelectedIds((current) => {
+      if (current.includes(id)) {
+        return current.filter((selectedId) => selectedId !== id);
+      }
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <LocationSelect
-          label="Location A"
-          value={effectiveAId}
-          otherValue={effectiveBId}
-          saved={saved}
-          onChange={(id) => changeSelection("a", id)}
-        />
-        <LocationSelect
-          label="Location B"
-          value={effectiveBId}
-          otherValue={effectiveAId}
-          saved={saved}
-          onChange={(id) => changeSelection("b", id)}
-        />
-      </div>
+      return current.length < 2 ? [...current, id] : [current[0], id];
+    });
+  }
+
+  const summary = activeResult
+    ? summarizeComparison(activeResult.a.scores, activeResult.b.scores)
+    : null;
+
+  return (
+    <section className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5 print:hidden">
+      <h2 className="text-base font-semibold text-ink">
+        Compare saved locations
+      </h2>
 
       {saved.length < 2 ? (
-        <div className="mt-4 rounded-lg border border-line bg-surface-subtle p-4 text-sm leading-6 text-ink-soft">
-          <p>
-            {saved.length === 0
-              ? "Save two scored locations to start a comparison."
-              : "Save one more scored location to start a comparison."}
+        <p className="mt-2 flex items-start gap-2 text-sm text-ink-muted">
+          <StarIcon className="mt-0.5 size-4 shrink-0 text-ink-faint" />
+          {signedIn
+            ? "Save two or more searched locations to compare them here."
+            : "Sign in and save two or more locations to compare them here."}
+        </p>
+      ) : (
+        <>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            Pick two saved locations to see their scores side by side, using the{" "}
+            {weightProfileLabels[profile]} profile and{" "}
+            {weightPresetLabels[preset]} priorities chosen above.
           </p>
-          <Link
-            href="/"
-            className="mt-2 inline-block font-semibold text-accent"
-          >
-            Search for a location
-          </Link>
-        </div>
-      ) : !effectiveAId || !effectiveBId ? (
-        <p className="mt-4 rounded-lg border border-line bg-surface-subtle px-4 py-3 text-sm text-ink-soft">
-          Choose a different saved location in each field to load the
-          comparison.
+          <ul className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+            {saved.map((search) => {
+              const side =
+                search.id === effectiveAId
+                  ? sideStyles[0]
+                  : search.id === effectiveBId
+                    ? sideStyles[1]
+                    : null;
+
+              return (
+                <li key={search.id} className="shrink-0">
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={side !== null}
+                    onClick={() => toggleSelected(search.id)}
+                    className={`focus-ring flex w-44 items-start gap-2 rounded-lg border-2 px-3 py-2 text-left transition ${
+                      side
+                        ? side.border
+                        : "border-line hover:border-line-strong"
+                    }`}
+                  >
+                    <span
+                      className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
+                        side ? side.badge : "bg-surface-raised text-ink-muted"
+                      }`}
+                    >
+                      {side ? side.letter : "+"}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-ink">
+                        {shortAddress(search.formattedAddress)}
+                      </span>
+                      <span className="text-xs tabular-nums text-ink-muted">
+                        Score {Math.round(search.overallScore ?? 0)}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+
+      {allSaved.length > saved.length ? (
+        <p className="mt-2 text-xs text-ink-muted">
+          {allSaved.length - saved.length} saved{" "}
+          {allSaved.length - saved.length === 1
+            ? "location has"
+            : "locations have"}{" "}
+          no current score. Search again to include{" "}
+          {allSaved.length - saved.length === 1 ? "it" : "them"}.
         </p>
       ) : null}
 
-      {unavailableCount > 0 ? (
-        <ul className="mt-3 list-disc space-y-0.5 pl-4 text-xs leading-5 text-ink-muted">
-          <li>
-            {unavailableCount} saved{" "}
-            {unavailableCount === 1 ? "location has" : "locations have"} no
-            current score data.
-          </li>
-          <li>
-            Search {unavailableCount === 1 ? "it" : "them"} again to include{" "}
-            {unavailableCount === 1 ? "it" : "them"} here.
-          </li>
-        </ul>
-      ) : null}
-
       {isLoading ? (
-        <p role="status" className="mt-5 text-sm font-medium text-ink-soft">
+        <p role="status" className="mt-4 text-sm font-medium text-ink-soft">
           Recalculating both locations…
         </p>
       ) : null}
@@ -299,89 +293,136 @@ export function ComparePanel({
       {activeError ? (
         <p
           role="alert"
-          className="mt-5 rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm font-medium text-danger-ink"
+          className="mt-4 rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm font-medium text-danger-ink"
         >
           {activeError}{" "}
           <button
             type="button"
             onClick={() => setAttempt((value) => value + 1)}
-            className="underline"
+            className="focus-ring rounded underline"
           >
             Retry
           </button>
         </p>
       ) : null}
 
-      {activeResult ? (
+      {activeResult && summary ? (
         <>
-          <div
-            role="region"
-            aria-label="Location score comparison"
-            tabIndex={0}
-            className="mt-5 overflow-x-auto rounded-lg border border-line"
-          >
-            <table className="w-full border-collapse text-sm">
-              <caption className="sr-only">
-                Category score comparison using the{" "}
-                {weightProfileLabels[profile]} profile and{" "}
-                {weightPresetLabels[preset]} weighting
-              </caption>
-              <thead>
-                <tr className="border-b border-line-strong bg-surface-subtle text-xs uppercase tracking-wide text-ink-muted">
-                  <th className="px-3 py-3 text-left font-semibold">
-                    Category
-                  </th>
-                  <th className="px-3 py-3 text-right font-semibold">
-                    <abbr title={activeResult.a.formattedAddress}>A</abbr>
-                  </th>
-                  <th className="px-3 py-3 text-right font-semibold">
-                    <abbr title={activeResult.b.formattedAddress}>B</abbr>
-                  </th>
-                  <th className="px-3 py-3 text-right font-semibold">Lead</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-line bg-surface font-semibold">
-                  <td className="px-3 py-2.5">Overall</td>
-                  {scoreCell(
-                    activeResult.a.overallScore,
-                    activeResult.b.overallScore,
-                  )}
-                  {scoreCell(
-                    activeResult.b.overallScore,
-                    activeResult.a.overallScore,
-                  )}
-                  {differenceCell(
-                    activeResult.a.overallScore,
-                    activeResult.b.overallScore,
-                  )}
-                </tr>
-                {activeResult.a.scores.map((scoreA) => {
-                  const scoreB = activeResult.b.scores.find(
-                    (candidate) => candidate.id === scoreA.id,
-                  );
-
-                  if (!scoreB) {
-                    return null;
-                  }
-
-                  return (
-                    <tr
-                      key={scoreA.id}
-                      className="border-b border-line last:border-0"
-                    >
-                      <td className="px-3 py-2.5 text-ink-soft">
-                        {scoreA.label}
-                      </td>
-                      {scoreCell(scoreA.score, scoreB.score)}
-                      {scoreCell(scoreB.score, scoreA.score)}
-                      {differenceCell(scoreA.score, scoreB.score)}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {[activeResult.a, activeResult.b].map((side, index) => (
+              <div
+                key={side.id}
+                className="flex items-center gap-3 rounded-lg bg-surface-subtle px-3 py-2"
+              >
+                <ScoreRing
+                  score={Math.round(side.overallScore)}
+                  name={`Location ${sideStyles[index].letter} overall score`}
+                  className="size-14 sm:size-16"
+                />
+                <div className="min-w-0">
+                  <span
+                    className={`inline-flex size-5 items-center justify-center rounded-full text-[11px] font-semibold ${sideStyles[index].badge}`}
+                  >
+                    {sideStyles[index].letter}
+                  </span>
+                  <p className="truncate text-xs font-medium text-ink">
+                    {shortAddress(side.formattedAddress)}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
+
+          <p className="mt-3 text-sm text-ink-soft">
+            {summary.aLeads.length === 0 && summary.bLeads.length === 0
+              ? "These two locations score about the same in every category."
+              : [
+                  summary.aLeads.length > 0
+                    ? `A is better for ${joinLabels(summary.aLeads)}.`
+                    : "",
+                  summary.bLeads.length > 0
+                    ? `B is better for ${joinLabels(summary.bLeads)}.`
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+          </p>
+
+          <table className="mt-3 w-full table-fixed border-collapse text-sm">
+            <caption className="sr-only">
+              Category score comparison using the {weightProfileLabels[profile]}{" "}
+              profile and {weightPresetLabels[preset]} weighting
+            </caption>
+            <thead>
+              <tr className="border-b border-line-strong text-xs text-ink-muted">
+                <th className="w-[42%] px-2 py-2 text-left font-semibold">
+                  Category
+                </th>
+                {[activeResult.a, activeResult.b].map((side, index) => (
+                  <th
+                    key={side.id}
+                    className="px-2 py-2 text-left font-semibold"
+                  >
+                    {sideStyles[index].letter}
+                    <span className="sr-only">: {side.formattedAddress}</span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-line bg-surface-subtle font-semibold">
+                <th scope="row" className="px-2 py-2 text-left">
+                  Overall
+                </th>
+                <ScoreCell
+                  score={activeResult.a.overallScore}
+                  otherScore={activeResult.b.overallScore}
+                  barClass={sideStyles[0].bar}
+                />
+                <ScoreCell
+                  score={activeResult.b.overallScore}
+                  otherScore={activeResult.a.overallScore}
+                  barClass={sideStyles[1].bar}
+                />
+              </tr>
+              {activeResult.a.scores.map((scoreA) => {
+                const scoreB = activeResult.b.scores.find(
+                  (candidate) => candidate.id === scoreA.id,
+                );
+
+                if (!scoreB) {
+                  return null;
+                }
+
+                return (
+                  <tr key={scoreA.id} className="border-b border-line-soft">
+                    <th
+                      scope="row"
+                      className="px-2 py-2 text-left font-normal text-ink-soft"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <CategoryIcon
+                          categoryId={scoreA.id}
+                          className="size-4 shrink-0 text-ink-muted"
+                        />
+                        <span className="truncate">{scoreA.label}</span>
+                      </span>
+                    </th>
+                    <ScoreCell
+                      score={scoreA.score}
+                      otherScore={scoreB.score}
+                      barClass={sideStyles[0].bar}
+                    />
+                    <ScoreCell
+                      score={scoreB.score}
+                      otherScore={scoreA.score}
+                      barClass={sideStyles[1].bar}
+                    />
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
           <p className="mt-3 text-xs leading-5 text-ink-muted">
             Evidence collected {formatEvidenceDate(activeResult.a.fetchedAt)}{" "}
