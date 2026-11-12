@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/app/lib/authClient";
 import { useLoginHref } from "@/app/hooks/useLoginHref";
 
-// Session control for the page header: a sign-in button when logged out,
-// an avatar with the account email and sign-out when logged in. useSession is reactive,
+// Slim session line for the page header: a sign-in link when logged out,
+// the account email plus sign-out when logged in. useSession is reactive,
 // so signing out re-renders this and everything else subscribed to it.
 export function AuthStatus() {
   const { data: session, isPending } = authClient.useSession();
@@ -41,7 +41,7 @@ export function AuthStatus() {
       <span
         role="status"
         aria-label="Checking sign-in"
-        className="size-9 rounded-full bg-surface-raised"
+        className="h-5 w-16 rounded bg-surface-raised"
       />
     );
   }
@@ -50,7 +50,7 @@ export function AuthStatus() {
     return (
       <Link
         href={loginHref}
-        className="focus-ring inline-flex h-9 items-center rounded-lg border border-line bg-surface px-3 text-sm font-medium text-ink-soft transition hover:bg-surface-raised hover:text-ink"
+        className="text-sm font-medium text-ink-muted hover:text-accent"
       >
         Sign in
       </Link>
@@ -63,26 +63,23 @@ export function AuthStatus() {
         ref={triggerRef}
         type="button"
         aria-expanded={menuOpen}
-        aria-label="Account menu"
         onClick={() => setMenuOpen((open) => !open)}
-        className="focus-ring flex size-9 items-center justify-center rounded-full border border-accent-line bg-accent-soft text-sm font-semibold text-accent-ink"
+        className="flex max-w-44 items-center gap-1.5 rounded-md px-2 py-1 text-ink-muted hover:bg-hover hover:text-accent"
+        title={session.user.email}
       >
-        {(session.user.name || session.user.email).charAt(0).toUpperCase()}
+        <span className="truncate">{session.user.email}</span>
       </button>
       {menuOpen ? (
         // A plain disclosure, not role="menu": a menu promises arrow-key
         // navigation, which one Sign out button does not need.
-        <div className="absolute right-0 z-50 mt-2 w-60 rounded-lg border border-line bg-surface p-1.5 shadow-lg">
-          <p className="truncate px-3 py-2 text-xs text-ink-muted">
-            {session.user.email}
-          </p>
+        <div className="absolute right-0 z-20 mt-2 min-w-32 rounded-lg border border-line bg-surface p-1 shadow-lg">
           <button
             type="button"
             onClick={() => {
               setMenuOpen(false);
               void authClient.signOut();
             }}
-            className="focus-ring w-full rounded-md px-3 py-2 text-left text-ink-soft hover:bg-hover hover:text-ink"
+            className="w-full rounded-md px-3 py-2 text-left font-medium text-ink-soft hover:bg-hover hover:text-accent"
           >
             Sign out
           </button>
