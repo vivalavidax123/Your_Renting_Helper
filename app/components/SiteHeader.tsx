@@ -5,15 +5,16 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useExplore } from "./ExploreProvider";
 import { LogoIcon } from "./icons";
 
-// Sticky on phones, where the result tabs sit right under it; static from
-// lg up, where the map column is the sticky element instead. The background
-// is opaque so page text never shows through while it scrolls underneath.
+// Sticky at every width: on phones the result tabs sit right under it, and
+// from lg up the full-height map sticks right under it. Full width (no
+// max-w) so the logo lines up with the card column of the split view. The
+// background is opaque so page text never shows through underneath.
 export function SiteHeader() {
   const { returnToWelcome } = useExplore();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-page px-4 sm:px-6 lg:static lg:px-8 print:hidden">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3">
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-page px-4 sm:px-6 lg:px-8 print:hidden">
+      <div className="mx-auto flex h-14 max-w-7xl items-center lg:max-w-none justify-between gap-3">
         <Link
           href="/"
           onClick={returnToWelcome}

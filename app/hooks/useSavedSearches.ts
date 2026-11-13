@@ -114,9 +114,37 @@ export function useSavedSearches(
     }
   }, []);
 
+  // Same shape as toggleSaved: call the API, then refetch so the chip
+  // disappears because the database says so, not because we guessed.
+  const removeRecent = useCallback(async (search: RecentSearch) => {
+    setToggleError("");
+    try {
+      const response = await fetch(`/api/history?id=${search.id}`, {
+        method: "DELETE",
+      });
+      const data = await readApiResult<Record<string, never>>(
+        response,
+        () => true,
+      );
+      if (!response.ok || !data.ok)
+        throw new Error(data.ok ? "Could not remove this search." : data.error);
+    } catch (error) {
+      setToggleError(getErrorMessage(error, "Could not remove this search."));
+    } finally {
+      setRefreshKey((key) => key + 1);
+    }
+  }, []);
+
   const savedPending = Boolean(userId && loadedSavedForUser !== userId);
 
   const savedError = toggleError || listError;
 
-  return { recent, saved, toggleSaved, savedError, savedPending };
+  return {
+    recent,
+    saved,
+    toggleSaved,
+    removeRecent,
+    savedError,
+    savedPending,
+  };
 }

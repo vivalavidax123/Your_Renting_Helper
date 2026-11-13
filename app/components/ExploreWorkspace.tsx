@@ -111,6 +111,7 @@ export function ExploreWorkspace() {
     saved,
     recent,
     toggleSaved,
+    removeRecent,
     canSave,
   } = search;
 
@@ -263,9 +264,13 @@ export function ExploreWorkspace() {
 
   return (
     <>
-      <main className="flex-1 px-4 pb-10 pt-4 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.8fr)]">
-          <div className="min-w-0 space-y-5">
+      {/* From lg up the page is a split view: a fixed-width column of cards on
+          the left and the map filling everything to the right and bottom
+          edges. The padding moves from <main> onto the card column so the
+          map can touch the edges. Phones keep the single padded column. */}
+      <main className="flex-1 px-4 pb-10 pt-4 sm:px-6 lg:p-0">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-0 xl:grid-cols-[800px_minmax(0,1fr)]">
+          <div className="min-w-0 space-y-5 lg:pb-10 lg:pl-8 lg:pr-6 lg:pt-4">
             <section className={`${cardClass} print:hidden`}>
               <SearchForm
                 autocomplete={search.autocomplete}
@@ -281,6 +286,7 @@ export function ExploreWorkspace() {
                 canSave={canSave}
                 onSelect={search.searchFromHistory}
                 onToggleSaved={handleToggleSaved}
+                onRemove={(entry) => void removeRecent(entry)}
               />
               {search.savedError ? (
                 <p role="alert" className="mt-3 text-sm text-danger-ink">
@@ -406,7 +412,7 @@ export function ExploreWorkspace() {
             role={active ? "tabpanel" : undefined}
             aria-labelledby={active ? "tab-map" : undefined}
             aria-label={active ? undefined : "Map"}
-            className={`lg:sticky lg:top-4 lg:block lg:h-[calc(100vh-2rem)] lg:max-h-[760px] lg:self-start print:hidden ${
+            className={`lg:sticky lg:top-14 lg:block lg:h-[calc(100dvh-3.5rem)] lg:self-start print:hidden ${
               active && mobileTab === "map"
                 ? "h-[calc(100dvh-15rem)] min-h-96"
                 : "max-lg:hidden"
