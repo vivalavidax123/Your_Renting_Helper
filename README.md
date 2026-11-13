@@ -11,7 +11,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 <details>
 <summary>Home page</summary>
 
-![Home page with address search, example suburbs, and the map placeholder](docs/images/home-page.jpg)
+![Home page with a search card, example suburbs, and an example result](docs/images/home-page.png)
 
 </details>
 
