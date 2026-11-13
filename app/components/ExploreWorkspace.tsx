@@ -265,9 +265,11 @@ export function ExploreWorkspace() {
   return (
     <>
       {/* From lg up the page is a split view: a fixed-width column of cards on
-          the left and the map filling everything to the right and bottom
-          edges. The padding moves from <main> onto the card column so the
-          map can touch the edges. Phones keep the single padded column. */}
+          the left and the map card filling the rest of the width and the
+          full height under the header, with a small margin to the right and
+          bottom edges. Each column carries its own padding instead of <main>,
+          so the map's height is exactly one screen. Phones keep the single
+          padded column. */}
       <main className="flex-1 px-4 pb-10 pt-4 sm:px-6 lg:p-0">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-0 xl:grid-cols-[800px_minmax(0,1fr)]">
           <div className="min-w-0 space-y-5 lg:pb-10 lg:pl-8 lg:pr-6 lg:pt-4">
@@ -412,7 +414,7 @@ export function ExploreWorkspace() {
             role={active ? "tabpanel" : undefined}
             aria-labelledby={active ? "tab-map" : undefined}
             aria-label={active ? undefined : "Map"}
-            className={`lg:sticky lg:top-14 lg:block lg:h-[calc(100dvh-3.5rem)] lg:self-start print:hidden ${
+            className={`lg:sticky lg:top-14 lg:block lg:h-[calc(100dvh-3.5rem)] lg:self-start lg:pb-4 lg:pr-4 lg:pt-4 print:hidden ${
               active && mobileTab === "map"
                 ? "h-[calc(100dvh-15rem)] min-h-96"
                 : "max-lg:hidden"

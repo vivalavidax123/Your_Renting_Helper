@@ -27,12 +27,10 @@ const overlayChipClass =
   "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium shadow-md transition";
 
 // Decorative stand-in shown before the first search, so no map request is
-// made (or billed) until there is something to show. From lg up the map
-// fills the right side of the page edge to edge, so both it and the live
-// map drop the card corners and keep only a left border as a divider.
+// made (or billed) until there is something to show.
 function MapPlaceholder({ message }: { message: string }) {
   return (
-    <div className="flex h-full min-h-80 flex-col items-center justify-center gap-4 rounded-xl border border-line bg-surface p-6 text-center shadow-sm lg:rounded-none lg:border-0 lg:border-l lg:shadow-none">
+    <div className="flex h-full min-h-80 flex-col items-center justify-center gap-4 rounded-xl border border-line bg-surface p-6 text-center shadow-sm">
       <svg
         viewBox="0 0 240 180"
         aria-hidden="true"
@@ -290,7 +288,7 @@ export function LocationMap({
   }
 
   return (
-    <div className="relative flex h-full min-h-80 flex-col overflow-hidden rounded-xl border border-line bg-surface-raised shadow-sm lg:rounded-none lg:border-0 lg:border-l lg:shadow-none">
+    <div className="relative flex h-full min-h-80 flex-col overflow-hidden rounded-xl border border-line bg-surface-raised shadow-sm">
       <div ref={mapRef} className="min-h-0 w-full flex-1" />
 
       {/* Right margin keeps the chips clear of Google's fullscreen button. */}
