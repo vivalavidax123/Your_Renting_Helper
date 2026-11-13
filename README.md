@@ -4,12 +4,14 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 
 [Open the live demo](https://rent-score-prototype.vercel.app/)
 
-![Location result for Brunswick VIC with category scores, the Student priority preset, and the amenity map](docs/images/result-page.png)
+![Location result for Brunswick VIC: overall score 93, category scores, and the amenity map filling the right side of the page](docs/images/result-page.jpg)
+
+![South Yarra VIC with the Commuter preset: Groceries and Transport picked on the map, and the same categories moved to the top of the nearby amenities list](docs/images/category-picks.jpg)
 
 <details>
 <summary>Home page</summary>
 
-![Home page with address search, example suburbs, and an example result](docs/images/home-page.png)
+![Home page with address search, example suburbs, and the map placeholder](docs/images/home-page.jpg)
 
 </details>
 
