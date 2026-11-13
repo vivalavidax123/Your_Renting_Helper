@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-11-12.
+Status reviewed against committed `HEAD` on 2026-11-13.
 
 | Area                 | Current state                                              |
 | -------------------- | ---------------------------------------------------------- |
@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-11-12.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 127 tests across 21 test files                             |
+| Automated tests      | 132 tests across 22 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -37,27 +37,27 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 ### Implemented
 
-- One page per address. On desktop a scrolling column of cards sits beside a map that stays in view; below `lg` the result is split into Scores, Places and Map tabs. Before the first search the same page shows an empty state: a one-line scope note (best for Melbourne), four example-suburb searches, three steps, a ghost score ring and a drawn map placeholder, and it makes no provider request.
-- The shared header is one line at every width: logo mark and name, theme toggle, and account. It is sticky below `lg`. The logo returns to a clean empty state without starting a provider request.
+- One page per address. From `lg` up the page is a split view: a scrolling column of cards (800px wide from `xl`) beside a map card that fills the rest of the width and one screen height under the header, with a 16px margin to the right and bottom edges. Below `lg` the result is split into Scores, Places and Map tabs. Before the first search the same page shows an empty state: a one-line scope note (best for Melbourne), four example-suburb searches, three steps, a ghost score ring and a drawn map placeholder, and it makes no provider request.
+- The shared header is one line at every width: logo mark and name, theme toggle, and account. It is sticky and full width at every size, so the desktop map sticks directly under it. The logo returns to a clean empty state without starting a provider request.
 - Successful searches and direct location opens replace the search query with the matched formatted address. The result header shows the overall score as a ring coloured by score band, the address, the band word (Excellent 80+, Good 70-79, Fair 50-69, Limited under 50, from `scoreBand` in `utils.ts`), the evidence date, a coverage chip (how many categories have fewer than three places), the match type, the mobility and score-priority selectors, Save (signed-in visitors only, with an Undo toast on removal), Share (copies the page address) and Print (hidden on phones, where Save and Share sit on the mobility row). On phones a new result scrolls the result header to the top of the screen, because the search card would otherwise push the score below the first screen.
 - Signed-in users see an initial avatar; it opens a plain disclosure (not an ARIA menu) showing the account email and Sign out. Escape and outside clicks close it.
-- The search box has a search icon, a clear button, a `/` shortcut and a spinner; on phones the button is icon-only. It is an ARIA combobox (`aria-expanded`, `aria-activedescendant`). Saved and recent chips drop ", Australia" and show the score in its band colour with a star toggle; signed-out visitors see a one-line sign-in prompt in their place. On phones the chip rows and the Places category filters scroll sideways with a fade on the right edge (`.scroll-rail` in `globals.css`); the compare picker is a two-column grid instead.
+- The search box has a search icon, a clear button, a `/` shortcut and a spinner; on phones the button is icon-only. It is an ARIA combobox (`aria-expanded`, `aria-activedescendant`). Saved and recent chips drop ", Australia" and show the score in its band colour with a star toggle; recent chips also have a remove button that deletes that search from the user's history (`DELETE /api/history`), while a saved chip is removed by un-starring it; signed-out visitors see a one-line sign-in prompt in their place. On phones the chip rows and the Places category filters scroll sideways with a fade on the right edge (`.scroll-rail` in `globals.css`); the compare picker is a two-column grid instead.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
 - Category score rows sorted by weight, each with an icon tile in the category colour, the weight, count and nearest distance, and a bar and number in the score-band colour. A row expands in place to show the three pillar scores (proximity, variety, quality), the explanation, a link to the closest place, and "Show these on the map". Zero-weight categories are dimmed at the bottom.
-- A Nearby amenities card lists every category in two columns with filter chips shared with the map toggles, a sort control (most reviewed, closest, highest rated) and three places per category before "Show all". Rows show rating and compact review count, distance, type and address, and an estimated walk at 80 m per minute; stops show bus or train icons and route badges.
+- A Nearby amenities card lists every category in two columns with category chips shared with the map chips (picked categories move to the top; no category is ever hidden from the list), a sort control (most reviewed, closest, highest rated) and three places per category before "Show all". Rows show rating and compact review count, distance, type and address, and an estimated walk at 80 m per minute; stops show bus or train icons and route badges.
 - No-car and car-owner scoring profiles.
 - Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The mobility and preset selectors sit together in the result header and also drive the comparison panel.
 - Seven-day shared result cache.
 - Interactive Google map with an accent pin for the searched location and category-coloured amenity markers; the selected marker grows above its neighbours.
-- Map overlays: a Walk rings toggle (straight-line 5, 10 and 15 minute rings), per-category marker toggles shared with the list filters, and a recentre button. Without a Maps key the column shows a drawn placeholder.
+- Map overlays: a Walk rings toggle (straight-line 5, 10 and 15 minute rings), category chips that pick which markers show (none picked shows all, one shows only that category, more add to it, and All clears the pick; shared with the list chips), and a recentre button. Without a Maps key the column shows a drawn placeholder.
 - Fullscreen map control.
 - List-to-map selection: on desktop the map is always visible; on phones selecting a place switches to the Map tab, which has a "Back to list" button that returns to the selected row.
 - Theme-aware map, markers, and custom popup styling.
 - Google Maps links in non-transport amenity popups.
 - Optional Transitland bus-stop, route, destination, and departure enrichment.
 - Derived walkability, transit, density, convenience, and car-reliance indicators, shown as a tile grid under the category scores and also fed to the AI analyst context.
-- A "More about this location" card with three on-demand sections (commute, community rent, terrain). Each one mounts and fetches only when opened, because commute and terrain call paid provider APIs on every request. Each leads with its answer, keeps data sources visible, and folds method notes into a collapsed "How this is measured" section.
+- A "More about this location" card with three on-demand sections (commute, community rent, terrain). Each one mounts and fetches only when first opened, because commute and terrain call paid provider APIs on every request. An opened card can be hidden again; hiding uses CSS rather than unmounting, so reopening repeats no paid request and keeps the rent form's input. Each leads with its answer, keeps data sources visible, and folds method notes into a collapsed "How this is measured" section.
 - Direct distance, rounded Geoapify driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - Terrain card measuring how hilly the land within 1.5 km is, from Google Elevation samples. It is shown as separate evidence and does not change any score.
 - Radius-based community median rent estimates for matching property type and bedroom count.
@@ -67,7 +67,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Persistent light and dark themes across the main and login views.
 - Reduced-motion preferences shorten interface transitions and loading animations.
 - Better Auth email/password accounts and Google OAuth.
-- Per-user recent searches and saved locations.
+- Per-user recent searches (each removable) and saved locations.
 - A comparison panel at the bottom of the page: pick two saved locations as cards (a third pick replaces B), see both overall scores as rings, one sentence naming up to two categories where each side leads by 5 or more points (`summarizeComparison`), and a table with a bar per score. Both sides are rescored for the mobility profile and preset chosen in the result header.
 - Evidence dates in the comparison panel and evidence cards use Australian day/month format in Melbourne time.
 - A How it works page (`/how-it-works`, linked from expanded category rows and the footer) explains the score bands, the three pillars, the mobility factor, and the preset weights. The weights table is rendered from `categories.ts`, so it cannot drift from the code.
@@ -189,7 +189,7 @@ The project deliberately uses a small number of direct boundaries:
 - **app/lib/types.ts** owns shared domain contracts. Provider wire types stay beside their Google or Transitland adapter; local component or hook state types remain local when no other module needs them.
 - **app/lib/api.ts** validates the common success/error envelope before API data enters UI state.
 - **app/lib/maps/googleMaps.ts** is marked client-only and owns SDK loading, marker construction (amenity, home pin, selected state), walk rings, popup HTML escaping, and map-specific types.
-- **app/components/ExploreWorkspace.tsx** is the single page. It reads search, score and saved-list state from `ExploreProvider` and owns only page-local state: the selected place, hidden categories, the phone tab and the toast. **icons.tsx** holds the shared inline SVG icons and **ScoreRing** draws every score ring.
+- **app/components/ExploreWorkspace.tsx** is the single page. It reads search, score and saved-list state from `ExploreProvider` and owns only page-local state: the selected place, picked categories, the phone tab and the toast. **icons.tsx** holds the shared inline SVG icons and **ScoreRing** draws every score ring.
 
 This structure is sufficient for the current project. Do not add repositories, dependency-injection layers, duplicate DTOs, generic state frameworks, or other abstractions without a concrete current need.
 
@@ -229,6 +229,7 @@ Profile and preset changes recalculate scores in the browser from the existing p
 | GET /api/geocode                      | Public                                       | Address geocoding and provider error mapping                                                      |
 | GET /api/places                       | Public, session-aware                        | Cache lookup, provider retrieval, snapshot save, optional history write; returns raw place groups |
 | GET /api/history                      | Public, session-aware                        | Current user's recent searches; signed-out users receive an empty list                            |
+| DELETE /api/history                   | Signed in                                    | Remove one location from the current user's history; the shared cache and saved stars are kept    |
 | GET /api/favourites                   | Signed in                                    | Current user's saved locations                                                                    |
 | POST /api/favourites                  | Signed in                                    | Save a known location                                                                             |
 | DELETE /api/favourites                | Signed in                                    | Remove a saved location                                                                           |
@@ -445,7 +446,7 @@ Better Auth uses the Prisma adapter and the same PostgreSQL database as the appl
 - Sign-in links carry the current page as `/login?next=...` (`useLoginHref`). After email or Google sign-in the user returns there. `safeNextPath` accepts only same-site paths (no `//host`, backslashes, or control characters) so `next` cannot become an open redirect; anything else falls back to `/`. New email sign-ups still land on the verification page, not on `next`.
 - The login page shows the product name above the card, Google first, visible field labels, and the eight-character password hint only when signing up.
 - Favourites return 401 when signed out.
-- History is session-aware and returns an empty list when signed out.
+- History is session-aware and returns an empty list when signed out; removing a history entry returns 401 when signed out.
 
 Google OAuth redirects the browser to Google; this application never receives the user's Google password.
 
@@ -466,7 +467,7 @@ Current behaviour:
 - a Google Maps search link for non-transport amenities using query and Google Place ID;
 - no custom Google Maps link for transport because Transitland stop IDs are not Google Place IDs;
 - built-in fullscreen control;
-- a Walk rings toggle, category toggles (state shared with the list filters; a selected place shows even when its category is off), and a recentre button;
+- a Walk rings toggle, category chips that pick which markers show (shared with the list chips; selecting a place from an unpicked category adds that category so its marker is visible), and a recentre button;
 - list-row selection that pans and opens the popup; on phones it also switches to the Map tab, which re-centres when it becomes visible and offers "Back to list".
 
 The application uses semantic colour tokens for light and dark themes. Theme preference is saved in localStorage, follows the operating system on first visit, is applied before hydration, and synchronises across tabs. Google map colour scheme is a construction-time option, so the map and its markers are recreated when the theme changes. Custom popup surfaces, text, close control, and links are styled for both themes.
@@ -564,14 +565,14 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 127-test suite across 21 files covers:
+The current 132-test suite across 22 files covers:
 
 - scoring behaviour and invariants;
-- formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the comparison summary, plus the same-site check for sign-in return paths;
+- formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the category-pick rule, the comparison summary, plus the same-site check for sign-in return paths;
 - request parsing for scoring options and chat questions;
 - API-envelope validation;
 - derived indicators;
-- favourites and rent-estimate route behavior;
+- favourites, history removal, and rent-estimate route behavior;
 - authentication email configuration and delivery callbacks;
 - community-rent medians, adaptive radii, report upserts, and profile suggestions;
 - CBD driving/transit response parsing and Melbourne daylight-saving calculations;

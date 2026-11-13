@@ -18,8 +18,8 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - Search Australian addresses with autocomplete, or start from an example suburb. No account is needed to search.
 - Expand each category score to see how proximity, variety and quality make it up, then jump to its places on the map.
 - Switch between no-car and car-owner views, and pick score priorities (Balanced, Student, Family, Commuter) that reweight the overall score.
-- Explore category-coloured amenities on a map that stays in view, with 5, 10 and 15 minute walking rings and per-category toggles.
-- Filter and sort nearby places, each with its rating and estimated walk.
+- Explore category-coloured amenities on a map that stays in view, with 5, 10 and 15 minute walking rings and category chips that show only the categories you pick.
+- Sort nearby places and bring the categories you pick to the top, each place with its rating and estimated walk.
 - Open the map in fullscreen and follow non-transport amenities into Google Maps.
 - See walking times and car reliance, and open CBD travel, terrain, and community rent when you want them.
 - Copy a result's link to share it, print it, and read a plain-language page on how the score works.
