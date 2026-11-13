@@ -182,6 +182,13 @@ export async function recordUserSearch(userId: string, locationId: string) {
   });
 }
 
+// Removes one spot from this user's history only. The shared score cache
+// and any saved star stay untouched. deleteMany (not delete) makes this
+// idempotent: removing a row that is already gone is not an error.
+export async function removeUserSearch(userId: string, locationId: string) {
+  await prisma.userSearch.deleteMany({ where: { userId, locationId } });
+}
+
 export async function listSavedLocations(
   userId: string,
 ): Promise<RecentSearch[]> {

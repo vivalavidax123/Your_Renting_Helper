@@ -9,6 +9,7 @@ import type {
   RequestState,
 } from "@/app/lib/types";
 import {
+  isCategoryShown,
   estimateWalkMinutes,
   formatCompactCount,
   formatDepartureTime,
@@ -26,7 +27,7 @@ type NearbyPlacesListProps = {
   categoryScores: CategoryScore[];
   selectedPlaceId: string | null;
   onSelectPlace: (placeId: string) => void;
-  hiddenCategories: Set<string>;
+  selectedCategories: Set<string>;
   onToggleCategory: (categoryId: string) => void;
   onShowAllCategories: () => void;
 };
@@ -275,7 +276,7 @@ export function NearbyPlacesList({
   categoryScores,
   selectedPlaceId,
   onSelectPlace,
-  hiddenCategories,
+  selectedCategories,
   onToggleCategory,
   onShowAllCategories,
 }: NearbyPlacesListProps) {
@@ -340,10 +341,10 @@ export function NearbyPlacesList({
           >
             <button
               type="button"
-              aria-pressed={hiddenCategories.size === 0}
+              aria-pressed={selectedCategories.size === 0}
               onClick={onShowAllCategories}
               className={`${filterChipClass} ${
-                hiddenCategories.size === 0
+                selectedCategories.size === 0
                   ? "border-accent-line bg-accent-soft text-accent-ink"
                   : "border-line text-ink-soft hover:bg-hover"
               }`}
@@ -351,25 +352,28 @@ export function NearbyPlacesList({
               All {allPlaces.length}
             </button>
             {placeGroups.map((group) => {
-              const hidden = hiddenCategories.has(group.id);
+              const picked = selectedCategories.has(group.id);
+              const shown = isCategoryShown(selectedCategories, group.id);
 
               return (
                 <button
                   key={group.id}
                   type="button"
-                  aria-pressed={!hidden}
+                  aria-pressed={picked}
                   onClick={() => onToggleCategory(group.id)}
-                  className={`${filterChipClass} border-line hover:bg-hover ${
-                    hidden ? "text-ink-faint line-through" : "text-ink-soft"
+                  className={`${filterChipClass} ${
+                    picked
+                      ? "border-accent-line bg-accent-soft text-accent-ink"
+                      : `border-line hover:bg-hover ${shown ? "text-ink-soft" : "text-ink-faint"}`
                   }`}
                 >
                   <span
                     className="size-2 rounded-full border"
                     style={{
                       borderColor: categoryColor(group.id),
-                      backgroundColor: hidden
-                        ? "transparent"
-                        : categoryColor(group.id),
+                      backgroundColor: shown
+                        ? categoryColor(group.id)
+                        : "transparent",
                     }}
                   />
                   {group.label} {group.places.length}
@@ -379,8 +383,14 @@ export function NearbyPlacesList({
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-            {placeGroups
-              .filter((group) => !hiddenCategories.has(group.id))
+            {/* The list never hides a category; picked ones move to the
+                top (a stable sort keeps the rest in their usual order). */}
+            {[...placeGroups]
+              .sort(
+                (a, b) =>
+                  Number(selectedCategories.has(b.id)) -
+                  Number(selectedCategories.has(a.id)),
+              )
               .map((group) => (
                 <CategorySection
                   key={group.id}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { RecentSearch } from "@/app/lib/types";
 import { scoreBand, scoreBandClasses } from "@/app/lib/utils";
 import { useLoginHref } from "@/app/hooks/useLoginHref";
-import { StarIcon } from "./icons";
+import { CloseIcon, StarIcon } from "./icons";
 
 // Purely presentational: the lists live in useSavedSearches and arrive as
 // props, so this component and the comparison panel can never disagree.
@@ -16,6 +16,7 @@ type RecentSearchesProps = {
   canSave: boolean;
   onSelect: (search: RecentSearch) => void;
   onToggleSaved: (search: RecentSearch) => void;
+  onRemove: (search: RecentSearch) => void;
 };
 
 type SearchChipProps = {
@@ -24,19 +25,24 @@ type SearchChipProps = {
   canSave: boolean;
   onSelect: (search: RecentSearch) => void;
   onToggleSaved: (search: RecentSearch) => void;
+  // Only recent chips get the remove button; a saved chip is removed by
+  // un-starring it, so the saved row passes no handler.
+  onRemove?: (search: RecentSearch) => void;
 };
 
 // Every result is Australian, so the country adds nothing to a chip.
 const shortAddress = (address: string) => address.replace(/, Australia$/, "");
 
-// Buttons cannot be nested in HTML, so the chip is a div holding two
-// separate buttons: the address (re-run the search) and the star (save).
+// Buttons cannot be nested in HTML, so the chip is a div holding separate
+// buttons: the address (re-run the search), the star (save) and, on recent
+// chips, the cross (remove from history).
 function SearchChip({
   search,
   disabled,
   canSave,
   onSelect,
   onToggleSaved,
+  onRemove,
 }: SearchChipProps) {
   const isSaved = search.savedAt !== null;
   const score =
@@ -77,12 +83,24 @@ function SearchChip({
             isSaved ? "Remove from saved locations" : "Save this location"
           }
           aria-pressed={isSaved}
-          className="focus-ring flex size-9 items-center justify-center rounded-r-full hover:bg-warning-soft disabled:opacity-50"
+          className={`focus-ring flex size-9 items-center justify-center hover:bg-warning-soft disabled:opacity-50 ${onRemove ? "" : "rounded-r-full"}`}
         >
           <StarIcon
             filled={isSaved}
             className={`size-4 ${isSaved ? "text-amber-500" : "text-ink-faint"}`}
           />
+        </button>
+      )}
+      {canSave && onRemove && (
+        <button
+          type="button"
+          onClick={() => onRemove(search)}
+          disabled={disabled}
+          aria-label={`Remove ${shortAddress(search.formattedAddress)} from recent searches`}
+          title="Remove from recent searches"
+          className="focus-ring flex size-9 items-center justify-center rounded-r-full text-ink-faint hover:bg-danger-soft hover:text-danger-ink disabled:opacity-50"
+        >
+          <CloseIcon className="size-3.5" />
         </button>
       )}
     </div>
@@ -121,6 +139,7 @@ export function RecentSearches({
   canSave,
   onSelect,
   onToggleSaved,
+  onRemove,
 }: RecentSearchesProps) {
   // Saved locations already appear in their own row; repeating them under
   // "Recent" would show the same chip twice, so recent keeps unsaved only.
@@ -163,6 +182,7 @@ export function RecentSearches({
           title="Recent searches"
           searches={unsavedRecent}
           {...chipProps}
+          onRemove={onRemove}
         />
       )}
     </div>

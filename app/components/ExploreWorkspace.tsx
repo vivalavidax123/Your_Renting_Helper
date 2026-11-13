@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { getCoverage } from "@/app/lib/indicators";
+import { isCategoryShown } from "@/app/lib/utils";
 import type { RecentSearch } from "@/app/lib/types";
 import { AdditionalIndicators } from "./AdditionalIndicators";
 import { ComparePanel } from "./ComparePanel";
@@ -111,6 +112,7 @@ export function ExploreWorkspace() {
     saved,
     recent,
     toggleSaved,
+    removeRecent,
     canSave,
   } = search;
 
@@ -119,8 +121,11 @@ export function ExploreWorkspace() {
     placeId: string;
   } | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("scores");
-  // One set shared by the list filters and the map toggles so they agree.
-  const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(
+  // Categories the visitor picked, shared by the map chips and the list
+  // chips so they agree. Empty means none picked: the map shows every
+  // category. The map hides unpicked categories; the list keeps them all
+  // and moves the picked ones to the top.
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     new Set(),
   );
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -135,7 +140,7 @@ export function ExploreWorkspace() {
   if (prevLocation !== location) {
     setPrevLocation(location);
     setSelectedPlace(null);
-    setHiddenCategories(new Set());
+    setSelectedCategories(new Set());
     setMobileTab("scores");
   }
 
@@ -200,23 +205,25 @@ export function ExploreWorkspace() {
   }
 
   function handleSelectPlace(placeId: string) {
+    // The list shows every category, so a place can be picked whose markers
+    // are hidden on the map. Add its category so the marker is visible.
+    const groupId = placeGroups.find((group) =>
+      group.places.some((place) => place.id === placeId),
+    )?.id;
+    if (groupId && !isCategoryShown(selectedCategories, groupId)) {
+      setSelectedCategories((current) => new Set(current).add(groupId));
+    }
     setSelectedPlace({ placeId });
     setMobileTab("map");
   }
 
   function handleShowCategory(categoryId: string) {
-    setHiddenCategories(
-      new Set(
-        placeGroups
-          .map((group) => group.id)
-          .filter((groupId) => groupId !== categoryId),
-      ),
-    );
+    setSelectedCategories(new Set([categoryId]));
     setMobileTab("map");
   }
 
   function toggleCategory(categoryId: string) {
-    setHiddenCategories((current) => {
+    setSelectedCategories((current) => {
       const next = new Set(current);
 
       if (!next.delete(categoryId)) {
@@ -225,6 +232,10 @@ export function ExploreWorkspace() {
 
       return next;
     });
+  }
+
+  function showAllCategories() {
+    setSelectedCategories(new Set());
   }
 
   function handleBackToList() {
@@ -263,9 +274,15 @@ export function ExploreWorkspace() {
 
   return (
     <>
-      <main className="flex-1 px-4 pb-10 pt-4 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.8fr)]">
-          <div className="min-w-0 space-y-5">
+      {/* From lg up the page is a split view: a fixed-width column of cards on
+          the left and the map card filling the rest of the width and the
+          full height under the header, with a small margin to the right and
+          bottom edges. Each column carries its own padding instead of <main>,
+          so the map's height is exactly one screen. Phones keep the single
+          padded column. */}
+      <main className="flex-1 px-4 pb-10 pt-4 sm:px-6 lg:p-0">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-0 xl:grid-cols-[800px_minmax(0,1fr)]">
+          <div className="min-w-0 space-y-5 lg:pb-10 lg:pl-8 lg:pr-6 lg:pt-4">
             <section className={`${cardClass} print:hidden`}>
               <SearchForm
                 autocomplete={search.autocomplete}
@@ -281,6 +298,7 @@ export function ExploreWorkspace() {
                 canSave={canSave}
                 onSelect={search.searchFromHistory}
                 onToggleSaved={handleToggleSaved}
+                onRemove={(entry) => void removeRecent(entry)}
               />
               {search.savedError ? (
                 <p role="alert" className="mt-3 text-sm text-danger-ink">
@@ -385,9 +403,9 @@ export function ExploreWorkspace() {
                 categoryScores={categoryScores}
                 selectedPlaceId={selectedPlace?.placeId ?? null}
                 onSelectPlace={handleSelectPlace}
-                hiddenCategories={hiddenCategories}
+                selectedCategories={selectedCategories}
                 onToggleCategory={toggleCategory}
-                onShowAllCategories={() => setHiddenCategories(new Set())}
+                onShowAllCategories={showAllCategories}
               />
             </div>
 
@@ -406,7 +424,7 @@ export function ExploreWorkspace() {
             role={active ? "tabpanel" : undefined}
             aria-labelledby={active ? "tab-map" : undefined}
             aria-label={active ? undefined : "Map"}
-            className={`lg:sticky lg:top-4 lg:block lg:h-[calc(100vh-2rem)] lg:max-h-[760px] lg:self-start print:hidden ${
+            className={`lg:sticky lg:top-14 lg:block lg:h-[calc(100dvh-3.5rem)] lg:self-start lg:pb-4 lg:pr-4 lg:pt-4 print:hidden ${
               active && mobileTab === "map"
                 ? "h-[calc(100dvh-15rem)] min-h-96"
                 : "max-lg:hidden"
@@ -416,8 +434,9 @@ export function ExploreWorkspace() {
               location={hasResult ? location : null}
               placeGroups={placeGroups}
               selectedPlace={selectedPlace}
-              hiddenCategories={hiddenCategories}
+              selectedCategories={selectedCategories}
               onToggleCategory={toggleCategory}
+              onShowAllCategories={showAllCategories}
               onBackToList={handleBackToList}
             />
           </aside>
