@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
+import { usePathname } from "next/navigation";
 import { getCoverage } from "@/app/lib/indicators";
 import { isCategoryShown } from "@/app/lib/utils";
 import type { RecentSearch } from "@/app/lib/types";
@@ -16,7 +17,7 @@ import { ResultHeader } from "./ResultHeader";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { SearchForm } from "./SearchForm";
 import { Toast, type ToastMessage } from "./Toast";
-import { MapPinIcon, SearchIcon, StarIcon } from "./icons";
+import { Welcome } from "./Welcome";
 
 type MobileTab = "scores" | "places" | "map";
 
@@ -26,74 +27,8 @@ const mobileTabs: { id: MobileTab; label: string }[] = [
   { id: "map", label: "Map" },
 ];
 
-// Four different kinds of Melbourne area; commute times only cover Melbourne.
-const exampleSearches = [
-  "South Yarra VIC",
-  "Footscray VIC",
-  "Box Hill VIC",
-  "Brunswick VIC",
-];
-
 const cardClass =
   "rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5";
-
-function EmptyState({
-  signedIn,
-  onExample,
-}: {
-  signedIn: boolean;
-  onExample: (query: string) => void;
-}) {
-  const steps = [
-    { icon: <SearchIcon />, text: "Search an address or suburb" },
-    { icon: <MapPinIcon />, text: "See scores for eight everyday categories" },
-    {
-      icon: <StarIcon />,
-      text: signedIn
-        ? "Save and compare rentals"
-        : "Sign in to save and compare",
-    },
-  ];
-
-  return (
-    <section className={cardClass}>
-      <p className="text-base leading-7 text-ink-soft">
-        See what&apos;s walkable, how connected it is, and what daily life looks
-        like around a rental. Best for Melbourne. No account needed.
-      </p>
-      <h2 className="mt-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        Try an example
-      </h2>
-      <ul className="mt-2 flex flex-wrap gap-2">
-        {exampleSearches.map((query) => (
-          <li key={query}>
-            <button
-              type="button"
-              onClick={() => onExample(query)}
-              className="focus-ring min-h-9 rounded-full border border-line bg-surface px-3 text-sm font-medium text-ink-soft transition hover:border-accent-line hover:bg-accent-soft"
-            >
-              {query}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <ol className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {steps.map((step, index) => (
-          <li
-            key={step.text}
-            className="flex items-start gap-2.5 rounded-lg bg-surface-subtle px-3 py-3 text-sm text-ink-soft"
-          >
-            <span className="mt-0.5 text-accent">{step.icon}</span>
-            <span>
-              <span className="sr-only">Step {index + 1}: </span>
-              {step.text}
-            </span>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 // One page for one address: a scrolling column of cards beside a map that
 // stays in view on desktop, and three tabs (Scores, Places, Map) on phones.
@@ -101,6 +36,7 @@ function EmptyState({
 // component owns only what is local to the page (selection, filters, tab).
 export function ExploreWorkspace() {
   const search = useExplore();
+  const pathname = usePathname();
   const {
     location,
     locationId,
@@ -272,6 +208,18 @@ export function ExploreWorkspace() {
   const panelClass = (tab: MobileTab) =>
     active && mobileTab !== tab ? "max-lg:hidden print:block!" : "";
 
+  // The home page before a search is a simple welcome (search card and an
+  // example result, no map). A location page always shows the workspace,
+  // even while its stored evidence loads or when it fails to open.
+  if (pathname === "/" && !active) {
+    return (
+      <>
+        <Welcome onToggleSaved={handleToggleSaved} />
+        <Toast toast={toast} onDismiss={dismissToast} />
+      </>
+    );
+  }
+
   return (
     <>
       {/* From lg up the page is a split view: a fixed-width column of cards on
@@ -342,12 +290,7 @@ export function ExploreWorkspace() {
                   </button>
                 ))}
               </div>
-            ) : (
-              <EmptyState
-                signedIn={canSave}
-                onExample={(query) => void search.handleSearch(query)}
-              />
-            )}
+            ) : null}
 
             <div
               id="panel-scores"
