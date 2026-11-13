@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isCategoryShown,
   estimateWalkMinutes,
   formatCompactCount,
   formatDepartureTime,
@@ -185,5 +186,17 @@ describe("formatEvidenceDate", () => {
     // 21:00 UTC on 15 October is 8:00 am on 16 October in Melbourne (AEDT).
     expect(formatEvidenceDate("2026-10-15T21:00:00.000Z")).toBe("16/10/2026");
     expect(formatEvidenceDate("2026-10-15T01:00:00.000Z")).toBe("15/10/2026");
+  });
+});
+
+describe("isCategoryShown", () => {
+  it("shows every category when nothing is picked", () => {
+    expect(isCategoryShown(new Set(), "food")).toBe(true);
+  });
+
+  it("shows only the picked categories once something is picked", () => {
+    const picked = new Set(["food", "groceries"]);
+    expect(isCategoryShown(picked, "food")).toBe(true);
+    expect(isCategoryShown(picked, "transport")).toBe(false);
   });
 });

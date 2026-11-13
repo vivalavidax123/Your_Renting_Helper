@@ -14,6 +14,7 @@ import {
   type MarkerEntry,
 } from "@/app/lib/maps/googleMaps";
 import type { GeocodeLocation, PlaceGroup } from "@/app/lib/types";
+import { isCategoryShown } from "@/app/lib/utils";
 import { ArrowLeftIcon, MapPinIcon, TargetIcon, WalkIcon } from "./icons";
 
 type MapLocation = Pick<
@@ -61,15 +62,17 @@ export function LocationMap({
   location,
   placeGroups,
   selectedPlace,
-  hiddenCategories,
+  selectedCategories,
   onToggleCategory,
+  onShowAllCategories,
   onBackToList,
 }: {
   location: MapLocation | null;
   placeGroups: PlaceGroup[];
   selectedPlace: { placeId: string } | null;
-  hiddenCategories: Set<string>;
+  selectedCategories: Set<string>;
   onToggleCategory: (categoryId: string) => void;
+  onShowAllCategories: () => void;
   onBackToList: () => void;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -224,9 +227,11 @@ export function LocationMap({
     }
 
     for (const entry of markerEntriesRef.current.values()) {
-      entry.marker.setMap(hiddenCategories.has(entry.groupId) ? null : map);
+      entry.marker.setMap(
+        isCategoryShown(selectedCategories, entry.groupId) ? map : null,
+      );
     }
-  }, [hiddenCategories, mapRevision]);
+  }, [selectedCategories, mapRevision]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -307,26 +312,43 @@ export function LocationMap({
           <WalkIcon className="size-3.5" />
           Walk rings
         </button>
+        <button
+          type="button"
+          aria-pressed={selectedCategories.size === 0}
+          onClick={onShowAllCategories}
+          className={`${overlayChipClass} ${
+            selectedCategories.size === 0
+              ? "border-accent-line bg-accent-soft text-accent-ink"
+              : "border-line bg-surface text-ink-soft"
+          }`}
+        >
+          All
+        </button>
+        {/* Picking a chip shows only the picked categories; picking more
+            adds to them, and clearing the last one shows everything. */}
         {placeGroups.map((group) => {
-          const hidden = hiddenCategories.has(group.id);
+          const picked = selectedCategories.has(group.id);
+          const shown = isCategoryShown(selectedCategories, group.id);
 
           return (
             <button
               key={group.id}
               type="button"
-              aria-pressed={!hidden}
+              aria-pressed={picked}
               onClick={() => onToggleCategory(group.id)}
-              className={`${overlayChipClass} border-line bg-surface ${
-                hidden ? "text-ink-faint line-through" : "text-ink-soft"
+              className={`${overlayChipClass} ${
+                picked
+                  ? "border-accent-line bg-accent-soft text-accent-ink"
+                  : `border-line bg-surface ${shown ? "text-ink-soft" : "text-ink-faint"}`
               }`}
             >
               <span
                 className="size-2 rounded-full border"
                 style={{
                   borderColor: categoryColor(group.id),
-                  backgroundColor: hidden
-                    ? "transparent"
-                    : categoryColor(group.id),
+                  backgroundColor: shown
+                    ? categoryColor(group.id)
+                    : "transparent",
                 }}
               />
               {group.label}

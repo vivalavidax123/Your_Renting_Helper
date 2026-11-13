@@ -204,3 +204,9 @@ export function safeNextPath(value: string | null) {
 
   return value;
 }
+
+// Category chips on the map and the places list share one selection. An
+// empty selection means "nothing picked", so every category is shown.
+export function isCategoryShown(selected: Set<string>, categoryId: string) {
+  return selected.size === 0 || selected.has(categoryId);
+}

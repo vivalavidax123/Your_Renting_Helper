@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { getCoverage } from "@/app/lib/indicators";
+import { isCategoryShown } from "@/app/lib/utils";
 import type { RecentSearch } from "@/app/lib/types";
 import { AdditionalIndicators } from "./AdditionalIndicators";
 import { ComparePanel } from "./ComparePanel";
@@ -120,8 +121,11 @@ export function ExploreWorkspace() {
     placeId: string;
   } | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("scores");
-  // One set shared by the list filters and the map toggles so they agree.
-  const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(
+  // Categories the visitor picked, shared by the map chips and the list
+  // chips so they agree. Empty means none picked: the map shows every
+  // category. The map hides unpicked categories; the list keeps them all
+  // and moves the picked ones to the top.
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     new Set(),
   );
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -136,7 +140,7 @@ export function ExploreWorkspace() {
   if (prevLocation !== location) {
     setPrevLocation(location);
     setSelectedPlace(null);
-    setHiddenCategories(new Set());
+    setSelectedCategories(new Set());
     setMobileTab("scores");
   }
 
@@ -201,23 +205,25 @@ export function ExploreWorkspace() {
   }
 
   function handleSelectPlace(placeId: string) {
+    // The list shows every category, so a place can be picked whose markers
+    // are hidden on the map. Add its category so the marker is visible.
+    const groupId = placeGroups.find((group) =>
+      group.places.some((place) => place.id === placeId),
+    )?.id;
+    if (groupId && !isCategoryShown(selectedCategories, groupId)) {
+      setSelectedCategories((current) => new Set(current).add(groupId));
+    }
     setSelectedPlace({ placeId });
     setMobileTab("map");
   }
 
   function handleShowCategory(categoryId: string) {
-    setHiddenCategories(
-      new Set(
-        placeGroups
-          .map((group) => group.id)
-          .filter((groupId) => groupId !== categoryId),
-      ),
-    );
+    setSelectedCategories(new Set([categoryId]));
     setMobileTab("map");
   }
 
   function toggleCategory(categoryId: string) {
-    setHiddenCategories((current) => {
+    setSelectedCategories((current) => {
       const next = new Set(current);
 
       if (!next.delete(categoryId)) {
@@ -226,6 +232,10 @@ export function ExploreWorkspace() {
 
       return next;
     });
+  }
+
+  function showAllCategories() {
+    setSelectedCategories(new Set());
   }
 
   function handleBackToList() {
@@ -393,9 +403,9 @@ export function ExploreWorkspace() {
                 categoryScores={categoryScores}
                 selectedPlaceId={selectedPlace?.placeId ?? null}
                 onSelectPlace={handleSelectPlace}
-                hiddenCategories={hiddenCategories}
+                selectedCategories={selectedCategories}
                 onToggleCategory={toggleCategory}
-                onShowAllCategories={() => setHiddenCategories(new Set())}
+                onShowAllCategories={showAllCategories}
               />
             </div>
 
@@ -424,8 +434,9 @@ export function ExploreWorkspace() {
               location={hasResult ? location : null}
               placeGroups={placeGroups}
               selectedPlace={selectedPlace}
-              hiddenCategories={hiddenCategories}
+              selectedCategories={selectedCategories}
               onToggleCategory={toggleCategory}
+              onShowAllCategories={showAllCategories}
               onBackToList={handleBackToList}
             />
           </aside>
