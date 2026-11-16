@@ -19,6 +19,22 @@ It is not part of `npm test` or CI: it calls OpenAI, costs money, and model
 output varies between runs. The deterministic checks it relies on are unit
 tested in `evals/checks.test.ts`, which does run in `npm test`.
 
+## Scheduled runs
+
+`.github/workflows/eval.yml` runs the same command in GitHub Actions:
+
+- every Monday at 22:00 UTC (Tuesday morning in Melbourne);
+- on demand with **Run workflow** on the Actions page;
+- on pull requests that change `locationAnalyst.ts`, `locationAnalysis.ts`, `evals/`, `vitest.eval.config.ts` or the workflow.
+
+It needs a repository secret `OPENAI_API_KEY` and a repository variable
+`OPENAI_MODEL` (Settings → Secrets and variables → Actions). A failing
+scheduled run emails the repository owner. Each run uploads `evals/results/`
+as the `analyst-eval-results` artifact, kept for 90 days. Pull requests from
+forks receive no secrets, so the eval fails there. GitHub disables scheduled
+workflows in a public repository after 60 days without commits; re-enable it
+from the Actions page.
+
 ## How it works
 
 ```text

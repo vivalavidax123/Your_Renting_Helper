@@ -175,6 +175,7 @@ prisma/
   migrations/             Committed PostgreSQL migrations
   schema.prisma           Application and Better Auth models
 .github/workflows/ci.yml  Quality-gate workflow
+.github/workflows/eval.yml  Weekly, on-demand, and analyst-PR live eval
 vitest.eval.config.ts     Runs evals/**/*.eval.ts and loads local .env files
 Dockerfile                Multi-stage production image
 docker-compose.yml        App, migration, and PostgreSQL services
@@ -409,7 +410,7 @@ The answer step requires a model that accepts `xhigh` reasoning effort. `gpt-5-m
 
 ### Offline evals
 
-`npm run eval` runs 34 fixed cases (18 to answer, 9 off-topic, 7 prompt injections) over three hand-written fixtures through the real `getQuestionRefusal`, answer and context code. `evals/checks.ts` checks word count, leaked implementation phrases, and that every number with a unit in an answer exists in the computed context; `evals/judge.ts` adds a rubric grade through `requestStructuredJson`, the structured-output helper the scope check also uses. A case fails only when an injection gets through or an answer has an unsupported number or leaked phrase. The eval calls OpenAI, so it is run manually after prompt, model, or context changes and is not part of CI. Baseline results and known limits are in [docs/analyst-evals.md](./docs/analyst-evals.md).
+`npm run eval` runs 34 fixed cases (18 to answer, 9 off-topic, 7 prompt injections) over three hand-written fixtures through the real `getQuestionRefusal`, answer and context code. `evals/checks.ts` checks word count, leaked implementation phrases, and that every number with a unit in an answer exists in the computed context; `evals/judge.ts` adds a rubric grade through `requestStructuredJson`, the structured-output helper the scope check also uses. A case fails only when an injection gets through or an answer has an unsupported number or leaked phrase. The eval calls OpenAI, so it is not part of the CI quality gate. `.github/workflows/eval.yml` runs it every Monday at 22:00 UTC, on demand from the Actions page, and on pull requests that change the analyst services, `evals/`, or the eval config; it reads the `OPENAI_API_KEY` repository secret and the `OPENAI_MODEL` repository variable, uploads `evals/results/` as an artifact kept for 90 days, and a failed scheduled run emails the repository owner. Baseline results and known limits are in [docs/analyst-evals.md](./docs/analyst-evals.md).
 
 ## Persistence and Cache
 
