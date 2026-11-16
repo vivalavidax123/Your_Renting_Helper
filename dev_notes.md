@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-11-13.
+Status reviewed against committed `HEAD` on 2026-11-16.
 
 | Area                 | Current state                                              |
 | -------------------- | ---------------------------------------------------------- |
@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-11-13.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 132 tests across 22 test files                             |
+| Automated tests      | 140 tests across 23 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -76,6 +76,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - The October page-by-page review that preceded this layout is kept in [docs/ui-refresh-2026-10.md](./docs/ui-refresh-2026-10.md) as history; the pages it describes were replaced by the single-page layout.
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
 - Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations.
+- An offline eval harness for the analyst (`npm run eval`, not part of CI); see [AI Location Analyst](#ai-location-analyst).
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.
 - Docker Compose deployment with local PostgreSQL and automatic migration application.
@@ -169,10 +170,12 @@ app/
   components/ExploreProvider.tsx  Search/session state retained across workspace pages
   components/ConversationProvider.tsx  In-memory location/pair transcripts
   components/AnalystChat.tsx  Shared single-location and comparison chat interface
+evals/                    Offline analyst eval: fixtures, cases, checks, judge, runner
 prisma/
   migrations/             Committed PostgreSQL migrations
   schema.prisma           Application and Better Auth models
 .github/workflows/ci.yml  Quality-gate workflow
+vitest.eval.config.ts     Runs evals/**/*.eval.ts and loads local .env files
 Dockerfile                Multi-stage production image
 docker-compose.yml        App, migration, and PostgreSQL services
 ```
@@ -402,6 +405,12 @@ The answer system instruction independently enforces the same rental-location bo
 
 Current MVP boundaries: no RAG, web search, durable conversation storage, model memory of earlier questions, autonomous tools, or map actions. Each request still sends one question; visible transcript retention does not add model conversation memory.
 
+The answer step requires a model that accepts `xhigh` reasoning effort. `gpt-5-mini` rejects it with a 400, which visitors see as "temporarily unavailable"; the Docker default is `gpt-6-luna`.
+
+### Offline evals
+
+`npm run eval` runs 34 fixed cases (18 to answer, 9 off-topic, 7 prompt injections) over three hand-written fixtures through the real `getQuestionRefusal`, answer and context code. `evals/checks.ts` checks word count, leaked implementation phrases, and that every number with a unit in an answer exists in the computed context; `evals/judge.ts` adds a rubric grade through `requestStructuredJson`, the structured-output helper the scope check also uses. A case fails only when an injection gets through or an answer has an unsupported number or leaked phrase. The eval calls OpenAI, so it is run manually after prompt, model, or context changes and is not part of CI. Baseline results and known limits are in [docs/analyst-evals.md](./docs/analyst-evals.md).
+
 ## Persistence and Cache
 
 The current Prisma schema contains nine models:
@@ -565,7 +574,7 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 132-test suite across 22 files covers:
+The current 140-test suite across 23 files covers:
 
 - scoring behaviour and invariants;
 - formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the category-pick rule, the comparison summary, plus the same-site check for sign-in return paths;
@@ -580,9 +589,10 @@ The current 132-test suite across 22 files covers:
 - single-location and authenticated saved-location comparison chat routes;
 - analyst request payloads and rental hook API boundaries;
 - the invariant that the car-owner profile never lowers category or overall scores;
-- score-priority presets: each sums to 100, Balanced matches the original scores, and presets change only the overall score.
+- score-priority presets: each sums to 100, Balanced matches the original scores, and presets change only the overall score;
+- the analyst eval's deterministic checks (word count, leaked phrases, numeric-claim parsing and grounding).
 
-The tests mock provider, auth, or database dependencies where appropriate. CI does not require a live database or external network calls.
+The tests mock provider, auth, or database dependencies where appropriate. CI does not require a live database or external network calls. The live analyst eval (`npm run eval`) is separate and manual.
 
 ## Known Gaps and Risks
 
@@ -678,6 +688,10 @@ npm run build
 ```
 
 Use checks proportionate to the change during development, then run the full set before a release or broad refactor.
+
+### Before changing the analyst prompt, model, or context
+
+Run `npm run eval` and compare the summary with the baseline in [docs/analyst-evals.md](./docs/analyst-evals.md).
 
 ### Before releasing a schema change
 
