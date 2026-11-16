@@ -482,7 +482,7 @@ Application variables:
 | GOOGLE_MAPS_API_KEY      | Yes                        | Server-only autocomplete, geocoding, place retrieval, elevation, and temporary transit routing     |
 | GEOAPIFY_API_KEY         | Yes                        | Server-only indicative driving time to Melbourne CBD                                               |
 | OPENAI_API_KEY           | For AI analyst             | Server-only OpenAI credential used by the grounded location chat                                   |
-| OPENAI_MODEL             | For AI analyst             | Server-only model selected by the environment; the tracked Docker example defaults to `gpt-5-mini` |
+| OPENAI_MODEL             | For AI analyst             | Server-only model selected by the environment; the tracked Docker example defaults to `gpt-6-luna` |
 | NEXT_PUBLIC_MAPS_API_KEY | For live map               | Browser-visible Maps JavaScript key                                                                |
 | BETTER_AUTH_SECRET       | Yes                        | Server-only stable auth and token-encryption secret                                                |
 | BETTER_AUTH_URL          | Yes                        | Canonical application origin for auth                                                              |
