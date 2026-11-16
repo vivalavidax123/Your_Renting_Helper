@@ -6,7 +6,7 @@ import baseConfig from "./vitest.config";
 // The eval calls the real OpenAI API, so it needs the same OPENAI_API_KEY and
 // OPENAI_MODEL the app reads. Next.js loads .env files on its own; Vitest
 // does not, so load them here. Variables already set in the shell win.
-for (const file of [".env.local", ".env"]) {
+for (const file of [".env.development.local", ".env.local", ".env"]) {
   if (existsSync(file)) {
     process.loadEnvFile(file);
   }
