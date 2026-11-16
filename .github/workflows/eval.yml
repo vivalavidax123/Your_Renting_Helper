@@ -1,0 +1,61 @@
+name: Analyst eval
+
+# Grades the AI location analyst with live OpenAI calls (npm run eval). It
+# costs money and model output varies, so it runs on a schedule and on demand,
+# never on every push. The point is to notice when the model behind
+# OPENAI_MODEL starts answering worse, even though no code changed.
+on:
+  schedule:
+    # Every Monday at 22:00 UTC, which is Tuesday morning in Melbourne.
+    - cron: "0 22 * * 1"
+  # Adds a "Run workflow" button on the Actions page.
+  workflow_dispatch:
+  # Also grade pull requests that change the analyst or the eval itself, so a
+  # prompt or context change is measured before it merges.
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/lib/services/locationAnalyst.ts"
+      - "app/lib/services/locationAnalysis.ts"
+      - "evals/**"
+      - "vitest.eval.config.ts"
+      - ".github/workflows/eval.yml"
+
+jobs:
+  eval:
+    name: Grade the location analyst
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The run fails when an injection gets through or an answer has an
+      # unsupported number or leaked phrase. GitHub emails the repository
+      # owner when a scheduled run fails.
+      - name: Run the analyst eval
+        run: npm run eval
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+
+      # Keep every answer and judge reason, pass or fail, so a run can be
+      # compared with the baseline in docs/analyst-evals.md.
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyst-eval-results
+          path: evals/results/
+          retention-days: 90
+          if-no-files-found: ignore
