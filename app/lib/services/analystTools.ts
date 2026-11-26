@@ -7,6 +7,7 @@ import {
   isRentalPropertyType,
   rentalPropertyTypes,
 } from "./rentalReports";
+import { steepGradePercent } from "@/app/lib/terrain";
 import { getTerrainSummary } from "./terrain";
 
 const noParameters = {
@@ -48,7 +49,7 @@ export function createLocationTools(
     {
       name: "get_terrain",
       description:
-        "How hilly the land is within 1.5 km of this location, from elevation samples: level (flat, gentle, hilly or steep), average and steepest grade in percent, elevation range, and the share of stretches at 5% grade or more. It describes the area, not one street.",
+        "How hilly the land is within 1.5 km of this location, from elevation samples: level (flat, gentle, hilly or steep), average and steepest grade in percent, elevation range, and the share of stretches at or above the steep-grade threshold. It describes the area, not one street.",
       parameters: noParameters,
       label: "the local terrain",
       async run() {
@@ -61,6 +62,8 @@ export function createLocationTools(
           steepestGradePercent: terrain.steepestGradePercent,
           elevationRangeMeters: terrain.elevationRangeMeters,
           steepStretchesPercent: Math.round(terrain.steepShare * 100),
+          // Returned as data so the model can quote it like any other fact.
+          steepStretchThresholdPercent: steepGradePercent,
         };
       },
     },

@@ -120,6 +120,7 @@ const innerCity: Fixture = {
       steepestGradePercent: 4.6,
       elevationRangeMeters: 24,
       steepStretchesPercent: 0,
+      steepStretchThresholdPercent: 5,
     },
     get_rent_estimate: {
       medianWeeklyRent: 560,
@@ -165,6 +166,7 @@ const outerSuburb: Fixture = {
       steepestGradePercent: 2.1,
       elevationRangeMeters: 9,
       steepStretchesPercent: 0,
+      steepStretchThresholdPercent: 5,
     },
     get_rent_estimate: {
       medianWeeklyRent: 480,
@@ -196,6 +198,7 @@ const sparseData: Fixture = {
       steepestGradePercent: 14.2,
       elevationRangeMeters: 160,
       steepStretchesPercent: 38,
+      steepStretchThresholdPercent: 5,
     },
     get_rent_estimate: {
       medianWeeklyRent: null,
