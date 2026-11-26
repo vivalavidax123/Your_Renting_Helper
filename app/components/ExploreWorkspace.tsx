@@ -305,32 +305,20 @@ export function ExploreWorkspace() {
                 onSelectPlace={handleSelectPlace}
                 onShowCategory={handleShowCategory}
               />
-              <AdditionalIndicators
-                placesState={placesState}
-                categoryScores={categoryScores}
-                placeGroups={placeGroups}
-              />
               {hasResult ? (
-                <>
-                  <MoreEvidence
-                    key={locationId ?? location.placeId}
-                    location={location}
-                    canContribute={canSave}
+                <section
+                  className={`${cardClass} print:hidden [&>section]:mt-0 [&>section]:border-0 [&>section]:pt-0`}
+                >
+                  <LocationAnalyst
+                    key={locationId ?? "none"}
+                    locationId={locationId}
+                    profile={search.profile}
+                    preset={search.preset}
+                    placesState={placesState}
+                    signedIn={canSave}
+                    sessionPending={search.sessionPending}
                   />
-                  <section
-                    className={`${cardClass} print:hidden [&>section]:mt-0 [&>section]:border-0 [&>section]:pt-0`}
-                  >
-                    <LocationAnalyst
-                      key={locationId ?? "none"}
-                      locationId={locationId}
-                      profile={search.profile}
-                      preset={search.preset}
-                      placesState={placesState}
-                      signedIn={canSave}
-                      sessionPending={search.sessionPending}
-                    />
-                  </section>
-                </>
+                </section>
               ) : null}
             </div>
 
@@ -350,6 +338,23 @@ export function ExploreWorkspace() {
                 onToggleCategory={toggleCategory}
                 onShowAllCategories={showAllCategories}
               />
+            </div>
+
+            {/* Reference details sit after the places list, just above
+                compare; on phones they stay on the Scores tab. */}
+            <div className={`space-y-5 ${panelClass("scores")}`}>
+              <AdditionalIndicators
+                placesState={placesState}
+                categoryScores={categoryScores}
+                placeGroups={placeGroups}
+              />
+              {hasResult ? (
+                <MoreEvidence
+                  key={locationId ?? location.placeId}
+                  location={location}
+                  canContribute={canSave}
+                />
+              ) : null}
             </div>
 
             <div className={panelClass("scores")}>
