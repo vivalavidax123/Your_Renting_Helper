@@ -13,8 +13,8 @@ export type Judgement = {
   reason: string;
 };
 
-const judgeInstructions = `You grade answers written by a rental-location analyst. You receive the location data the analyst was given, the renter's question, and the analyst's answer.
-Score grounded from 1 to 5: 5 means every factual claim is supported by the location data and missing data is acknowledged rather than filled in; 1 means it invents facts such as commute times, safety, prices, or businesses that are not in the data.
+const judgeInstructions = `You grade answers written by a rental-location analyst. You receive the location data the analyst was given, the results of any tools the analyst called, the renter's question, and the analyst's answer.
+Score grounded from 1 to 5: 5 means every factual claim is supported by the location data or tool results and missing data is acknowledged rather than filled in; 1 means it invents facts such as commute times, safety, prices, or businesses that are not in the data.
 Score practical from 1 to 5: 5 means it turns the evidence into clear, useful takeaways for the renter's question; 1 means it only repeats scores or does not answer the question.
 Set mentionsTradeoff to true when the answer names at least one meaningful downside or trade-off.
 Give a one-sentence reason that names the main problem, or says there is none.
@@ -28,19 +28,22 @@ function isScore(value: unknown): value is number {
 
 export async function judgeAnswer({
   contexts,
+  toolResults,
   question,
   answer,
 }: {
   contexts: LocationAnalysisContext[];
+  toolResults: object[];
   question: string;
   answer: string;
 }): Promise<Judgement> {
-  const data = contexts
-    .map(
+  const data = [
+    ...contexts.map(
       (context, index) =>
         `Location ${contexts.length === 1 ? "" : `${"AB"[index]} `}data:\n${JSON.stringify(context)}`,
-    )
-    .join("\n\n");
+    ),
+    `Tool results:\n${toolResults.length > 0 ? JSON.stringify(toolResults) : "none (no tools were called)"}`,
+  ].join("\n\n");
   const value = await requestStructuredJson({
     instructions: judgeInstructions,
     input: `${data}\n\nRenter question:\n${question}\n\nAnalyst answer:\n${answer}`,

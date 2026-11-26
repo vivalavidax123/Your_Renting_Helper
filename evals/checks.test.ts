@@ -57,6 +57,18 @@ describe("collectEvidence", () => {
     expect(evidence.minutes).toEqual([8, 8, 19]);
   });
 
+  it("treats *Minutes keys, such as tool travel times, as minutes", () => {
+    const evidence = collectEvidence({
+      driveMinutes: 35,
+      transitMinutes: null,
+    });
+
+    expect(evidence.minutes).toEqual([35]);
+    expect(
+      findUnsupportedNumbers("About 35 minutes by car.", evidence),
+    ).toEqual([]);
+  });
+
   it("merges several contexts for comparison answers", () => {
     const evidence = collectEvidence(
       { overallScore: 72 },

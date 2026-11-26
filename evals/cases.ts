@@ -16,7 +16,12 @@ export type EvalCase = {
   // One fixture for single-location chat, two for comparison chat.
   locations: [FixtureId] | [FixtureId, FixtureId];
   preset?: WeightPreset;
+  // Single-location answers only: the tools the analyst should call ([] for
+  // none). Left out when more than one choice is reasonable.
+  expectTools?: ToolName[];
 };
+
+export type ToolName = "get_cbd_travel" | "get_terrain" | "get_rent_estimate";
 
 export const cases: EvalCase[] = [
   // Everyday questions about one location.
@@ -26,6 +31,7 @@ export const cases: EvalCase[] = [
     kind: "normal",
     expect: "answer",
     locations: ["innerCity"],
+    expectTools: [],
   },
   {
     id: "inner-student",
@@ -34,6 +40,7 @@ export const cases: EvalCase[] = [
     expect: "answer",
     locations: ["innerCity"],
     preset: "student",
+    expectTools: [],
   },
   {
     id: "inner-gym",
@@ -41,6 +48,7 @@ export const cases: EvalCase[] = [
     kind: "normal",
     expect: "answer",
     locations: ["innerCity"],
+    expectTools: [],
   },
   {
     id: "inner-trade-off",
@@ -70,6 +78,7 @@ export const cases: EvalCase[] = [
     kind: "normal",
     expect: "answer",
     locations: ["outerSuburb"],
+    expectTools: [],
   },
   {
     id: "outer-score",
@@ -77,6 +86,7 @@ export const cases: EvalCase[] = [
     kind: "normal",
     expect: "answer",
     locations: ["outerSuburb"],
+    expectTools: [],
   },
   {
     id: "sparse-daily",
@@ -93,6 +103,7 @@ export const cases: EvalCase[] = [
     kind: "edge",
     expect: "answer",
     locations: ["innerCity"],
+    expectTools: [],
   },
   {
     id: "inner-commute",
@@ -114,6 +125,7 @@ export const cases: EvalCase[] = [
     kind: "edge",
     expect: "answer",
     locations: ["sparseData"],
+    expectTools: [],
   },
   {
     id: "sparse-services",
@@ -121,6 +133,61 @@ export const cases: EvalCase[] = [
     kind: "edge",
     expect: "answer",
     locations: ["sparseData"],
+    expectTools: [],
+  },
+
+  // Questions the location data cannot answer but a tool can.
+  {
+    id: "tool-cbd-transit",
+    question:
+      "How long would it take me to get into the city for work by public transport?",
+    kind: "normal",
+    expect: "answer",
+    locations: ["innerCity"],
+    expectTools: ["get_cbd_travel"],
+  },
+  {
+    id: "tool-cbd-no-transit",
+    question:
+      "Can I get to the CBD by train or bus from here, and how long does it take?",
+    kind: "edge",
+    expect: "answer",
+    locations: ["sparseData"],
+    expectTools: ["get_cbd_travel"],
+  },
+  {
+    id: "tool-terrain-cycling",
+    question:
+      "I want to cycle everywhere. Are there lots of hills around here?",
+    kind: "normal",
+    expect: "answer",
+    locations: ["sparseData"],
+    expectTools: ["get_terrain"],
+  },
+  {
+    id: "tool-rent",
+    question: "Roughly what does a 2-bedroom apartment rent for around here?",
+    kind: "normal",
+    expect: "answer",
+    locations: ["innerCity"],
+    expectTools: ["get_rent_estimate"],
+  },
+  {
+    id: "tool-rent-no-reports",
+    question: "What's the typical weekly rent for a 3-bedroom house nearby?",
+    kind: "edge",
+    expect: "answer",
+    locations: ["sparseData"],
+    expectTools: ["get_rent_estimate"],
+  },
+  {
+    id: "tool-commute-and-hills",
+    question:
+      "I'd drive to the CBD for work and walk my dog every day. How's the drive, and is it hilly?",
+    kind: "normal",
+    expect: "answer",
+    locations: ["outerSuburb"],
+    expectTools: ["get_cbd_travel", "get_terrain"],
   },
 
   // Comparisons between two locations.

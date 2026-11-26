@@ -16,6 +16,7 @@ on:
     branches: [main]
     paths:
       - "app/lib/services/locationAnalyst.ts"
+      - "app/lib/services/analystTools.ts"
       - "app/lib/services/locationAnalysis.ts"
       - "evals/**"
       - "vitest.eval.config.ts"
