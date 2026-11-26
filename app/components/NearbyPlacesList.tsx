@@ -337,7 +337,7 @@ export function NearbyPlacesList({
           <div
             role="group"
             aria-label="Show categories"
-            className="-mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] scroll-rail sm:mx-0 sm:flex-wrap sm:px-0 print:hidden"
+            className="-mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] max-sm:scroll-rail sm:mx-0 sm:flex-wrap sm:px-0 print:hidden"
           >
             <button
               type="button"
@@ -382,7 +382,7 @@ export function NearbyPlacesList({
             })}
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 @4xl:grid-cols-3">
             {/* The list never hides a category; picked ones move to the
                 top (a stable sort keeps the rest in their usual order). */}
             {[...placeGroups]

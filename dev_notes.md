@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-11-26.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 140 tests across 23 test files                             |
+| Automated tests      | 144 tests across 23 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -37,20 +37,20 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 
 ### Implemented
 
-- One page per address. From `lg` up the page is a split view: a scrolling column of cards (800px wide from `xl`) beside a map card that fills the rest of the width and one screen height under the header, with a 16px margin to the right and bottom edges. Below `lg` the result is split into Scores, Places and Map tabs. Before the first search, `/` shows a simple welcome (`Welcome.tsx`) instead: a search card with a headline, short intro (best for Melbourne), the search form, four example suburbs, and either a sign-in line or the saved and recent chips, beside a static "Example result" card (hidden on phones). It has no map and makes no provider request. Location pages always show the workspace, so a direct visit never flashes the welcome.
+- One page per address. From `lg` up the page is a split view: a scrolling column of cards (by default about half the page on `lg` and 800px from `xl`) beside a map card that fills the rest of the width and one screen height under the header, with a 16px margin to the right and bottom edges. A divider between them (`SplitDivider.tsx`, `role="separator"`) resizes the split: drag it, or focus it and use Left/Right (Shift for bigger steps), Home/End for the limits, and Enter or double-click to reset. The card column stays at least 440px and the map at least 480px (`splitLimits` in `utils.ts`). The chosen width is a CSS variable on the grid, written directly while dragging and saved to localStorage on release (`useSplitWidth.ts`), so it is kept per browser. The card column is a CSS container, so cards that change layout (the category grid, the Nearby amenities columns) follow the column's width, not the window's. Below `lg` the result is split into Scores, Places and Map tabs. Before the first search, `/` shows a simple welcome (`Welcome.tsx`) instead: a search card with a headline, short intro (best for Melbourne), the search form, four example suburbs, and either a sign-in line or the saved and recent chips, beside a static "Example result" card (hidden on phones). It has no map and makes no provider request. Location pages always show the workspace, so a direct visit never flashes the welcome.
 - The shared header is one line at every width: logo mark and name, theme toggle, and account. It is sticky at every size. It is full width on result pages, so the desktop map sticks directly under it, and centred to the welcome cards' width on the pre-search home page. The logo returns to the welcome without starting a provider request.
 - Successful searches and direct location opens replace the search query with the matched formatted address. The result header shows the overall score as a ring coloured by score band, the address, the band word (Excellent 80+, Good 70-79, Fair 50-69, Limited under 50, from `scoreBand` in `utils.ts`), the evidence date, a coverage chip (how many categories have fewer than three places), the match type, the mobility and score-priority selectors, Save (signed-in visitors only, with an Undo toast on removal), Share (copies the page address) and Print (hidden on phones, where Save and Share sit on the mobility row). On phones a new result scrolls the result header to the top of the screen, because the search card would otherwise push the score below the first screen.
 - Signed-in users see an initial avatar; it opens a plain disclosure (not an ARIA menu) showing the account email and Sign out. Escape and outside clicks close it.
-- The search box has a search icon, a clear button, a `/` shortcut and a spinner; on phones the button is icon-only. It is an ARIA combobox (`aria-expanded`, `aria-activedescendant`). Saved and recent chips drop ", Australia" and show the score in its band colour with a star toggle; recent chips also have a remove button that deletes that search from the user's history (`DELETE /api/history`), while a saved chip is removed by un-starring it; signed-out visitors see a one-line sign-in prompt in their place. On phones the chip rows and the Places category filters scroll sideways with a fade on the right edge (`.scroll-rail` in `globals.css`); the compare picker is a two-column grid instead.
+- The search box has a search icon, a clear button, a `/` shortcut and a spinner; on phones the button is icon-only. It is an ARIA combobox (`aria-expanded`, `aria-activedescendant`). Saved and recent chips drop ", Australia" and show the score in its band colour with a star toggle; recent chips also have a remove button that deletes that search from the user's history (`DELETE /api/history`), while a saved chip is removed by un-starring it; signed-out visitors see a one-line sign-in prompt in their place. On phones the chip rows and the Places category filters scroll sideways with a fade on the right edge (the `scroll-rail` utility in `globals.css`, used as `max-sm:scroll-rail`); the compare picker is a two-column grid instead.
 - Australian address autocomplete and geocoding.
 - Eight amenity categories with category-level filtering and deduplication.
-- Category score cards in a grid (two columns on phones and in the narrower lg split view, four at xl), sorted by weight. Each card has a top stripe, icon tile and bar in the category colour (from `categoryColor()`), the score, count and nearest distance, and its share of the overall score. Tapping a card opens one detail panel under the grid with the three pillar scores (proximity, variety, quality), the explanation, a link to the closest place, and "Show these on the map"; tapping it again closes it. Printing shows every category's details. Zero-weight categories are dimmed at the end.
-- A Nearby amenities card lists every category in two columns with category chips shared with the map chips (picked categories move to the top; no category is ever hidden from the list), a sort control (most reviewed, closest, highest rated) and three places per category before "Show all". Rows show rating and compact review count, distance, type and address, and an estimated walk at 80 m per minute; stops show bus or train icons and route badges.
+- Category score cards in a grid (two columns while the card column is narrow, four once it is at least 36rem wide, a container query), sorted by weight. Each card has a top stripe, icon tile and bar in the category colour (from `categoryColor()`), the score, count and nearest distance, and its share of the overall score. Tapping a card opens one detail panel under the grid with the three pillar scores (proximity, variety, quality), the explanation, a link to the closest place, and "Show these on the map"; tapping it again closes it. Printing shows every category's details. Zero-weight categories are dimmed at the end.
+- A Nearby amenities card lists every category in two columns (three when the card column is very wide) with category chips shared with the map chips (picked categories move to the top; no category is ever hidden from the list), a sort control (most reviewed, closest, highest rated) and three places per category before "Show all". Rows show rating and compact review count, distance, type and address, and an estimated walk at 80 m per minute; stops show bus or train icons and route badges.
 - No-car and car-owner scoring profiles.
 - Score-priority presets (Balanced, Student, Family, Commuter) that reweight the overall score without changing category scores. The mobility and preset selectors sit together in the result header and also drive the comparison panel.
 - Seven-day shared result cache.
 - Interactive Google map with an accent pin for the searched location and category-coloured amenity markers; the selected marker grows above its neighbours.
-- Map overlays: a Walk rings toggle (straight-line 5, 10 and 15 minute rings), category chips that pick which markers show (none picked shows all, one shows only that category, more add to it, and All clears the pick; shared with the list chips), and a recentre button. Without a Maps key the column shows a drawn placeholder.
+- Map overlays: a Walk rings toggle (straight-line 5, 10 and 15 minute rings), category chips that pick which markers show (none picked shows all, one shows only that category, more add to it, and All clears the pick; shared with the list chips), and a recentre button. The map card is a CSS container: on a narrow map (phones) the chips stay on one row that scrolls with a faded edge; from 28rem they wrap onto more rows in a compact size, and return to normal size on a wide map, so no chip is cut off. Without a Maps key the column shows a drawn placeholder.
 - Fullscreen map control.
 - List-to-map selection: on desktop the map is always visible; on phones selecting a place switches to the Map tab, which has a "Back to list" button that returns to the selected row.
 - Theme-aware map, markers, and custom popup styling.
@@ -146,7 +146,7 @@ app/
     rent-estimates/       Community rent estimates and contributions
     terrain/              Hilliness summary from Google Elevation samples
   components/            Dashboard, map, auth, theme, scores, and result views
-  hooks/                 Autocomplete, search, saved-search, rental, and sign-in-link controllers
+  hooks/                 Autocomplete, search, saved-search, rental, sign-in-link, and split-width controllers
   lib/
     maps/                 Browser-only Google Maps integration
     services/             Google, Transitland, OpenAI, and persistence services (server-only)
@@ -193,7 +193,7 @@ The project deliberately uses a small number of direct boundaries:
 - **app/lib/types.ts** owns shared domain contracts. Provider wire types stay beside their Google or Transitland adapter; local component or hook state types remain local when no other module needs them.
 - **app/lib/api.ts** validates the common success/error envelope before API data enters UI state.
 - **app/lib/maps/googleMaps.ts** is marked client-only and owns SDK loading, marker construction (amenity, home pin, selected state), walk rings, popup HTML escaping, and map-specific types.
-- **app/components/ExploreWorkspace.tsx** is the single page. It reads search, score and saved-list state from `ExploreProvider` and owns only page-local state: the selected place, picked categories, the phone tab and the toast. On `/` with no result it renders `Welcome` instead. **icons.tsx** holds the shared inline SVG icons and **ScoreRing** draws every score ring.
+- **app/components/ExploreWorkspace.tsx** is the single page. It reads search, score and saved-list state from `ExploreProvider` and owns only page-local state: the selected place, picked categories, the phone tab, the toast, and the desktop split width (`useSplitWidth`, edited through `SplitDivider`). On `/` with no result it renders `Welcome` instead. **icons.tsx** holds the shared inline SVG icons and **ScoreRing** draws every score ring.
 
 This structure is sufficient for the current project. Do not add repositories, dependency-injection layers, duplicate DTOs, generic state frameworks, or other abstractions without a concrete current need.
 
@@ -477,7 +477,7 @@ Current behaviour:
 - a Google Maps search link for non-transport amenities using query and Google Place ID;
 - no custom Google Maps link for transport because Transitland stop IDs are not Google Place IDs;
 - built-in fullscreen control;
-- a Walk rings toggle, category chips that pick which markers show (shared with the list chips; selecting a place from an unpicked category adds that category so its marker is visible), and a recentre button;
+- a Walk rings toggle, category chips that wrap to the map card's width and pick which markers show (shared with the list chips; selecting a place from an unpicked category adds that category so its marker is visible), and a recentre button;
 - list-row selection that pans and opens the popup; on phones it also switches to the Map tab, which re-centres when it becomes visible and offers "Back to list".
 
 The application uses semantic colour tokens for light and dark themes. Theme preference is saved in localStorage, follows the operating system on first visit, is applied before hydration, and synchronises across tabs. Google map colour scheme is a construction-time option, so the map and its markers are recreated when the theme changes. Custom popup surfaces, text, close control, and links are styled for both themes.
@@ -575,10 +575,10 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 140-test suite across 23 files covers:
+The current 144-test suite across 23 files covers:
 
 - scoring behaviour and invariants;
-- formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the category-pick rule, the comparison summary, plus the same-site check for sign-in return paths;
+- formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the category-pick rule, the comparison summary, plus the same-site check for sign-in return paths and the split-divider width limits and keyboard steps;
 - request parsing for scoring options and chat questions;
 - API-envelope validation;
 - derived indicators;

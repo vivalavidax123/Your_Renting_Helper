@@ -1,10 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
 import { usePathname } from "next/navigation";
 import { getCoverage } from "@/app/lib/indicators";
 import { isCategoryShown } from "@/app/lib/utils";
 import type { RecentSearch } from "@/app/lib/types";
+import { useSplitWidth } from "@/app/hooks/useSplitWidth";
 import { AdditionalIndicators } from "./AdditionalIndicators";
 import { ComparePanel } from "./ComparePanel";
 import { useExplore } from "./ExploreProvider";
@@ -16,6 +24,7 @@ import { RecentSearches } from "./RecentSearches";
 import { ResultHeader } from "./ResultHeader";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { SearchForm } from "./SearchForm";
+import { SplitDivider, splitWidthVar } from "./SplitDivider";
 import { Toast, type ToastMessage } from "./Toast";
 import { Welcome } from "./Welcome";
 
@@ -26,6 +35,15 @@ const mobileTabs: { id: MobileTab; label: string }[] = [
   { id: "places", label: "Places" },
   { id: "map", label: "Map" },
 ];
+
+// From lg up: the card column, then the map in the rest of the width. The
+// card column is the width the visitor dragged it to (a CSS variable set by
+// SplitDivider), or by default about half the page on lg and 800px from xl.
+// min() keeps at least 480px for the map when the window gets narrower
+// (the same limit as splitLimits.mapMinWidth; at 480px the map chips still
+// wrap instead of scrolling).
+const splitGridClass =
+  "lg:grid-cols-[min(var(--split-card-width,52.6%),calc(100%_-_480px))_minmax(0,1fr)] xl:grid-cols-[min(var(--split-card-width,800px),calc(100%_-_480px))_minmax(0,1fr)]";
 
 const cardClass =
   "rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5";
@@ -57,6 +75,8 @@ export function ExploreWorkspace() {
     placeId: string;
   } | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("scores");
+  const split = useSplitWidth();
+  const gridRef = useRef<HTMLDivElement>(null);
   // Categories the visitor picked, shared by the map chips and the list
   // chips so they agree. Empty means none picked: the map shows every
   // category. The map hides unpicked categories; the list keeps them all
@@ -222,15 +242,26 @@ export function ExploreWorkspace() {
 
   return (
     <>
-      {/* From lg up the page is a split view: a fixed-width column of cards on
-          the left and the map card filling the rest of the width and the
-          full height under the header, with a small margin to the right and
-          bottom edges. Each column carries its own padding instead of <main>,
+      {/* From lg up the page is a split view: a column of cards on the left
+          (resizable with the divider) and the map card filling the rest of
+          the width and the full height under the header, with a small
+          margin to the right and bottom edges. Each column carries its own padding instead of <main>,
           so the map's height is exactly one screen. Phones keep the single
           padded column. */}
       <main className="flex-1 px-4 pb-10 pt-4 sm:px-6 lg:p-0">
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-0 xl:grid-cols-[800px_minmax(0,1fr)]">
-          <div className="min-w-0 space-y-5 lg:pb-10 lg:pl-8 lg:pr-6 lg:pt-4">
+        <div
+          ref={gridRef}
+          style={
+            split.width === null
+              ? undefined
+              : ({ [splitWidthVar]: `${split.width}px` } as CSSProperties)
+          }
+          className={`grid grid-cols-1 gap-5 lg:gap-0 ${splitGridClass}`}
+        >
+          {/* @container lets the cards inside size themselves to this
+              column's width (which the divider changes) rather than to the
+              whole window. */}
+          <div className="@container min-w-0 space-y-5 lg:pb-10 lg:pl-8 lg:pr-6 lg:pt-4">
             <section className={`${cardClass} print:hidden`}>
               <SearchForm
                 autocomplete={search.autocomplete}
@@ -378,6 +409,11 @@ export function ExploreWorkspace() {
                 : "max-lg:hidden"
             }`}
           >
+            <SplitDivider
+              gridRef={gridRef}
+              width={split.width}
+              onChange={split.saveWidth}
+            />
             <LocationMap
               location={hasResult ? location : null}
               placeGroups={placeGroups}

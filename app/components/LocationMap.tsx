@@ -24,8 +24,11 @@ type MapLocation = Pick<
 
 const defaultZoom = 14;
 
+// Chips size themselves to the map card (a container query), not the
+// window: normal size on a narrow map where the row scrolls (phones), a
+// compact size once they wrap, and normal again when the map is wide.
 const overlayChipClass =
-  "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium shadow-md transition";
+  "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium shadow-md transition @md:gap-1 @md:px-2 @md:py-0.5 @md:text-[11px] @4xl:gap-1.5 @4xl:px-2.5 @4xl:py-1 @4xl:text-xs";
 
 // Decorative stand-in shown before the first search, so no map request is
 // made (or billed) until there is something to show.
@@ -293,11 +296,14 @@ export function LocationMap({
   }
 
   return (
-    <div className="relative flex h-full min-h-80 flex-col overflow-hidden rounded-xl border border-line bg-surface-raised shadow-sm">
+    <div className="@container relative flex h-full min-h-80 flex-col overflow-hidden rounded-xl border border-line bg-surface-raised shadow-sm">
       <div ref={mapRef} className="min-h-0 w-full flex-1" />
 
-      {/* Right margin keeps the chips clear of Google's fullscreen button. */}
-      <div className="absolute left-2 right-14 top-2 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+      {/* Right margin keeps the chips clear of Google's fullscreen button.
+          On a narrow map (phones) the chips stay on one row that scrolls,
+          with a faded edge as the hint; from @md they wrap onto more rows
+          so none is cut off. */}
+      <div className="absolute left-2 right-14 top-2 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] @max-md:scroll-rail @md:flex-wrap @md:gap-1 @md:overflow-visible @4xl:gap-1.5">
         <button
           type="button"
           aria-pressed={showRings}
