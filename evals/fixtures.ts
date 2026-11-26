@@ -1,6 +1,7 @@
-// Hand-written nearby-place data for three kinds of location. Every number is
-// known, so the deterministic checks can tell a real fact from an invented
-// one. Real snapshots can be added later in the same shape.
+// Hand-written nearby-place data and tool results for three kinds of
+// location. Every number is known, so the deterministic checks can tell a
+// real fact from an invented one. Real snapshots can be added later in the
+// same shape.
 
 import { rentScoreCategories } from "@/app/lib/categories";
 import type { NearbyPlace, PlaceGroup } from "@/app/lib/types";
@@ -8,11 +9,39 @@ import type { NearbyPlace, PlaceGroup } from "@/app/lib/types";
 // [name, primaryType, distanceMeters, rating]
 type PlaceRow = [string, string, number, number | null];
 
+// What the analyst tools return for this fixture, in the same shape as the
+// real tools in app/lib/services/analystTools.ts. The rent result is used
+// for whatever property type and bedroom count the model asks about.
+export type FixtureToolResults = {
+  get_cbd_travel: object;
+  get_terrain: object;
+  get_rent_estimate: object;
+};
+
 export type Fixture = {
   id: string;
   address: string;
   groups: PlaceGroup[];
+  toolResults: FixtureToolResults;
 };
+
+function cbdTravel(
+  straightLineDistanceMeters: number,
+  driveMinutes: number | null,
+  transitMinutes: number | null,
+) {
+  return {
+    destination: "Melbourne CBD (Melbourne Town Hall)",
+    straightLineDistanceMeters,
+    driveMinutes,
+    transitMinutes,
+    transitDeparture: "weekday 8:00 am",
+    note:
+      driveMinutes === null || transitMinutes === null
+        ? "Some travel times are temporarily unavailable."
+        : null,
+  };
+}
 
 function buildGroups(
   fixtureId: string,
@@ -82,6 +111,24 @@ const innerCity: Fixture = {
       ["Commonwealth Bank", "bank", 820, 3.5],
     ],
   }),
+  toolResults: {
+    get_cbd_travel: cbdTravel(5800, 20, 30),
+    get_terrain: {
+      level: "gentle",
+      radiusMeters: 1500,
+      averageGradePercent: 1.8,
+      steepestGradePercent: 4.6,
+      elevationRangeMeters: 24,
+      steepStretchesPercent: 0,
+      steepStretchThresholdPercent: 5,
+    },
+    get_rent_estimate: {
+      medianWeeklyRent: 560,
+      reportCount: 4,
+      searchRadiusMeters: 1000,
+      confidence: "community",
+    },
+  },
 };
 
 // Outer growth-area suburb: one big centre, everything else a drive away.
@@ -110,6 +157,24 @@ const outerSuburb: Fixture = {
     ],
     services: [],
   }),
+  toolResults: {
+    get_cbd_travel: cbdTravel(24500, 35, 60),
+    get_terrain: {
+      level: "flat",
+      radiusMeters: 1500,
+      averageGradePercent: 0.6,
+      steepestGradePercent: 2.1,
+      elevationRangeMeters: 9,
+      steepStretchesPercent: 0,
+      steepStretchThresholdPercent: 5,
+    },
+    get_rent_estimate: {
+      medianWeeklyRent: 480,
+      reportCount: 1,
+      searchRadiusMeters: 10000,
+      confidence: "early",
+    },
+  },
 };
 
 // Several categories returned nothing, so the analyst must say data is
@@ -123,6 +188,25 @@ const sparseData: Fixture = {
     transport: [["Ridge Rd bus stop", "bus_stop", 1900, null]],
     fuel: [["Kinglake Fuel", "gas_station", 1200, 3.9]],
   }),
+  // No public transport time and no rent reports: the analyst has to say so.
+  toolResults: {
+    get_cbd_travel: cbdTravel(44000, 60, null),
+    get_terrain: {
+      level: "steep",
+      radiusMeters: 1500,
+      averageGradePercent: 6.4,
+      steepestGradePercent: 14.2,
+      elevationRangeMeters: 160,
+      steepStretchesPercent: 38,
+      steepStretchThresholdPercent: 5,
+    },
+    get_rent_estimate: {
+      medianWeeklyRent: null,
+      reportCount: 0,
+      searchRadiusMeters: 10000,
+      confidence: "none",
+    },
+  },
 };
 
 export const fixtures = { innerCity, outerSuburb, sparseData };

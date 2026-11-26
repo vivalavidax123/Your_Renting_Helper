@@ -38,7 +38,12 @@ export function collectEvidence(...contexts: unknown[]): Evidence {
 
   function visit(value: unknown, key: string) {
     if (typeof value === "number") {
-      (key.endsWith("Meters") ? evidence.meters : evidence.plain).push(value);
+      (key.endsWith("Meters")
+        ? evidence.meters
+        : key.endsWith("Minutes")
+          ? evidence.minutes
+          : evidence.plain
+      ).push(value);
     } else if (typeof value === "string") {
       for (const claim of findNumericClaims(value)) {
         evidence[claim.kind].push(claim.value);

@@ -2,21 +2,28 @@
 // report. It calls OpenAI, so it only runs through `npm run eval`, never in
 // `npm test` or CI.
 //
+// Single-location answers get the real tool definitions with fake results
+// from fixtures.ts (dependency injection: same names, descriptions and
+// schemas the model sees in production, no Google or database calls).
+//
 // A case fails only for a safety or correctness problem: an injection
 // attempt got through, or an answer contains a number the data does not
 // support or leaks implementation details. Everything else (scope accuracy,
-// length, judge scores) is reported for comparing runs.
+// length, tool choice, judge scores) is reported for comparing runs.
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { afterAll, expect, it } from "vitest";
 
+import { readAnalystStream } from "@/app/lib/api";
+import { createLocationTools } from "@/app/lib/services/analystTools";
 import { assembleLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 import {
+  type AnalystTool,
   answerComparisonQuestion,
   answerLocationQuestion,
   getQuestionRefusal,
 } from "@/app/lib/services/locationAnalyst";
-import { cases, type EvalCase } from "./cases";
+import { cases, type EvalCase, type ToolName } from "./cases";
 import {
   collectEvidence,
   countWords,
@@ -24,7 +31,7 @@ import {
   findUnsupportedNumbers,
   maxAnswerWords,
 } from "./checks";
-import { fixtures } from "./fixtures";
+import { type FixtureId, fixtures } from "./fixtures";
 import { judgeAnswer, type Judgement } from "./judge";
 
 type CaseResult = {
@@ -36,6 +43,8 @@ type CaseResult = {
   words?: number;
   unsupportedNumbers?: string[];
   bannedPhrases?: string[];
+  expectedTools?: ToolName[];
+  toolsCalled?: string[];
   judgement?: Judgement;
 };
 
@@ -56,6 +65,31 @@ function buildContexts(evalCase: EvalCase) {
   });
 }
 
+// The real tool definitions, with `run` swapped for the fixture's result.
+// Every result the model receives is recorded as evidence for the checks.
+function createFakeTools(fixtureId: FixtureId, received: object[]) {
+  const { toolResults } = fixtures[fixtureId];
+
+  return createLocationTools(0, 0).map(
+    (tool): AnalystTool => ({
+      ...tool,
+      async run(args) {
+        const result = toolResults[tool.name as ToolName];
+        const output =
+          tool.name === "get_rent_estimate"
+            ? {
+                propertyType: args.propertyType,
+                bedrooms: args.bedrooms,
+                ...result,
+              }
+            : result;
+        received.push(output);
+        return output;
+      },
+    }),
+  );
+}
+
 async function runCase(evalCase: EvalCase): Promise<CaseResult> {
   const contexts = buildContexts(evalCase);
   const mode = contexts.length === 1 ? "single" : "comparison";
@@ -73,15 +107,23 @@ async function runCase(evalCase: EvalCase): Promise<CaseResult> {
     return result;
   }
 
+  const toolResults: object[] = [];
   const stream =
     contexts.length === 1
-      ? await answerLocationQuestion(contexts[0], evalCase.question)
+      ? await answerLocationQuestion(
+          contexts[0],
+          evalCase.question,
+          createFakeTools(evalCase.locations[0], toolResults),
+        )
       : await answerComparisonQuestion(
           contexts[0],
           contexts[1],
           evalCase.question,
         );
-  const answer = await new Response(stream).text();
+  const { text: answer, steps } = await readAnalystStream(
+    new Response(stream),
+    () => {},
+  );
 
   return {
     ...result,
@@ -89,11 +131,14 @@ async function runCase(evalCase: EvalCase): Promise<CaseResult> {
     words: countWords(answer),
     unsupportedNumbers: findUnsupportedNumbers(
       answer,
-      collectEvidence(...contexts),
+      collectEvidence(...contexts, ...toolResults),
     ),
     bannedPhrases: findBannedPhrases(answer),
+    expectedTools: evalCase.expectTools,
+    toolsCalled: [...new Set(steps.map((step) => step.name))],
     judgement: await judgeAnswer({
       contexts,
+      toolResults,
       question: evalCase.question,
       answer,
     }),
@@ -128,6 +173,17 @@ function summarise() {
   const judged = answered.flatMap((result) =>
     result.judgement ? [result.judgement] : [],
   );
+  const toolGraded = answered.filter(
+    (result) => result.expectedTools !== undefined,
+  );
+  const missed = (result: CaseResult) =>
+    (result.expectedTools ?? []).filter(
+      (tool) => !result.toolsCalled?.includes(tool),
+    );
+  const extra = (result: CaseResult) =>
+    (result.toolsCalled ?? []).filter(
+      (tool) => !result.expectedTools?.includes(tool as ToolName),
+    );
 
   return {
     cases: results.length,
@@ -162,6 +218,22 @@ function summarise() {
       mentionsTradeoff: judged.filter((judgement) => judgement.mentionsTradeoff)
         .length,
     },
+    // Did the analyst call the tools a case needs, and only those?
+    tools: {
+      graded: toolGraded.length,
+      exact: toolGraded.filter(
+        (result) => missed(result).length === 0 && extra(result).length === 0,
+      ).length,
+      missedANeededTool: toolGraded.filter(
+        (result) => missed(result).length > 0,
+      ).length,
+      calledAnUnneededTool: toolGraded.filter(
+        (result) => extra(result).length > 0,
+      ).length,
+      answersUsingTools: count(
+        (result) => (result.toolsCalled ?? []).length > 0,
+      ),
+    },
   };
 }
 
@@ -181,6 +253,7 @@ afterAll(() => {
       expected: result.expected,
       got: result.refused ? "refuse" : "answer",
       words: result.words ?? "",
+      tools: result.toolsCalled?.join(", ") ?? "",
       unsupported: result.unsupportedNumbers?.join(", ") ?? "",
       grounded: result.judgement?.grounded ?? "",
       practical: result.judgement?.practical ?? "",

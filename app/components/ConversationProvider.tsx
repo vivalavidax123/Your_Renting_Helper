@@ -9,13 +9,20 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { WeightPreset, WeightProfile } from "@/app/lib/categories";
-import { getErrorMessage, readApiResult, readTextStream } from "@/app/lib/api";
+import {
+  getErrorMessage,
+  readAnalystStream,
+  readApiResult,
+} from "@/app/lib/api";
+import type { AnalystStep } from "@/app/lib/types";
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
   profile: WeightProfile;
+  // Tools the analyst ran for this answer, shown above it.
+  steps?: AnalystStep[];
   interrupted?: boolean;
 };
 type Conversation = { messages: Message[]; question: string };
@@ -154,12 +161,12 @@ export function useConversation({
           data.ok ? "Could not answer this question." : data.error,
         );
       }
-      await readTextStream(response, (content) => {
+      await readAnalystStream(response, ({ text, steps }) => {
         if (controller.signal.aborted) return;
         update(conversationKey, (current) => ({
           ...current,
           messages: current.messages.map((message) =>
-            message.id === id ? { ...message, content } : message,
+            message.id === id ? { ...message, content: text, steps } : message,
           ),
         }));
       });
