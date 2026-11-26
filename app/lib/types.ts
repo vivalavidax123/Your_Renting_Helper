@@ -147,3 +147,13 @@ export type TerrainSummary = {
   // Share of sampled stretches at or above the steep-grade threshold, 0-1.
   steepShare: number;
 };
+
+// One tool the AI analyst ran while answering, shown as a "checked ..." line.
+export type AnalystStep = { name: string; label: string; ok: boolean };
+
+// One line of the analyst chat stream (newline-delimited JSON): answer text
+// as it is written, a tool step, or a friendly error that ends the answer.
+export type AnalystEvent =
+  | { type: "text"; text: string }
+  | ({ type: "step" } & AnalystStep)
+  | { type: "error"; message: string };

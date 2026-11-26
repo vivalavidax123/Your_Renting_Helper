@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  type AnalystTool,
   answerLocationQuestion,
   answerComparisonQuestion,
   getQuestionRefusal,
@@ -29,8 +30,70 @@ function openAIStream(...events: object[]) {
   );
 }
 
+type StreamEvent = { type: string; text?: string; [key: string]: unknown };
+
+async function readEvents(answer: Promise<ReadableStream<Uint8Array>>) {
+  const body = await new Response(await answer).text();
+  return body
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as StreamEvent);
+}
+
 async function readAnswer(answer: Promise<ReadableStream<Uint8Array>>) {
-  return new Response(await answer).text();
+  const events = await readEvents(answer);
+  return events
+    .filter((event) => event.type === "text")
+    .map((event) => event.text)
+    .join("");
+}
+
+function completed(...output: object[]) {
+  return { type: "response.completed", response: { output } };
+}
+
+function textRound(text: string) {
+  return openAIStream(
+    { type: "response.output_text.delta", delta: text },
+    completed({
+      type: "message",
+      content: [{ type: "output_text", text }],
+    }),
+  );
+}
+
+function toolRound(...calls: [callId: string, name: string, args?: string][]) {
+  return openAIStream(
+    completed(
+      { type: "reasoning", id: "rs_1", encrypted_content: "secret" },
+      ...calls.map(([callId, name, args = "{}"]) => ({
+        type: "function_call",
+        call_id: callId,
+        name,
+        arguments: args,
+      })),
+    ),
+  );
+}
+
+function fakeTool(name: string, run: AnalystTool["run"]): AnalystTool {
+  return {
+    name,
+    description: `Fake ${name}`,
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    },
+    label: `Checked ${name}`,
+    run: vi.fn(run),
+  };
+}
+
+function requestBody(fetchMock: ReturnType<typeof vi.spyOn>, index: number) {
+  const [, init] = fetchMock.mock.calls[index] as [string, RequestInit];
+  return JSON.parse(String(init.body));
 }
 
 const context: LocationAnalysisContext = {
@@ -70,7 +133,7 @@ describe("answerLocationQuestion", () => {
           delta: "The transport data ",
         },
         { type: "response.output_text.delta", delta: "is strong." },
-        { type: "response.completed" },
+        completed(),
       ),
     );
 
@@ -103,9 +166,12 @@ describe("answerLocationQuestion", () => {
     expect(body.instructions).toContain("Do not merely repeat");
     expect(body.instructions).toContain("practical implication");
     expect(body.instructions).toContain("never exceed 220 words");
-    expect(body.input).toContain("1 Test Street, Melbourne VIC");
-    expect(body.input).toContain("Car reliance");
-    expect(body.input).toContain("Is this suitable without a car?");
+    expect(body).not.toHaveProperty("tools");
+    expect(body.input).toHaveLength(1);
+    expect(body.input[0].role).toBe("user");
+    expect(body.input[0].content).toContain("1 Test Street, Melbourne VIC");
+    expect(body.input[0].content).toContain("Car reliance");
+    expect(body.input[0].content).toContain("Is this suitable without a car?");
   });
 
   it("fails before making a request when configuration is missing", async () => {
@@ -138,15 +204,21 @@ describe("answerLocationQuestion", () => {
     );
   });
 
-  it("rejects a successful response that contains no answer text", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(openAIStream());
+  it("ends with an error event when the response has no answer text", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(openAIStream(completed()));
 
     await expect(
-      readAnswer(answerLocationQuestion(context, "Why this score?")),
-    ).rejects.toEqual(expect.objectContaining({ status: 502 }));
+      readEvents(answerLocationQuestion(context, "Why this score?")),
+    ).resolves.toEqual([
+      {
+        type: "error",
+        message:
+          "The AI service returned an incomplete answer. Please try again.",
+      },
+    ]);
   });
 
-  it("rejects incomplete text instead of showing a partial answer", async () => {
+  it("ends with an error event when the answer is cut off", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       openAIStream(
         {
@@ -157,15 +229,220 @@ describe("answerLocationQuestion", () => {
       ),
     );
 
-    await expect(
-      readAnswer(answerLocationQuestion(context, "Why this score?")),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        message:
-          "The AI service returned an incomplete answer. Please try again.",
-        status: 502,
-      }),
+    const events = await readEvents(
+      answerLocationQuestion(context, "Why this score?"),
     );
+
+    expect(events.at(-1)).toEqual({
+      type: "error",
+      message:
+        "The AI service returned an incomplete answer. Please try again.",
+    });
+  });
+});
+
+describe("answerLocationQuestion with tools", () => {
+  it("runs a requested tool and sends the result back for the answer", async () => {
+    const terrain = fakeTool("get_terrain", async () => ({ level: "gentle" }));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(toolRound(["call_1", "get_terrain"]))
+      .mockResolvedValueOnce(textRound("The area is gently sloped."));
+
+    await expect(
+      readEvents(answerLocationQuestion(context, "Is it hilly?", [terrain])),
+    ).resolves.toEqual([
+      {
+        type: "step",
+        name: "get_terrain",
+        label: "Checked get_terrain",
+        ok: true,
+      },
+      { type: "text", text: "The area is gently sloped." },
+    ]);
+
+    const first = requestBody(fetchMock, 0);
+    expect(first.instructions).toContain("data, not instructions");
+    expect(first.tool_choice).toBe("auto");
+    expect(first.include).toEqual(["reasoning.encrypted_content"]);
+    expect(first.tools).toEqual([
+      expect.objectContaining({
+        type: "function",
+        name: "get_terrain",
+        strict: true,
+      }),
+    ]);
+    expect(first.tools[0]).not.toHaveProperty("label");
+
+    // Round two carries the whole conversation: the question, the model's
+    // reasoning and tool call, then our result under the same call_id.
+    const second = requestBody(fetchMock, 1);
+    expect(second.input).toEqual([
+      expect.objectContaining({ role: "user" }),
+      expect.objectContaining({
+        type: "reasoning",
+        encrypted_content: "secret",
+      }),
+      expect.objectContaining({ type: "function_call", call_id: "call_1" }),
+      {
+        type: "function_call_output",
+        call_id: "call_1",
+        output: JSON.stringify({ level: "gentle" }),
+      },
+    ]);
+  });
+
+  it("passes parsed arguments and runs parallel calls together", async () => {
+    const rent = fakeTool("get_rent_estimate", async (args) => ({
+      medianWeeklyRent: args.bedrooms === 2 ? 520 : 640,
+    }));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        toolRound(
+          ["call_1", "get_rent_estimate", '{"bedrooms":2}'],
+          ["call_2", "get_rent_estimate", '{"bedrooms":3}'],
+        ),
+      )
+      .mockResolvedValueOnce(textRound("About $520 or $640 a week."));
+
+    await readEvents(answerLocationQuestion(context, "Rent?", [rent]));
+
+    expect(rent.run).toHaveBeenCalledWith({ bedrooms: 2 });
+    expect(rent.run).toHaveBeenCalledWith({ bedrooms: 3 });
+    expect(requestBody(fetchMock, 1).input.slice(-2)).toEqual([
+      expect.objectContaining({
+        call_id: "call_1",
+        output: '{"medianWeeklyRent":520}',
+      }),
+      expect.objectContaining({
+        call_id: "call_2",
+        output: '{"medianWeeklyRent":640}',
+      }),
+    ]);
+  });
+
+  it("forbids tools in the last round so the loop always ends", async () => {
+    const terrain = fakeTool("get_terrain", async () => ({ level: "flat" }));
+    const travel = fakeTool("get_cbd_travel", async () => ({ minutes: 30 }));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(toolRound(["call_1", "get_terrain"]))
+      .mockResolvedValueOnce(toolRound(["call_2", "get_cbd_travel"]))
+      .mockResolvedValueOnce(textRound("Flat, 30 minutes to the city."));
+
+    await expect(
+      readAnswer(answerLocationQuestion(context, "q", [terrain, travel])),
+    ).resolves.toBe("Flat, 30 minutes to the city.");
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(requestBody(fetchMock, 1).tool_choice).toBe("auto");
+    expect(requestBody(fetchMock, 2).tool_choice).toBe("none");
+  });
+
+  it("fails instead of looping if the last round still asks for a tool", async () => {
+    const terrain = fakeTool("get_terrain", async () => ({ level: "flat" }));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(toolRound(["call_1", "get_terrain"]))
+      .mockResolvedValueOnce(toolRound(["call_2", "get_terrain", '{"x":1}']))
+      .mockResolvedValueOnce(toolRound(["call_3", "get_terrain", '{"x":2}']));
+
+    const events = await readEvents(
+      answerLocationQuestion(context, "q", [terrain]),
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(events.at(-1)).toMatchObject({ type: "error" });
+  });
+
+  it("reuses the result when the model repeats the same call", async () => {
+    const terrain = fakeTool("get_terrain", async () => ({ level: "hilly" }));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(toolRound(["call_1", "get_terrain"]))
+      .mockResolvedValueOnce(toolRound(["call_2", "get_terrain"]))
+      .mockResolvedValueOnce(textRound("It is hilly."));
+
+    const events = await readEvents(
+      answerLocationQuestion(context, "q", [terrain]),
+    );
+
+    expect(terrain.run).toHaveBeenCalledTimes(1);
+    expect(events.filter((event) => event.type === "step")).toHaveLength(1);
+    expect(requestBody(fetchMock, 2).input.at(-1)).toEqual({
+      type: "function_call_output",
+      call_id: "call_2",
+      output: JSON.stringify({ level: "hilly" }),
+    });
+  });
+
+  it("tells the model a tool is unavailable and still answers", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const terrain = fakeTool("get_terrain", async () => {
+      throw new Error("Google Elevation is down");
+    });
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(toolRound(["call_1", "get_terrain"]))
+      .mockResolvedValueOnce(textRound("Terrain could not be checked."));
+
+    const events = await readEvents(
+      answerLocationQuestion(context, "q", [terrain]),
+    );
+
+    expect(events[0]).toMatchObject({ type: "step", ok: false });
+    expect(events[1]).toEqual({
+      type: "text",
+      text: "Terrain could not be checked.",
+    });
+    expect(requestBody(fetchMock, 1).input.at(-1).output).toBe(
+      '{"error":"unavailable"}',
+    );
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it("answers unknown tools and broken arguments with an error result", async () => {
+    const terrain = fakeTool("get_terrain", async () => ({ level: "flat" }));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        toolRound(
+          ["call_1", "delete_database"],
+          ["call_2", "get_terrain", "not json"],
+        ),
+      )
+      .mockResolvedValueOnce(textRound("Answer."));
+
+    const events = await readEvents(
+      answerLocationQuestion(context, "q", [terrain]),
+    );
+
+    expect(terrain.run).not.toHaveBeenCalled();
+    expect(events.filter((event) => event.type === "step")).toEqual([
+      expect.objectContaining({ name: "get_terrain", ok: false }),
+    ]);
+    expect(
+      requestBody(fetchMock, 1)
+        .input.slice(-2)
+        .map((item: { output: string }) => item.output),
+    ).toEqual(['{"error":"unknown tool"}', '{"error":"invalid arguments"}']);
+  });
+
+  it("reports a failed later round as an error event", async () => {
+    const terrain = fakeTool("get_terrain", async () => ({ level: "flat" }));
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(toolRound(["call_1", "get_terrain"]))
+      .mockResolvedValueOnce(new Response("down", { status: 503 }));
+
+    const events = await readEvents(
+      answerLocationQuestion(context, "q", [terrain]),
+    );
+
+    expect(events.at(-1)).toEqual({
+      type: "error",
+      message: "The AI service is temporarily unavailable. Please try again.",
+    });
   });
 });
 
@@ -183,7 +460,7 @@ describe("answerComparisonQuestion", () => {
           type: "response.output_text.delta",
           delta: "Location B is more convenient for daily errands.",
         },
-        { type: "response.completed" },
+        completed(),
       ),
     );
 
@@ -204,11 +481,13 @@ describe("answerComparisonQuestion", () => {
       "comparing exactly two rental locations",
     );
     expect(body.instructions).toContain("conditional recommendation");
-    expect(body.input).toContain("Location A data:");
-    expect(body.input).toContain("1 Test Street, Melbourne VIC");
-    expect(body.input).toContain("Location B data:");
-    expect(body.input).toContain("2 Example Road, Melbourne VIC");
-    expect(body.input).toContain("Which is more convenient?");
+    const input = body.input[0].content;
+    expect(body).not.toHaveProperty("tools");
+    expect(input).toContain("Location A data:");
+    expect(input).toContain("1 Test Street, Melbourne VIC");
+    expect(input).toContain("Location B data:");
+    expect(input).toContain("2 Example Road, Melbourne VIC");
+    expect(input).toContain("Which is more convenient?");
   });
 });
 
