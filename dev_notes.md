@@ -146,7 +146,7 @@ app/
     rent-estimates/       Community rent estimates and contributions
     terrain/              Hilliness summary from Google Elevation samples
   components/            Dashboard, map, auth, theme, scores, and result views
-  hooks/                 Autocomplete, search, saved-search, rental, and sign-in-link controllers
+  hooks/                 Autocomplete, search, saved-search, rental, sign-in-link, and split-width controllers
   lib/
     maps/                 Browser-only Google Maps integration
     services/             Google, Transitland, OpenAI, and persistence services (server-only)
@@ -193,7 +193,7 @@ The project deliberately uses a small number of direct boundaries:
 - **app/lib/types.ts** owns shared domain contracts. Provider wire types stay beside their Google or Transitland adapter; local component or hook state types remain local when no other module needs them.
 - **app/lib/api.ts** validates the common success/error envelope before API data enters UI state.
 - **app/lib/maps/googleMaps.ts** is marked client-only and owns SDK loading, marker construction (amenity, home pin, selected state), walk rings, popup HTML escaping, and map-specific types.
-- **app/components/ExploreWorkspace.tsx** is the single page. It reads search, score and saved-list state from `ExploreProvider` and owns only page-local state: the selected place, picked categories, the phone tab and the toast. On `/` with no result it renders `Welcome` instead. **icons.tsx** holds the shared inline SVG icons and **ScoreRing** draws every score ring.
+- **app/components/ExploreWorkspace.tsx** is the single page. It reads search, score and saved-list state from `ExploreProvider` and owns only page-local state: the selected place, picked categories, the phone tab, the toast, and the desktop split width (`useSplitWidth`, edited through `SplitDivider`). On `/` with no result it renders `Welcome` instead. **icons.tsx** holds the shared inline SVG icons and **ScoreRing** draws every score ring.
 
 This structure is sufficient for the current project. Do not add repositories, dependency-injection layers, duplicate DTOs, generic state frameworks, or other abstractions without a concrete current need.
 
@@ -477,7 +477,7 @@ Current behaviour:
 - a Google Maps search link for non-transport amenities using query and Google Place ID;
 - no custom Google Maps link for transport because Transitland stop IDs are not Google Place IDs;
 - built-in fullscreen control;
-- a Walk rings toggle, category chips that pick which markers show (shared with the list chips; selecting a place from an unpicked category adds that category so its marker is visible), and a recentre button;
+- a Walk rings toggle, category chips that wrap to the map card's width and pick which markers show (shared with the list chips; selecting a place from an unpicked category adds that category so its marker is visible), and a recentre button;
 - list-row selection that pans and opens the popup; on phones it also switches to the Map tab, which re-centres when it becomes visible and offers "Back to list".
 
 The application uses semantic colour tokens for light and dark themes. Theme preference is saved in localStorage, follows the operating system on first visit, is applied before hydration, and synchronises across tabs. Google map colour scheme is a construction-time option, so the map and its markers are recreated when the theme changes. Custom popup surfaces, text, close control, and links are styled for both themes.
@@ -575,10 +575,10 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 140-test suite across 23 files covers:
+The current 144-test suite across 23 files covers:
 
 - scoring behaviour and invariants;
-- formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the category-pick rule, the comparison summary, plus the same-site check for sign-in return paths;
+- formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the category-pick rule, the comparison summary, plus the same-site check for sign-in return paths and the split-divider width limits and keyboard steps;
 - request parsing for scoring options and chat questions;
 - API-envelope validation;
 - derived indicators;
