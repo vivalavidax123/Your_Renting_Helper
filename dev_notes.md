@@ -56,8 +56,8 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Theme-aware map, markers, and custom popup styling.
 - Google Maps links in non-transport amenity popups.
 - Optional Transitland bus-stop, route, destination, and departure enrichment.
-- Derived walkability, transit, density, convenience, and car-reliance indicators, shown as a tile grid under the category scores and also fed to the AI analyst context.
-- A "More about this location" card with three on-demand sections (commute, community rent, terrain). Each one mounts and fetches only when first opened, because commute and terrain call paid provider APIs on every request. An opened card can be hidden again; hiding uses CSS rather than unmounting, so reopening repeats no paid request and keeps the rent form's input. Each leads with its answer, keeps data sources visible, and folds method notes into a collapsed "How this is measured" section.
+- Derived walkability, transit, density, convenience, and car-reliance indicators, shown as a tile grid below the nearby amenities list (above compare) and also fed to the AI analyst context.
+- A "More about this location" card, placed after the location indicators and above compare, with three on-demand sections (commute, community rent, terrain). Each one mounts and fetches only when first opened, because commute and terrain call paid provider APIs on every request. An opened card can be hidden again; hiding uses CSS rather than unmounting, so reopening repeats no paid request and keeps the rent form's input. Each leads with its answer, keeps data sources visible, and folds method notes into a collapsed "How this is measured" section.
 - Direct distance, rounded Geoapify driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - Terrain card measuring how hilly the land within 1.5 km is, from Google Elevation samples. It is shown as separate evidence and does not change any score.
 - Radius-based community median rent estimates for matching property type and bedroom count.
@@ -206,7 +206,7 @@ This structure is sufficient for the current project. Do not add repositories, d
 3. Submitting the form requests /api/geocode.
 4. useLocationSearch requests /api/places with coordinates and location metadata.
 5. The matched address and amenity groups are committed together, and the formatted address replaces the submitted query in the search field. Persisted results navigate to /locations/[locationId]?profile=... (plus &preset=... when a non-default preset is active); direct visits read stored evidence through GET /api/locations/[locationId] without a provider refresh.
-6. The page renders the result header, category scores, indicators, analyst, amenity list, comparison panel and map from that one result. `LocationLoader` renders the workspace immediately, so a direct visit shows loading skeletons while stored evidence is fetched.
+6. The page renders, in order, the result header, category scores, analyst, amenity list, indicators, "More about this location", comparison panel and map from that one result. `LocationLoader` renders the workspace immediately, so a direct visit shows loading skeletons while stored evidence is fetched.
 7. CbdTravelCard, TerrainCard, and RentalInsights request /api/cbd-travel, /api/terrain, and /api/rent-estimates only after the visitor opens that section of "More about this location".
 8. The client validates each API envelope before updating result state.
 9. Older autocomplete, geocode, places, CBD-travel, and rent-estimate requests are aborted so stale responses cannot overwrite newer actions.
