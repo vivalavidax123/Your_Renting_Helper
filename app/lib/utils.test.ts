@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampSplitWidth,
   isCategoryShown,
   estimateWalkMinutes,
   formatCompactCount,
@@ -11,6 +12,7 @@ import {
   parseLatLng,
   safeNextPath,
   scoreBand,
+  splitWidthForKey,
   summarizeComparison,
 } from "./utils";
 import type { CategoryScore } from "./types";
@@ -198,5 +200,31 @@ describe("isCategoryShown", () => {
     const picked = new Set(["food", "groceries"]);
     expect(isCategoryShown(picked, "food")).toBe(true);
     expect(isCategoryShown(picked, "transport")).toBe(false);
+  });
+});
+
+describe("clampSplitWidth", () => {
+  it("keeps the card column and the map above their minimum widths", () => {
+    expect(clampSplitWidth(200, 1600)).toBe(440);
+    expect(clampSplitWidth(1500, 1600)).toBe(1120);
+    expect(clampSplitWidth(700.4, 1600)).toBe(700);
+  });
+
+  it("prefers the card minimum when the window is too narrow for both", () => {
+    expect(clampSplitWidth(600, 700)).toBe(440);
+  });
+});
+
+describe("splitWidthForKey", () => {
+  it("moves the divider in small or large steps", () => {
+    expect(splitWidthForKey("ArrowLeft", false, 800, 1600)).toBe(784);
+    expect(splitWidthForKey("ArrowRight", true, 800, 1600)).toBe(864);
+  });
+
+  it("jumps to the limits, resets on Enter and ignores other keys", () => {
+    expect(splitWidthForKey("Home", false, 800, 1600)).toBe(440);
+    expect(splitWidthForKey("End", false, 800, 1600)).toBe(1120);
+    expect(splitWidthForKey("Enter", false, 800, 1600)).toBe("reset");
+    expect(splitWidthForKey("a", false, 800, 1600)).toBeNull();
   });
 });
