@@ -29,7 +29,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 - See direct distance, indicative driving time, and usual weekday 8am public-transport time to Melbourne CBD.
 - Check how hilly the area is (average and steepest slopes within 1.5 km), useful if hills matter for your car, bike, or walks.
 - See like-for-like community rent medians and, when signed in, contribute a known weekly rent.
-- When signed in, ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting.
+- When signed in, ask a grounded AI analyst what the displayed score and nearby amenities could mean for day-to-day renting. It can look up CBD travel, terrain, and community rent when a question needs them, and shows what it checked.
 - Use a persistent light or dark theme.
 - Create an account to keep recent searches, save locations, compare two results under one mobility profile and score preset, and ask AI-assisted comparison questions.
 
@@ -37,7 +37,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 
 This is a working prototype, not an official property rating or valuation service. Amenity distances are straight-line estimates; CBD driving uses a rounded Geoapify estimate, while public transport currently uses a Google timetable estimate. Both can vary from an actual trip. The car-owner profile uses the same priorities as the no-car profile with more tolerance for distance, so it cannot lower the displayed category or overall scores.
 
-Community rent figures are user-reported evidence, not scraped market data or an official valuation. AI questions require sign-in and are screened for harmful or unrelated content. Answers are grounded in the score, nearby amenities, and derived indicators supplied by the application; they do not perform external research. Population, school, safety, and planning datasets are not currently included.
+Community rent figures are user-reported evidence, not scraped market data or an official valuation. AI questions require sign-in and are screened for harmful or unrelated content. Answers are grounded in the score, nearby amenities, derived indicators, and the app's own CBD-travel, terrain, and rent lookups; they do not perform web research. Population, school, safety, and planning datasets are not currently included.
 
 ## Run Locally
 

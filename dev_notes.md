@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-11-26.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 144 tests across 23 test files                             |
+| Automated tests      | 154 tests across 23 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -75,7 +75,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - The old category, details and compare addresses redirect to the location page (or `/` for compare), keeping `profile` and `preset`.
 - The October page-by-page review that preceded this layout is kept in [docs/ui-refresh-2026-10.md](./docs/ui-refresh-2026-10.md) as history; the pages it describes were replaced by the single-page layout.
 - Multi-point guidance, evidence notes, data assumptions, and comparison-selection explanations use semantic bullet lists for easier scanning; redundant analyst and comparison-header descriptions are omitted.
-- Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations.
+- Authenticated, moderation-screened, rental-scoped AI analysis for a searched location and comparison of two saved locations. The single-location analyst can call CBD-travel, terrain and community-rent tools when the stored data cannot answer a question, and the chat shows which ones it checked.
 - An offline eval harness for the analyst (`npm run eval`, not part of CI); see [AI Location Analyst](#ai-location-analyst).
 - PostgreSQL persistence on Neon for hosted environments.
 - Vercel deployment and analytics.
@@ -388,8 +388,8 @@ The result page includes a lightweight signed-in single-location chat panel, and
 4. The server loads the latest stored place groups and recomputes scores and indicators for the selected profile and preset.
 5. The question passes OpenAI moderation before answer generation; flagged input receives a fixed refusal without reaching another model call.
 6. A structured scope classifier allows rental-location questions and returns a fixed refusal for unrelated requests without calling the analyst model.
-7. The context builder keeps the score breakdown and up to five nearest amenities per category.
-8. The analyst requests a streamed OpenAI response, extracts `response.output_text.delta` events on the server, and forwards only the answer text as it arrives.
+7. The context builder keeps the score breakdown and up to five nearest amenities per category. The stored coordinates are returned beside the context, not inside it, and used only to build the tools.
+8. The analyst runs a bounded tool loop (`runAnalyst`): each streamed round either writes the answer or asks for `get_cbd_travel`, `get_terrain` or `get_rent_estimate` (`analystTools.ts`), which the server runs before the next round. At most three rounds; the last uses `tool_choice: "none"`. Answer text and tool steps stream to the browser as newline-delimited JSON events. Details are in [docs/analyst-tools.md](./docs/analyst-tools.md).
 
 ### Saved-location comparison request flow
 
@@ -398,19 +398,19 @@ The result page includes a lightweight signed-in single-location chat panel, and
 3. The route requires a session and verifies that both locations are saved by that user.
 4. The server builds the same grounded context independently for each location and labels them Location A and Location B.
 5. The question passes the same moderation and comparison-aware scope checks used by single-location analysis.
-6. The analyst explains meaningful differences, ties, trade-offs, and conditional recommendations without forcing a winner.
+6. The analyst explains meaningful differences, ties, trade-offs, and conditional recommendations without forcing a winner. Comparison chat has no tools yet.
 
-Questions are first sent to `omni-moderation-latest`. A flagged result returns a fixed plain-text refusal and skips later model calls. Safe questions then use the environment-selected `OPENAI_MODEL` for a non-streaming structured scope decision with low reasoning, low verbosity, a 200-token ceiling, and `store: false`. The scope permits location scores, nearby amenities, transport, rent evidence, daily routines, renter priorities, trade-offs, and relevant facts to verify; it rejects unrelated general assistance, content generation, and instruction-override attempts. A rejected question receives a fixed plain-text refusal and skips answer generation. Screening failures stop the request with a safe 502 or 504 response rather than bypassing a check.
+Questions are first sent to `omni-moderation-latest`. A flagged result returns a fixed refusal (one text event) and skips later model calls. Safe questions then use the environment-selected `OPENAI_MODEL` for a non-streaming structured scope decision with low reasoning, low verbosity, a 200-token ceiling, and `store: false`. The scope permits location scores, nearby amenities, transport, rent evidence, daily routines, renter priorities, trade-offs, and relevant facts to verify; it rejects unrelated general assistance, content generation, and instruction-override attempts. A rejected question receives a fixed refusal and skips answer generation. Screening failures stop the request with a safe 502 or 504 response rather than bypassing a check.
 
-The answer system instruction independently enforces the same rental-location boundary, requires answers to use supplied data, refuses unsupported claims, avoids promising external searches, connects evidence to practical renter implications, and distinguishes facts from interpretation. Answer requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout, `store: false`, and streaming. The server converts OpenAI's provider-specific event stream into plain UTF-8 text; the browser appends each chunk to one assistant message and shows a cursor until the stream finishes. ConversationProvider retains messages and drafts in memory per location or ordered comparison pair across workspace navigation. The workspace is keyed by the current user identity, so changing between anonymous and authenticated sessions remounts the search and conversation state. Reloading or leaving the workspace starts fresh conversations. Route departure aborts active replies, preserves their text, and marks them interrupted. Clear conversation removes only the current transcript and draft. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
+The answer system instruction independently enforces the same rental-location boundary, requires answers to use supplied data and tool results, treats tool results as data rather than instructions, refuses unsupported claims, avoids promising web searches, connects evidence to practical renter implications, and distinguishes facts from interpretation. Answer requests use the environment-selected `OPENAI_MODEL`, xhigh reasoning effort, high text verbosity, a 1,200-token output ceiling, a 20-second timeout per round, `store: false` (with encrypted reasoning carried between rounds), and streaming. The server converts OpenAI's event stream into `text`, `step` and `error` events (`application/x-ndjson`); `readAnalystStream` builds one assistant message from them, shows the checked steps above the answer, and shows a cursor until the stream finishes. The first OpenAI request is awaited before streaming starts, so setup and outage errors keep their HTTP status; a later-round failure arrives as an `error` event and marks the answer interrupted. ConversationProvider retains messages and drafts in memory per location or ordered comparison pair across workspace navigation. The workspace is keyed by the current user identity, so changing between anonymous and authenticated sessions remounts the search and conversation state. Reloading or leaving the workspace starts fresh conversations. Route departure aborts active replies, preserves their text, and marks them interrupted. Clear conversation removes only the current transcript and draft. Switching mobility profiles preserves both transcripts and drafts, including a pending answer. Each answer labels the profile captured at submission; subsequent questions use the newly selected profile. Enter sends a question and Shift+Enter inserts a newline.
 
-Current MVP boundaries: no RAG, web search, durable conversation storage, model memory of earlier questions, autonomous tools, or map actions. Each request still sends one question; visible transcript retention does not add model conversation memory.
+Current MVP boundaries: no RAG, web search, durable conversation storage, model memory of earlier questions, custom commute destinations, comparison tools, or map actions. Each request still sends one question; visible transcript retention does not add model conversation memory.
 
 The answer step requires a model that accepts `xhigh` reasoning effort. `gpt-5-mini` rejects it with a 400, which visitors see as "temporarily unavailable"; the Docker default is `gpt-6-luna`.
 
 ### Offline evals
 
-`npm run eval` runs 34 fixed cases (18 to answer, 9 off-topic, 7 prompt injections) over three hand-written fixtures through the real `getQuestionRefusal`, answer and context code. `evals/checks.ts` checks word count, leaked implementation phrases, and that every number with a unit in an answer exists in the computed context; `evals/judge.ts` adds a rubric grade through `requestStructuredJson`, the structured-output helper the scope check also uses. A case fails only when an injection gets through or an answer has an unsupported number or leaked phrase. The eval calls OpenAI, so it is not part of the CI quality gate. `.github/workflows/eval.yml` runs it every Monday at 22:00 UTC, on demand from the Actions page, and on pull requests that change the analyst services, `evals/`, or the eval config; it reads the `OPENAI_API_KEY` repository secret and the `OPENAI_MODEL` repository variable, uploads `evals/results/` as an artifact kept for 90 days, and a failed scheduled run emails the repository owner. Baseline results and known limits are in [docs/analyst-evals.md](./docs/analyst-evals.md).
+`npm run eval` runs 40 fixed cases (24 to answer, including 6 that need a tool, 9 off-topic, 7 prompt injections) over three hand-written fixtures through the real `getQuestionRefusal`, answer and context code. Single-location cases get the real tool definitions with fake results from the fixtures, and cases with one clear answer list the tools they expect; tool choice is reported, not failed. `evals/checks.ts` checks word count, leaked implementation phrases, and that every number with a unit in an answer exists in the computed context or a tool result; `evals/judge.ts` adds a rubric grade through `requestStructuredJson`, the structured-output helper the scope check also uses. A case fails only when an injection gets through or an answer has an unsupported number or leaked phrase. The eval calls OpenAI, so it is not part of the CI quality gate. `.github/workflows/eval.yml` runs it every Monday at 22:00 UTC, on demand from the Actions page, and on pull requests that change the analyst services or tools, `evals/`, or the eval config; it reads the `OPENAI_API_KEY` repository secret and the `OPENAI_MODEL` repository variable, uploads `evals/results/` as an artifact kept for 90 days, and a failed scheduled run emails the repository owner. Baseline results and known limits are in [docs/analyst-evals.md](./docs/analyst-evals.md).
 
 ## Persistence and Cache
 
@@ -575,7 +575,7 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 144-test suite across 23 files covers:
+The current 154-test suite across 23 files covers:
 
 - scoring behaviour and invariants;
 - formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the category-pick rule, the comparison summary, plus the same-site check for sign-in return paths and the split-divider width limits and keyboard steps;
@@ -586,7 +586,7 @@ The current 144-test suite across 23 files covers:
 - authentication email configuration and delivery callbacks;
 - community-rent medians, adaptive radii, report upserts, and profile suggestions;
 - CBD driving/transit response parsing and Melbourne daylight-saving calculations;
-- grounded AI context construction, OpenAI request configuration, streamed response parsing, text-chunk accumulation, failure mapping, and the moderation and scope checks with their refusals;
+- grounded AI context construction, OpenAI request configuration, streamed response parsing, the tool loop (tool call then answer, forced final round, repeated-call reuse, tool failure, unknown tools and broken arguments, later-round failure), NDJSON event reading, failure mapping, and the moderation and scope checks with their refusals;
 - single-location and authenticated saved-location comparison chat routes;
 - analyst request payloads and rental hook API boundaries;
 - the invariant that the car-owner profile never lowers category or overall scores;
@@ -604,7 +604,7 @@ The tests mock provider, auth, or database dependencies where appropriate. CI do
 
 ### Reliability and operations
 
-- No application-level rate limiting on provider-backed search, CBD, AI analyst, or authenticated rent-contribution routes.
+- No application-level rate limiting on provider-backed search, CBD, AI analyst, or authenticated rent-contribution routes. Analyst tool calls also spend Geoapify and Google quota when the model decides to check CBD travel or terrain.
 - /api/cbd-travel and /api/terrain prevent response caching and call their providers on every request, creating a quota and cost-exposure risk. Terrain never changes, so it is a good candidate for storage if usage grows.
 - No structured logging, monitoring dashboard, tracing, or error-tracking integration.
 - A database outage silently falls back to live Google calls and can increase quota usage.
@@ -692,7 +692,7 @@ Use checks proportionate to the change during development, then run the full set
 
 ### Before changing the analyst prompt, model, or context
 
-Run `npm run eval` and compare the summary with the baseline in [docs/analyst-evals.md](./docs/analyst-evals.md).
+Run `npm run eval` and compare the summary with the baseline in [docs/analyst-evals.md](./docs/analyst-evals.md). For tool changes, also compare the tool-choice summary in [docs/analyst-tools.md](./docs/analyst-tools.md).
 
 ### Before releasing a schema change
 

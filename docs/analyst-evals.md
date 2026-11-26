@@ -25,7 +25,7 @@ tested in `evals/checks.test.ts`, which does run in `npm test`.
 
 - every Monday at 22:00 UTC (Tuesday morning in Melbourne);
 - on demand with **Run workflow** on the Actions page;
-- on pull requests that change `locationAnalyst.ts`, `locationAnalysis.ts`, `evals/`, `vitest.eval.config.ts` or the workflow.
+- on pull requests that change `locationAnalyst.ts`, `analystTools.ts`, `locationAnalysis.ts`, `evals/`, `vitest.eval.config.ts` or the workflow.
 
 It needs a repository secret `OPENAI_API_KEY` and a repository variable
 `OPENAI_MODEL` (Settings → Secrets and variables → Actions). A failing
@@ -48,13 +48,13 @@ evals/fixtures.ts   hand-written place groups for three locations
   -> console table + summary, full answers in evals/results/<time>.json (git-ignored)
 ```
 
-| File                    | Role                                                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `evals/fixtures.ts`     | Inner suburb (Brunswick East), outer growth suburb (Tarneit), sparse rural data (Kinglake). Names look real; distances and ratings are invented on purpose, so every number is known. |
-| `evals/cases.ts`        | 34 cases: 18 to answer (4 comparisons, 5 where the data cannot fully answer), 9 off-topic and 7 prompt-injection attempts to refuse.                                                  |
-| `evals/checks.ts`       | Deterministic checks. No API calls.                                                                                                                                                   |
-| `evals/judge.ts`        | Grades `grounded` (1-5), `practical` (1-5) and `mentionsTradeoff`. Uses `requestStructuredJson`, the same helper as the scope check.                                                  |
-| `evals/analyst.eval.ts` | Runner. Four cases at a time, three-minute timeout per case.                                                                                                                          |
+| File                    | Role                                                                                                                                                                                                 |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `evals/fixtures.ts`     | Inner suburb (Brunswick East), outer growth suburb (Tarneit), sparse rural data (Kinglake), each with fake tool results. Names look real; numbers are invented on purpose, so every number is known. |
+| `evals/cases.ts`        | 40 cases: 24 to answer (4 comparisons, 6 that need a tool, 7 where the data cannot fully answer), 9 off-topic and 7 prompt-injection attempts to refuse.                                             |
+| `evals/checks.ts`       | Deterministic checks. No API calls.                                                                                                                                                                  |
+| `evals/judge.ts`        | Grades `grounded` (1-5), `practical` (1-5) and `mentionsTradeoff`. Uses `requestStructuredJson`, the same helper as the scope check.                                                                 |
+| `evals/analyst.eval.ts` | Runner. Four cases at a time, three-minute timeout per case.                                                                                                                                         |
 
 ### The grounding check
 
@@ -79,7 +79,11 @@ Only safety and correctness problems:
 Scope accuracy on other cases, word count and judge scores are reported only,
 because single model outputs vary.
 
+Tool use (fake tools, `expectTools` and the tool-choice summary) is described in [analyst-tools.md](./analyst-tools.md). Tool results count as evidence: numeric keys ending in `Minutes` are minutes.
+
 ## Baseline (2026-11-16, `gpt-6-luna`)
+
+This is the pre-tools baseline with 34 cases. The first 40-case runs with tools are in [analyst-tools.md](./analyst-tools.md).
 
 | Metric                           | Result           |
 | -------------------------------- | ---------------- |
