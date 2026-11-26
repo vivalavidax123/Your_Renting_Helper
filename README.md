@@ -18,7 +18,7 @@ Your Renting Helper is a personal web prototype for comparing how convenient a r
 ## What You Can Do
 
 - Search Australian addresses with autocomplete, or start from an example suburb. No account is needed to search.
-- Expand each category score to see how proximity, variety and quality make it up, then jump to its places on the map.
+- Open each colour-coded category card to see how proximity, variety and quality make it up, then jump to its places on the map.
 - Switch between no-car and car-owner views, and pick score priorities (Balanced, Student, Family, Commuter) that reweight the overall score.
 - Explore category-coloured amenities on a map that stays in view, with 5, 10 and 15 minute walking rings and category chips that show only the categories you pick.
 - Sort nearby places and bring the categories you pick to the top, each place with its rating and estimated walk.
