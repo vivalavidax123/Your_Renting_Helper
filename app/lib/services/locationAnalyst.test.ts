@@ -86,7 +86,7 @@ function fakeTool(name: string, run: AnalystTool["run"]): AnalystTool {
       required: [],
       additionalProperties: false,
     },
-    label: `Checked ${name}`,
+    label: name,
     run: vi.fn(run),
   };
 }
@@ -255,7 +255,7 @@ describe("answerLocationQuestion with tools", () => {
       {
         type: "step",
         name: "get_terrain",
-        label: "Checked get_terrain",
+        label: "get_terrain",
         ok: true,
       },
       { type: "text", text: "The area is gently sloped." },

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { isJsonRecord } from "@/app/lib/api";
+import { encodeAnalystEvent, isJsonRecord } from "@/app/lib/api";
 import type { AnalystEvent } from "@/app/lib/types";
 import type { LocationAnalysisContext } from "./locationAnalysis";
 
@@ -357,8 +357,8 @@ function incompleteAnswer() {
 }
 
 // A function the model may ask the server to run. The model only sees the
-// name, description and JSON Schema; `run` stays on the server, and `label`
-// is what the visitor sees once it has run.
+// name, description and JSON Schema; `run` stays on the server. `label`
+// finishes the visitor's "Checked ..." line, e.g. "the local terrain".
 export type AnalystTool = {
   name: string;
   description: string;
@@ -457,10 +457,6 @@ async function requestModelRound(
   return response.body;
 }
 
-function encodeEvent(event: AnalystEvent) {
-  return new TextEncoder().encode(`${JSON.stringify(event)}\n`);
-}
-
 // The agent loop. Each round the model either writes the answer (done) or
 // asks for tools; the server runs them, adds the results to the conversation
 // and asks again. The first request is awaited before the stream is
@@ -483,8 +479,9 @@ async function runAnalyst(
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
+      const encoder = new TextEncoder();
       const send = (event: AnalystEvent) =>
-        controller.enqueue(encodeEvent(event));
+        controller.enqueue(encoder.encode(encodeAnalystEvent(event)));
       let receivedText = false;
       let body = firstRound;
 

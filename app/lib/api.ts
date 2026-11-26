@@ -1,4 +1,4 @@
-import type { ApiResult } from "./types";
+import type { AnalystEvent, AnalystStep, ApiResult } from "./types";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -21,17 +21,27 @@ export function errorResponse(
   return Response.json({ ok: false, error: message }, { status });
 }
 
-// A plain-text answer (a streamed AI answer or a short refusal). nosniff
-// stops the browser from guessing a different content type, and no-cache
-// stops proxies from holding back a stream.
-export function textResponse(body: BodyInit) {
+// An analyst chat answer: newline-delimited JSON (NDJSON), one AnalystEvent
+// per line, streamed as it is produced. nosniff stops the browser from
+// guessing a different content type, and no-cache stops proxies from holding
+// back the stream.
+export function analystResponse(body: BodyInit) {
   return new Response(body, {
     headers: {
       "Cache-Control": "no-cache",
-      "Content-Type": "text/plain; charset=utf-8",
+      "Content-Type": "application/x-ndjson; charset=utf-8",
       "X-Content-Type-Options": "nosniff",
     },
   });
+}
+
+export function encodeAnalystEvent(event: AnalystEvent) {
+  return `${JSON.stringify(event)}\n`;
+}
+
+// A whole answer that is known up front, such as a refusal, as one event.
+export function analystTextResponse(text: string) {
+  return analystResponse(encodeAnalystEvent({ type: "text", text }));
 }
 
 // The text to show a visitor for a caught browser-side error. Errors this app
@@ -75,9 +85,50 @@ export async function readApiResult<T extends object>(
   return value as { ok: true } & T;
 }
 
-export async function readTextStream(
+function readAnalystEvent(line: string): AnalystEvent | null {
+  let value: unknown;
+
+  try {
+    value = JSON.parse(line);
+  } catch {
+    throw new Error("The server returned an invalid response.");
+  }
+
+  if (!isJsonRecord(value)) {
+    return null;
+  }
+
+  if (value.type === "text" && typeof value.text === "string") {
+    return { type: "text", text: value.text };
+  }
+
+  if (
+    value.type === "step" &&
+    typeof value.name === "string" &&
+    typeof value.label === "string" &&
+    typeof value.ok === "boolean"
+  ) {
+    return {
+      type: "step",
+      name: value.name,
+      label: value.label,
+      ok: value.ok,
+    };
+  }
+
+  if (value.type === "error" && typeof value.message === "string") {
+    return { type: "error", message: value.message };
+  }
+
+  return null;
+}
+
+// Reads an analystResponse stream line by line. onUpdate receives the answer
+// so far and the tool steps so far after each event. An error event throws
+// its friendly message, so callers handle it like any failed request.
+export async function readAnalystStream(
   response: Response,
-  onText: (text: string) => void,
+  onUpdate: (answer: { text: string; steps: AnalystStep[] }) => void,
 ) {
   if (!response.body) {
     throw new Error("The server returned an empty response.");
@@ -85,28 +136,54 @@ export async function readTextStream(
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
+  let buffer = "";
   let text = "";
+  const steps: AnalystStep[] = [];
+
+  function readLine(line: string) {
+    const event = line.trim() ? readAnalystEvent(line) : null;
+
+    if (!event) {
+      return;
+    }
+
+    if (event.type === "error") {
+      throw new Error(event.message);
+    }
+
+    if (event.type === "text") {
+      text += event.text;
+    } else {
+      const { name, label, ok } = event;
+      steps.push({ name, label, ok });
+    }
+
+    onUpdate({ text, steps: [...steps] });
+  }
 
   while (true) {
     const { value, done } = await reader.read();
 
     if (done) {
-      const remaining = decoder.decode();
-
-      if (remaining) {
-        text += remaining;
-        onText(text);
-      }
+      buffer += decoder.decode();
       break;
     }
 
-    text += decoder.decode(value, { stream: true });
-    onText(text);
+    buffer += decoder.decode(value, { stream: true });
+    let newline = buffer.indexOf("\n");
+
+    while (newline !== -1) {
+      readLine(buffer.slice(0, newline));
+      buffer = buffer.slice(newline + 1);
+      newline = buffer.indexOf("\n");
+    }
   }
+
+  readLine(buffer);
 
   if (!text.trim()) {
     throw new Error("The server returned an empty response.");
   }
 
-  return text;
+  return { text, steps };
 }

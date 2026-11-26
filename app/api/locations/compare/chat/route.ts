@@ -1,5 +1,10 @@
 import { parseScoringOptions } from "@/app/lib/categories";
-import { errorResponse, isJsonRecord, textResponse } from "@/app/lib/api";
+import {
+  analystResponse,
+  analystTextResponse,
+  errorResponse,
+  isJsonRecord,
+} from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   answerComparisonQuestion,
@@ -104,11 +109,15 @@ export async function POST(request: Request) {
     const refusal = await getQuestionRefusal(question, "comparison");
 
     if (refusal) {
-      return textResponse(refusal);
+      return analystTextResponse(refusal);
     }
 
-    return textResponse(
-      await answerComparisonQuestion(locationA, locationB, question),
+    return analystResponse(
+      await answerComparisonQuestion(
+        locationA.context,
+        locationB.context,
+        question,
+      ),
     );
   } catch (error) {
     if (error instanceof LocationAnalystError) {

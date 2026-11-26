@@ -1,5 +1,10 @@
 import { parseScoringOptions } from "@/app/lib/categories";
-import { errorResponse, isJsonRecord, textResponse } from "@/app/lib/api";
+import {
+  analystResponse,
+  analystTextResponse,
+  errorResponse,
+  isJsonRecord,
+} from "@/app/lib/api";
 import { auth } from "@/app/lib/auth";
 import {
   answerLocationQuestion,
@@ -7,6 +12,7 @@ import {
   LocationAnalystError,
   readQuestion,
 } from "@/app/lib/services/locationAnalyst";
+import { createLocationTools } from "@/app/lib/services/analystTools";
 import { loadLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 
 export async function POST(
@@ -57,13 +63,13 @@ export async function POST(
       );
     }
 
-    const context = await loadLocationAnalysisContext(
+    const loaded = await loadLocationAnalysisContext(
       locationId,
       profile,
       preset,
     );
 
-    if (!context) {
+    if (!loaded) {
       return Response.json(
         { ok: false, error: "Location data was not found." },
         { status: 404 },
@@ -73,10 +79,18 @@ export async function POST(
     const refusal = await getQuestionRefusal(question, "single");
 
     if (refusal) {
-      return textResponse(refusal);
+      return analystTextResponse(refusal);
     }
 
-    return textResponse(await answerLocationQuestion(context, question));
+    // Tools get the saved coordinates from the database, never from the
+    // request or the model.
+    return analystResponse(
+      await answerLocationQuestion(
+        loaded.context,
+        question,
+        createLocationTools(loaded.latitude, loaded.longitude),
+      ),
+    );
   } catch (error) {
     if (error instanceof LocationAnalystError) {
       return Response.json(

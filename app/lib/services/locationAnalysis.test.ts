@@ -129,10 +129,12 @@ describe("loadLocationAnalysisContext", () => {
       cached: true,
     });
 
-    const context = await loadLocationAnalysisContext("location-1", "carOwner");
+    const loaded = await loadLocationAnalysisContext("location-1", "carOwner");
 
     expect(storedLocation).toHaveBeenCalledWith("location-1");
-    expect(context).toMatchObject({
+    expect(loaded).toMatchObject({ latitude: -37.81, longitude: 144.96 });
+    expect(loaded?.context).not.toHaveProperty("latitude");
+    expect(loaded?.context).toMatchObject({
       locationId: "location-1",
       preferences: { mobilityProfile: "carOwner", weightPreset: "balanced" },
       dataAsOf: "2026-08-30T00:00:00.000Z",

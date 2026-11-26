@@ -38,7 +38,11 @@ const compare = vi.mocked(answerComparisonQuestion);
 function answerStream(answer: string) {
   return new ReadableStream({
     start(controller) {
-      controller.enqueue(new TextEncoder().encode(answer));
+      controller.enqueue(
+        new TextEncoder().encode(
+          `${JSON.stringify({ type: "text", text: answer })}\n`,
+        ),
+      );
       controller.close();
     },
   });
@@ -140,12 +144,16 @@ describe("POST /api/locations/compare/chat", () => {
   });
 
   it("builds both contexts with the selected profile and streams the answer", async () => {
-    const contextA = { locationId: "location-1" } as NonNullable<
-      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
-    >;
-    const contextB = { locationId: "location-2" } as NonNullable<
-      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
-    >;
+    const contextA = {
+      context: { locationId: "location-1" },
+      latitude: -37.8,
+      longitude: 144.9,
+    } as NonNullable<Awaited<ReturnType<typeof loadLocationAnalysisContext>>>;
+    const contextB = {
+      context: { locationId: "location-2" },
+      latitude: -37.8,
+      longitude: 144.9,
+    } as NonNullable<Awaited<ReturnType<typeof loadLocationAnalysisContext>>>;
     getSession.mockResolvedValue(signedInAs("user-1"));
     checkSaved.mockResolvedValue(true);
     buildContext
@@ -168,9 +176,11 @@ describe("POST /api/locations/compare/chat", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe(
-      "text/plain; charset=utf-8",
+      "application/x-ndjson; charset=utf-8",
     );
-    expect(body).toBe("Location A is easier without a car.");
+    expect(body).toBe(
+      '{"type":"text","text":"Location A is easier without a car."}\n',
+    );
     expect(buildContext).toHaveBeenNthCalledWith(
       1,
       "location-1",
@@ -184,16 +194,18 @@ describe("POST /api/locations/compare/chat", () => {
       "balanced",
     );
     expect(compare).toHaveBeenCalledWith(
-      contextA,
-      contextB,
+      contextA.context,
+      contextB.context,
       "Which is easier without a car?",
     );
   });
 
   it("returns 404 when either location snapshot is unavailable", async () => {
-    const contextA = { locationId: "location-1" } as NonNullable<
-      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
-    >;
+    const contextA = {
+      context: { locationId: "location-1" },
+      latitude: -37.8,
+      longitude: 144.9,
+    } as NonNullable<Awaited<ReturnType<typeof loadLocationAnalysisContext>>>;
     getSession.mockResolvedValue(signedInAs("user-1"));
     checkSaved.mockResolvedValue(true);
     buildContext.mockResolvedValueOnce(contextA).mockResolvedValueOnce(null);
@@ -212,12 +224,16 @@ describe("POST /api/locations/compare/chat", () => {
   });
 
   it("preserves useful analyst service errors", async () => {
-    const contextA = { locationId: "location-1" } as NonNullable<
-      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
-    >;
-    const contextB = { locationId: "location-2" } as NonNullable<
-      Awaited<ReturnType<typeof loadLocationAnalysisContext>>
-    >;
+    const contextA = {
+      context: { locationId: "location-1" },
+      latitude: -37.8,
+      longitude: 144.9,
+    } as NonNullable<Awaited<ReturnType<typeof loadLocationAnalysisContext>>>;
+    const contextB = {
+      context: { locationId: "location-2" },
+      latitude: -37.8,
+      longitude: 144.9,
+    } as NonNullable<Awaited<ReturnType<typeof loadLocationAnalysisContext>>>;
     getSession.mockResolvedValue(signedInAs("user-1"));
     checkSaved.mockResolvedValue(true);
     buildContext

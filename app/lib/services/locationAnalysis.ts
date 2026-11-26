@@ -132,8 +132,10 @@ export function assembleLocationAnalysisContext({
   };
 }
 
-// Loads a stored location and turns it into the analyst's context. Returns
-// null when the location or its place snapshot no longer exists.
+// Loads a stored location and turns it into the analyst's context. The
+// coordinates are returned beside the context, not inside it: the analyst
+// tools need them, the model does not. Returns null when the location or its
+// place snapshot no longer exists.
 export async function loadLocationAnalysisContext(
   locationId: string,
   profile: WeightProfile = "carFree",
@@ -145,12 +147,16 @@ export async function loadLocationAnalysisContext(
     return null;
   }
 
-  return assembleLocationAnalysisContext({
-    locationId: stored.locationId,
-    address: stored.location.formattedAddress,
-    groups: stored.groups,
-    profile,
-    preset,
-    dataAsOf: stored.fetchedAt,
-  });
+  return {
+    context: assembleLocationAnalysisContext({
+      locationId: stored.locationId,
+      address: stored.location.formattedAddress,
+      groups: stored.groups,
+      profile,
+      preset,
+      dataAsOf: stored.fetchedAt,
+    }),
+    latitude: stored.location.latitude,
+    longitude: stored.location.longitude,
+  };
 }

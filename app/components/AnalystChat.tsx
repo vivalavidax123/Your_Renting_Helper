@@ -95,6 +95,17 @@ export function AnalystChat({
                       Answered using {weightProfileLabels[message.profile]}
                     </p>
                   ) : null}
+                  {message.steps?.length ? (
+                    <ul className="mb-1 text-xs text-ink-muted">
+                      {message.steps.map((step, stepIndex) => (
+                        <li key={`${step.name}-${stepIndex}`}>
+                          {step.ok
+                            ? `✓ Checked ${step.label}`
+                            : `✗ Couldn’t check ${step.label}`}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                   {message.content}
                   {message.interrupted ? (
                     <p className="text-xs text-ink-muted">

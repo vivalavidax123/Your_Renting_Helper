@@ -6,6 +6,9 @@ vi.mock("@/app/lib/auth", () => ({
 vi.mock("@/app/lib/services/locationAnalysis", () => ({
   loadLocationAnalysisContext: vi.fn(),
 }));
+vi.mock("@/app/lib/services/analystTools", () => ({
+  createLocationTools: vi.fn(() => []),
+}));
 vi.mock("@/app/lib/services/locationAnalyst", async () => {
   const actual = await vi.importActual<
     typeof import("@/app/lib/services/locationAnalyst")
@@ -24,6 +27,7 @@ import {
   answerLocationQuestion,
   LocationAnalystError,
 } from "@/app/lib/services/locationAnalyst";
+import { createLocationTools } from "@/app/lib/services/analystTools";
 import { loadLocationAnalysisContext } from "@/app/lib/services/locationAnalysis";
 
 const buildContext = vi.mocked(loadLocationAnalysisContext);
@@ -39,10 +43,22 @@ function signedInAs(userId: string): Session {
 function answerStream(answer: string) {
   return new ReadableStream({
     start(controller) {
-      controller.enqueue(new TextEncoder().encode(answer));
+      controller.enqueue(
+        new TextEncoder().encode(
+          `${JSON.stringify({ type: "text", text: answer })}\n`,
+        ),
+      );
       controller.close();
     },
   });
+}
+
+function loadedLocation() {
+  return {
+    context: { locationId: "location-1" },
+    latitude: -37.81,
+    longitude: 144.96,
+  } as NonNullable<Awaited<ReturnType<typeof loadLocationAnalysisContext>>>;
 }
 
 function request(body: string) {
@@ -109,10 +125,8 @@ describe("POST /api/locations/[locationId]/chat", () => {
   });
 
   it("builds the selected profile context and streams its answer", async () => {
-    const context = { locationId: "location-1" } as Awaited<
-      ReturnType<typeof loadLocationAnalysisContext>
-    >;
-    buildContext.mockResolvedValue(context);
+    const loaded = loadedLocation();
+    buildContext.mockResolvedValue(loaded);
     analyze.mockResolvedValue(
       answerStream("Transport is the strongest category."),
     );
@@ -131,22 +145,23 @@ describe("POST /api/locations/[locationId]/chat", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe(
-      "text/plain; charset=utf-8",
+      "application/x-ndjson; charset=utf-8",
     );
-    expect(body).toBe("Transport is the strongest category.");
+    expect(body).toBe(
+      '{"type":"text","text":"Transport is the strongest category."}\n',
+    );
     expect(buildContext).toHaveBeenCalledWith(
       "location-1",
       "carOwner",
       "student",
     );
-    expect(analyze).toHaveBeenCalledWith(context, "Why this score?");
+    expect(createLocationTools).toHaveBeenCalledWith(-37.81, 144.96);
+    expect(analyze).toHaveBeenCalledWith(loaded.context, "Why this score?", []);
   });
 
   it("returns the analyst service's useful failure status", async () => {
-    const context = { locationId: "location-1" } as Awaited<
-      ReturnType<typeof loadLocationAnalysisContext>
-    >;
-    buildContext.mockResolvedValue(context);
+    const loaded = loadedLocation();
+    buildContext.mockResolvedValue(loaded);
     analyze.mockRejectedValue(
       new LocationAnalystError(
         "The AI service took too long. Please try again.",
