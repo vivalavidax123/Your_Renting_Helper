@@ -23,10 +23,10 @@ const pillarParts = [
 
 const detailPanelId = "category-detail-panel";
 
-// Two columns on phones and in the narrower lg split view, four once the
-// left column is wide enough (xl gives it 800px).
-const gridClass =
-  "grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4";
+// Two columns in a narrow card column, four once it is wide enough. @xl is
+// a container query: it reads the card column's width (which the split
+// divider changes), not the window's.
+const gridClass = "grid grid-cols-2 gap-2 @xl:grid-cols-4";
 
 function closestPlace(group: PlaceGroup | undefined) {
   if (!group || group.places.length === 0) {

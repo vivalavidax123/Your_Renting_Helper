@@ -210,3 +210,42 @@ export function safeNextPath(value: string | null) {
 export function isCategoryShown(selected: Set<string>, categoryId: string) {
   return selected.size === 0 || selected.has(categoryId);
 }
+
+// The desktop split view: the card column can be dragged between these
+// limits. Both are in CSS pixels; the map keeps at least mapMinWidth.
+export const splitLimits = { cardMinWidth: 440, mapMinWidth: 480 };
+
+export function clampSplitWidth(width: number, containerWidth: number) {
+  const max = Math.max(
+    splitLimits.cardMinWidth,
+    containerWidth - splitLimits.mapMinWidth,
+  );
+  return Math.round(Math.min(Math.max(width, splitLimits.cardMinWidth), max));
+}
+
+// Keyboard control for the split divider (the WAI-ARIA "window splitter"
+// pattern). Returns the new card-column width, "reset" to go back to the
+// default layout, or null for keys the divider does not handle.
+export function splitWidthForKey(
+  key: string,
+  shiftKey: boolean,
+  width: number,
+  containerWidth: number,
+): number | "reset" | null {
+  const step = shiftKey ? 64 : 16;
+
+  switch (key) {
+    case "ArrowLeft":
+      return clampSplitWidth(width - step, containerWidth);
+    case "ArrowRight":
+      return clampSplitWidth(width + step, containerWidth);
+    case "Home":
+      return clampSplitWidth(0, containerWidth);
+    case "End":
+      return clampSplitWidth(Infinity, containerWidth);
+    case "Enter":
+      return "reset";
+    default:
+      return null;
+  }
+}
