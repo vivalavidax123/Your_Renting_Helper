@@ -69,6 +69,14 @@ chunk ids that answer it) and 3 questions the guidance does not cover, using
 real query embeddings. It runs under `npm run eval` and in the eval workflow.
 It fails when the hit rate at 4 drops below 85%.
 
+It also counts **exact-term misses**: 8 questions carry `keyTerms`, words that
+appear word for word in the right chunk ("dishwasher", "pet bond"). A miss on
+one of those is a failure vector search can have and keyword search would not.
+The count is shown in the console, in the GitHub Actions run summary and in
+`evals/results/retrieval-*.json`. Rule: if exact-term misses appear in every
+weekly run, add keyword search (for example BM25 merged with the vector ranking
+by Reciprocal Rank Fusion). A single miss is not enough reason.
+
 First run, 2026-11-27, threshold 0.3:
 
 | Metric                              | Result        |
@@ -80,16 +88,23 @@ First run, 2026-11-27, threshold 0.3:
 Misses:
 
 - "How long does the landlord have to fix a broken dishwasher?" The answer
-  chunk contains the words "broken dishwasher", but four other repair
-  sections scored slightly higher (0.50 to 0.52). This is the case keyword
-  search would catch; add it if the weekly runs keep showing exact-term misses.
-- "They're selling the house and want us out. How much notice?" The renter
-  notice sections ranked above the notice-to-vacate table.
+  chunk contains the words "broken dishwasher", but ranked 6th (0.484; the
+  4th result scored 0.503). This is the case keyword search would catch, and
+  the first exact-term miss.
+- "They're selling the house and want us out. How much notice?" The answer
+  chunk ranked 6th (0.563; 4th scored 0.571). It is the longest chunk (about
+  300 words listing every end-of-agreement reason), which dilutes the "sale"
+  meaning.
 
-Unrelated questions (coffee, stamp duty, tax deductions) still scored up to
-0.54, overlapping relevant questions (about 0.5 to 0.6). A similarity
-threshold cannot reliably separate "not covered" from "covered", so the
-threshold was raised to 0.4 only to drop clearly unrelated matches. Deciding
+The questions, chunks and model are fixed, so these misses repeat on every run
+until the model, the chunking or the search changes.
+
+Unrelated questions still returned results: coffee 0.355, tax deductions
+0.399, stamp duty 0.544. The 26 correct hits scored 0.462 to 0.732. Similarity
+measures how close the topic is, not whether a chunk answers the question, so
+a threshold cannot reliably separate "not covered" from "covered". It was
+raised to 0.4, which drops the coffee and tax matches without losing a correct
+hit. Deciding
 whether the returned text actually answers the question is left to the
 analyst, which reads it.
 

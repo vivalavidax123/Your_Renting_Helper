@@ -30,8 +30,8 @@ export const defaultSearchLimit = 4;
 
 // Chunks less similar than this are left out, which drops clearly unrelated
 // matches. It cannot tell "not covered" from "covered" on its own: in the
-// first retrieval eval, unrelated questions still scored up to 0.54 while
-// relevant ones scored about 0.5 to 0.6. The analyst reads the returned text
+// first retrieval eval, an unrelated question still scored 0.54 while correct
+// hits scored 0.46 to 0.73. The analyst reads the returned text
 // and decides whether it answers the question. See docs/renting-rules.md.
 export const minimumSimilarity = 0.4;
 

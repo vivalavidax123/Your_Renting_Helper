@@ -10,6 +10,10 @@ export type RetrievalCase = {
   id: string;
   question: string;
   expected: string[];
+  // Words from the question that appear word for word in an expected chunk.
+  // Vector search can still miss these; the eval counts such misses as
+  // "exact-term misses", the case keyword search would fix.
+  keyTerms?: string[];
 };
 
 export const retrievalCases: RetrievalCase[] = [
@@ -46,6 +50,7 @@ export const retrievalCases: RetrievalCase[] = [
     id: "pet-bond",
     question: "Can they charge me an extra pet bond for my cat?",
     expected: ["pets#pet-bonds"],
+    keyTerms: ["pet bond"],
   },
   {
     id: "rent-increase-frequency",
@@ -78,6 +83,7 @@ export const retrievalCases: RetrievalCase[] = [
     question:
       "How many weeks of rent in advance can they ask for when I sign the lease?",
     expected: ["rent-payments#charging-rent-in-advance"],
+    keyTerms: ["rent in advance"],
   },
   {
     id: "late-fee",
@@ -86,6 +92,7 @@ export const retrievalCases: RetrievalCase[] = [
       "rent-payments#illegal-fees-and-charges",
       "unpaid-rent#late-rent-and-late-fees",
     ],
+    keyTerms: ["late payment"],
   },
   {
     id: "rent-arrears-evict",
@@ -109,6 +116,7 @@ export const retrievalCases: RetrievalCase[] = [
     id: "non-urgent-repair-time",
     question: "How long does the landlord have to fix a broken dishwasher?",
     expected: ["repairs#urgent-and-non-urgent-repairs"],
+    keyTerms: ["dishwasher"],
   },
   {
     id: "withhold-rent",
@@ -126,12 +134,14 @@ export const retrievalCases: RetrievalCase[] = [
       "minimum-standards#lighting-ventilation-mould-and-structure",
       "repairs#list-of-urgent-repairs",
     ],
+    keyTerms: ["mould"],
   },
   {
     id: "heater-standard",
     question:
       "The apartment only has a portable heater. Does it need a proper one?",
     expected: ["minimum-standards#heating"],
+    keyTerms: ["portable"],
   },
   {
     id: "condition-report",
@@ -140,6 +150,7 @@ export const retrievalCases: RetrievalCase[] = [
     expected: [
       "condition-reports#condition-reports-at-the-start-of-the-agreement",
     ],
+    keyTerms: ["condition report"],
   },
   {
     id: "pet-request",
@@ -152,6 +163,7 @@ export const retrievalCases: RetrievalCase[] = [
     question:
       "Am I allowed to put up picture hooks and shelves without asking?",
     expected: ["modifications#changes-that-can-be-made-without-permission"],
+    keyTerms: ["picture hooks"],
   },
   {
     id: "inspection-frequency",
