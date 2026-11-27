@@ -38,6 +38,60 @@ function closestPlace(group: PlaceGroup | undefined) {
   );
 }
 
+// The look of one category card: icon, score, coloured bar and the nearby
+// line. Exported so the home page's example result uses the same card and
+// cannot drift from the real one.
+export function CategoryCardFace({ category }: { category: CategoryScore }) {
+  const color = categoryCardColor(category);
+
+  return (
+    <>
+      <span className="flex items-center gap-2">
+        <CategoryTile
+          categoryId={category.id}
+          color={categoryColor(category.id)}
+        />
+        <span className="min-w-0 text-xs font-medium leading-tight text-ink-soft">
+          {category.label}
+        </span>
+      </span>
+      <span className="mt-2.5 text-2xl font-semibold tabular-nums text-ink">
+        {category.score}
+        <span className="text-xs font-normal text-ink-muted"> /100</span>
+      </span>
+      <span
+        aria-hidden="true"
+        className="mt-2 h-1.5 overflow-hidden rounded-full bg-score-track"
+      >
+        <span
+          className="block h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500"
+          style={{ width: `${category.score}%`, backgroundColor: color }}
+        />
+      </span>
+      <span className="mt-2 text-xs text-ink-muted">
+        {category.count} nearby ·{" "}
+        {category.closestDistanceMeters === null
+          ? "no match"
+          : formatDistance(category.closestDistanceMeters)}
+      </span>
+      <span className="mt-0.5 text-[11px] text-ink-muted">
+        {category.weight === 0
+          ? "Not counted in overall"
+          : `${category.weight}% of overall`}
+      </span>
+    </>
+  );
+}
+
+// Card frame shared by the clickable result card and the static example:
+// the top border carries the category colour.
+export const categoryCardClass =
+  "flex h-full w-full flex-col rounded-lg border border-t-[3px] border-line bg-surface-subtle p-3 text-left";
+
+export function categoryCardColor(category: CategoryScore) {
+  return category.weight === 0 ? "#94a3b8" : categoryColor(category.id);
+}
+
 function CategoryCard({
   category,
   selected,
@@ -47,57 +101,24 @@ function CategoryCard({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const excluded = category.weight === 0;
-  const color = excluded ? "#94a3b8" : categoryColor(category.id);
+  const color = categoryCardColor(category);
 
   return (
-    <li className={excluded ? "opacity-55" : ""}>
+    <li className={category.weight === 0 ? "opacity-55" : ""}>
       <button
         type="button"
         aria-expanded={selected}
         aria-controls={detailPanelId}
         onClick={onSelect}
-        // The top border carries the category colour; the selected card also
-        // gets a ring in the same colour so it reads as the open one.
-        className="focus-ring flex h-full w-full flex-col rounded-lg border border-t-[3px] border-line bg-surface-subtle p-3 text-left transition hover:bg-hover"
+        // The selected card also gets a ring in its colour so it reads as
+        // the open one.
+        className={`focus-ring ${categoryCardClass} transition hover:bg-hover`}
         style={{
           borderTopColor: color,
           boxShadow: selected ? `0 0 0 2px ${color}` : undefined,
         }}
       >
-        <span className="flex items-center gap-2">
-          <CategoryTile
-            categoryId={category.id}
-            color={categoryColor(category.id)}
-          />
-          <span className="min-w-0 text-xs font-medium leading-tight text-ink-soft">
-            {category.label}
-          </span>
-        </span>
-        <span className="mt-2.5 text-2xl font-semibold tabular-nums text-ink">
-          {category.score}
-          <span className="text-xs font-normal text-ink-muted"> /100</span>
-        </span>
-        <span
-          aria-hidden="true"
-          className="mt-2 h-1.5 overflow-hidden rounded-full bg-score-track"
-        >
-          <span
-            className="block h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500"
-            style={{ width: `${category.score}%`, backgroundColor: color }}
-          />
-        </span>
-        <span className="mt-2 text-xs text-ink-muted">
-          {category.count} nearby ·{" "}
-          {category.closestDistanceMeters === null
-            ? "no match"
-            : formatDistance(category.closestDistanceMeters)}
-        </span>
-        <span className="mt-0.5 text-[11px] text-ink-muted">
-          {excluded
-            ? "Not counted in overall"
-            : `${category.weight}% of overall`}
-        </span>
+        <CategoryCardFace category={category} />
       </button>
     </li>
   );
