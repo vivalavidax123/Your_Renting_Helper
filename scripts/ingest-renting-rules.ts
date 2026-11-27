@@ -14,8 +14,14 @@
 // and the import-free chunker.
 
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
 
 import {
   chunkRentingRulePage,
@@ -163,6 +169,7 @@ async function main() {
     })),
   };
 
+  mkdirSync(dirname(outputFile), { recursive: true });
   writeFileSync(outputFile, `${JSON.stringify(file)}\n`);
   console.log(`Wrote ${outputFile}.`);
 }

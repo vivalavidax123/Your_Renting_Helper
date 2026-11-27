@@ -3,8 +3,8 @@
 // as a hit). Ids are "<page>#<section>" from app/lib/data/renting-rules.json,
 // so a re-ingest that renames a section makes the eval fail loudly.
 //
-// `expected: []` marks a question the guidance does not cover: the search
-// should return nothing above the similarity threshold.
+// `expected: []` marks a question the guidance does not cover. Ideally the
+// search returns nothing for it; the eval reports how often that happens.
 
 export type RetrievalCase = {
   id: string;
@@ -230,7 +230,7 @@ export const retrievalCases: RetrievalCase[] = [
     ],
   },
 
-  // Not covered by the guidance: nothing should pass the threshold.
+  // Not covered by the guidance (reported, not enforced).
   {
     id: "uncovered-buying",
     question: "What stamp duty do first home buyers pay in Victoria?",

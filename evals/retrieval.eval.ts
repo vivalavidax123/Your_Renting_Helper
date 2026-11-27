@@ -8,7 +8,9 @@
 //   the top 4 results (the number the analyst tool will return)
 // - MRR (mean reciprocal rank): 1 when the first result is right, 1/2 when
 //   the second is, 0 when none of the top 4 is; rewards ranking well
-// - uncovered questions: should return no results above the threshold
+// - uncovered questions: how many return nothing above the threshold. This
+//   is reported, not enforced: similarity alone cannot reliably spot a
+//   question the guidance does not cover (see docs/renting-rules.md)
 //
 // The run fails when the hit rate drops below 85%, so a bad re-ingest or a
 // change to chunking is caught. MRR and the uncovered results are reported.

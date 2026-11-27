@@ -28,10 +28,12 @@ export type RentingRuleMatch = RentingRuleChunk & { score: number };
 // 300 words keep the tool result under roughly 2,000 tokens.
 export const defaultSearchLimit = 4;
 
-// Chunks less similar than this are left out, so an unrelated question gets
-// no sources rather than four weak ones. Tuned with the retrieval eval
-// (evals/retrieval.eval.ts); see docs/renting-rules.md.
-export const minimumSimilarity = 0.3;
+// Chunks less similar than this are left out, which drops clearly unrelated
+// matches. It cannot tell "not covered" from "covered" on its own: in the
+// first retrieval eval, unrelated questions still scored up to 0.54 while
+// relevant ones scored about 0.5 to 0.6. The analyst reads the returned text
+// and decides whether it answers the question. See docs/renting-rules.md.
+export const minimumSimilarity = 0.4;
 
 export const rentingRules = data as RentingRulesData;
 
