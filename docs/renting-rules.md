@@ -96,6 +96,11 @@ Misses:
   300 words listing every end-of-agreement reason), which dilutes the "sale"
   meaning.
 
+Second run, 2026-11-27, threshold 0.4, in the eval workflow on PR #31: hit
+rate 26 / 28, MRR 0.88, exact-term misses 1 / 8 (the dishwasher question; the
+sale question has no key terms), uncovered questions with no results 2 / 3
+(stamp duty still returned four chunks, top score 0.544).
+
 The questions, chunks and model are fixed, so these misses repeat on every run
 until the model, the chunking or the search changes.
 

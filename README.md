@@ -83,7 +83,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 | `npm run lint`              | Run ESLint                                    |
 | `npm run typecheck`         | Type-check the project                        |
 | `npm run test`              | Run the test suite                            |
-| `npm run eval`              | Grade the AI analyst with live OpenAI calls   |
+| `npm run eval`              | Grade the AI analyst and renting-rules search |
 | `npm run ingest:renting`    | Rebuild the renting-rules search data         |
 | `npm run build`             | Create a production build                     |
 | `npm run check`             | Run formatting, lint, types, tests, and build |
