@@ -10,6 +10,11 @@ import { requestEmbedding } from "./locationAnalyst";
 // with every chunk instead of using a vector database. If the guidance ever
 // grows to many thousands of chunks, only this file needs to change (for
 // example to Postgres with pgvector).
+//
+// The search is hybrid: vector similarity finds chunks with the same meaning,
+// BM25 keyword scoring finds chunks that share a rare word with the question
+// ("dishwasher"), and Reciprocal Rank Fusion merges the two orders. See
+// docs/renting-rules.md.
 
 export type StoredRentingRuleChunk = RentingRuleChunk & { embedding: number[] };
 
@@ -60,8 +65,8 @@ export function cosineSimilarity(a: number[], b: number[]) {
     : dot / Math.sqrt(lengthA * lengthB);
 }
 
-// Scores every chunk against the question vector and keeps the best ones
-// above the threshold, best first.
+// Vector search: scores every chunk against the question vector and keeps
+// the best ones above the threshold, best first.
 export function rankChunks(
   queryVector: number[],
   chunks: StoredRentingRuleChunk[],
@@ -75,6 +80,137 @@ export function rankChunks(
     }))
     .filter((match) => match.score >= threshold)
     .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
+// Words too common to say anything about which chunk answers a question.
+const stopWords = new Set(
+  (
+    "a an and are as at be but by can do does for from get have how i if in " +
+    "is it its me my of on or our re so that the their them there they this " +
+    "to up us we what when where which who will with would you your"
+  ).split(" "),
+);
+
+// Splits text into lowercase words, drops stop words, and strips a final "s"
+// so "bonds" matches "bond". This is deliberately simpler than a stemmer:
+// "selling" still does not match "sale".
+export function tokenize(text: string) {
+  return text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length > 1 && !stopWords.has(word))
+    .map((word) =>
+      word.length > 3 && word.endsWith("s") && !word.endsWith("ss")
+        ? word.slice(0, -1)
+        : word,
+    );
+}
+
+// BM25 constants: k1 sets how quickly repeats of a word stop adding score,
+// b how much long chunks are discounted. These are the usual defaults.
+const k1 = 1.2;
+const b = 0.75;
+
+// BM25 keyword score of every chunk that shares at least one word with the
+// query. For each query word: IDF (rarer across all chunks = worth more)
+// times the word's count in the chunk, with diminishing returns and a small
+// discount for long chunks. The index is rebuilt on every call; for about a
+// hundred chunks that takes about a millisecond, so caching is not worth it.
+export function keywordScores(
+  query: string,
+  chunks: RentingRuleChunk[],
+): Map<string, number> {
+  const documents = chunks.map((chunk) =>
+    tokenize(`${chunk.title} ${chunk.section} ${chunk.text}`),
+  );
+  const averageLength =
+    documents.reduce((sum, words) => sum + words.length, 0) /
+    Math.max(documents.length, 1);
+  const documentFrequency = new Map<string, number>();
+
+  for (const words of documents) {
+    for (const word of new Set(words)) {
+      documentFrequency.set(word, (documentFrequency.get(word) ?? 0) + 1);
+    }
+  }
+
+  const queryWords = [...new Set(tokenize(query))];
+  const scores = new Map<string, number>();
+
+  documents.forEach((words, index) => {
+    const counts = new Map<string, number>();
+    for (const word of words) {
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+
+    let score = 0;
+    for (const word of queryWords) {
+      const count = counts.get(word) ?? 0;
+      if (count === 0) {
+        continue;
+      }
+      const containing = documentFrequency.get(word) ?? 0;
+      const idf = Math.log(
+        1 + (documents.length - containing + 0.5) / (containing + 0.5),
+      );
+      score +=
+        (idf * count * (k1 + 1)) /
+        (count + k1 * (1 - b + (b * words.length) / averageLength));
+    }
+
+    if (score > 0) {
+      scores.set(chunks[index].id, score);
+    }
+  });
+
+  return scores;
+}
+
+// Reciprocal Rank Fusion: each ranking gives an item 1 / (60 + its rank),
+// and the parts are added. It uses positions only, so rankings with
+// incomparable scores (cosine 0 to 1, BM25 unbounded) can be merged. An item
+// near the top of both lists beats one that is first in only one. 60 is the
+// constant from the original RRF paper; it keeps first place from dominating.
+export function fuseRankings(rankings: string[][], k = 60) {
+  const fused = new Map<string, number>();
+
+  for (const ranking of rankings) {
+    ranking.forEach((id, index) => {
+      fused.set(id, (fused.get(id) ?? 0) + 1 / (k + index + 1));
+    });
+  }
+
+  return fused;
+}
+
+// The app's search order. The similarity threshold still decides which
+// chunks are candidates, so unrelated questions behave as with vector search
+// alone; fusion only reorders the candidates. Each match keeps its cosine
+// similarity as `score`, because fused values (about 0.03) mean nothing to a
+// reader.
+export function rankChunksHybrid(
+  query: string,
+  queryVector: number[],
+  chunks: StoredRentingRuleChunk[],
+  limit = defaultSearchLimit,
+  threshold = minimumSimilarity,
+): RentingRuleMatch[] {
+  const candidates = rankChunks(queryVector, chunks, chunks.length, threshold);
+  // Scored over all chunks, so word rarity (IDF) reflects the whole guidance.
+  const keyword = keywordScores(query, chunks);
+  const keywordOrder = candidates
+    .filter((match) => keyword.has(match.id))
+    .sort((a, b) => (keyword.get(b.id) ?? 0) - (keyword.get(a.id) ?? 0))
+    .map((match) => match.id);
+  const fused = fuseRankings([
+    candidates.map((match) => match.id),
+    keywordOrder,
+  ]);
+
+  // Array sort is stable, so equal fused values keep the cosine order.
+  return candidates
+    .sort((a, b) => (fused.get(b.id) ?? 0) - (fused.get(a.id) ?? 0))
     .slice(0, limit);
 }
 
@@ -92,5 +228,5 @@ export async function searchRentingRules(
     label: "The renting rules search",
   });
 
-  return rankChunks(queryVector, rules.chunks, limit);
+  return rankChunksHybrid(query, queryVector, rules.chunks, limit);
 }

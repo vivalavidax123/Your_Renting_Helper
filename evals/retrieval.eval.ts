@@ -11,14 +11,16 @@
 // - exact-term misses: covered questions that share a word or phrase with
 //   the right chunk (keyTerms) yet missed the top 4. Vector search matches
 //   meaning, not words, so it can miss "dishwasher" even when the chunk says
-//   "broken dishwasher". If the weekly runs keep showing these, add keyword
-//   search (see docs/renting-rules.md)
+//   "broken dishwasher". Keyword search (BM25) is there to catch these
 // - uncovered questions: how many return nothing above the threshold. This
 //   is reported, not enforced: similarity alone cannot reliably spot a
 //   question the guidance does not cover (see docs/renting-rules.md)
 //
-// The run fails when the hit rate drops below 85%, so a bad re-ingest or a
-// change to chunking is caught. MRR and the uncovered results are reported.
+// Every metric is reported twice: for vector search alone and for the hybrid
+// search the app uses (vector + BM25 keywords, merged by Reciprocal Rank
+// Fusion). The run fails when the hybrid hit rate drops below 85%, so a bad
+// re-ingest or a change to chunking or ranking is caught. MRR and the
+// uncovered results are reported.
 
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { afterAll, expect, it } from "vitest";
@@ -28,22 +30,30 @@ import {
   defaultSearchLimit,
   minimumSimilarity,
   rankChunks,
+  rankChunksHybrid,
+  type RentingRuleMatch,
   rentingRules,
 } from "@/app/lib/services/rentingRules";
 import { type RetrievalCase, retrievalCases } from "./retrievalCases";
 
 const minimumHitRate = 0.85;
 
-type RetrievalResult = {
-  id: string;
-  expected: string[];
-  keyTerms: string[];
+type Mode = "vector" | "hybrid";
+const modes: Mode[] = ["vector", "hybrid"];
+
+type ModeResult = {
   returned: { id: string; score: number }[];
   rank: number | null;
   // Where the best expected chunk lands when every chunk is ranked, so a
   // miss shows whether it was close (6th) or far off (60th).
   fullRank: number;
 };
+
+type RetrievalResult = {
+  id: string;
+  expected: string[];
+  keyTerms: string[];
+} & Record<Mode, ModeResult>;
 
 const results: RetrievalResult[] = [];
 
@@ -70,8 +80,9 @@ it("labels only chunk ids and key terms that exist", () => {
   expect(unmatchedTerms).toEqual([]);
 });
 
-// The same steps as searchRentingRules, with one embedding call shared by
-// the app's top-4 result and the full ranking.
+// Ranks one question both ways from a single embedding call: vector only
+// (rankChunks) and the app's hybrid search (rankChunksHybrid). Showing both
+// in every run tells whether keyword search is still earning its place.
 async function runCase(testCase: RetrievalCase) {
   const queryVector = await requestEmbedding({
     text: testCase.question,
@@ -79,30 +90,49 @@ async function runCase(testCase: RetrievalCase) {
     dimensions: rentingRules.embeddingDimensions,
     label: "The retrieval eval",
   });
-  const matches = rankChunks(queryVector, rentingRules.chunks);
-  const allMatches = rankChunks(
-    queryVector,
-    rentingRules.chunks,
-    rentingRules.chunks.length,
-    -1,
-  );
-  const fullIndex = allMatches.findIndex((match) =>
-    testCase.expected.includes(match.id),
-  );
-  const index = matches.findIndex((match) =>
-    testCase.expected.includes(match.id),
-  );
+  const rankers: Record<
+    Mode,
+    (limit?: number, threshold?: number) => RentingRuleMatch[]
+  > = {
+    vector: (limit, threshold) =>
+      rankChunks(queryVector, rentingRules.chunks, limit, threshold),
+    hybrid: (limit, threshold) =>
+      rankChunksHybrid(
+        testCase.question,
+        queryVector,
+        rentingRules.chunks,
+        limit,
+        threshold,
+      ),
+  };
+  const isExpected = (match: RentingRuleMatch) =>
+    testCase.expected.includes(match.id);
+
+  const byMode = Object.fromEntries(
+    modes.map((mode) => {
+      const matches = rankers[mode]();
+      const allMatches = rankers[mode](rentingRules.chunks.length, -1);
+      const index = matches.findIndex(isExpected);
+
+      return [
+        mode,
+        {
+          returned: matches.map((match) => ({
+            id: match.id,
+            score: Math.round(match.score * 1000) / 1000,
+          })),
+          rank: index === -1 ? null : index + 1,
+          fullRank: allMatches.findIndex(isExpected) + 1,
+        },
+      ];
+    }),
+  ) as Record<Mode, ModeResult>;
 
   results.push({
     id: testCase.id,
     expected: testCase.expected,
     keyTerms: testCase.keyTerms ?? [],
-    returned: matches.map((match) => ({
-      id: match.id,
-      score: Math.round(match.score * 1000) / 1000,
-    })),
-    rank: index === -1 ? null : index + 1,
-    fullRank: fullIndex + 1,
+    ...byMode,
   });
 }
 
@@ -113,25 +143,26 @@ it.concurrent.each(retrievalCases.map((testCase) => [testCase.id, testCase]))(
   },
 );
 
-afterAll(() => {
+function summarize(mode: Mode) {
   const covered = results.filter((result) => result.expected.length > 0);
   const uncovered = results.filter((result) => result.expected.length === 0);
-  const hits = covered.filter((result) => result.rank !== null);
+  const hits = covered.filter((result) => result[mode].rank !== null);
   const hitRate = covered.length > 0 ? hits.length / covered.length : 0;
   const mrr =
-    covered.reduce(
-      (sum, result) => sum + (result.rank === null ? 0 : 1 / result.rank),
-      0,
-    ) / Math.max(covered.length, 1);
+    covered.reduce((sum, result) => {
+      const rank = result[mode].rank;
+      return sum + (rank === null ? 0 : 1 / rank);
+    }, 0) / Math.max(covered.length, 1);
   const uncoveredClean = uncovered.filter(
-    (result) => result.returned.length === 0,
+    (result) => result[mode].returned.length === 0,
   );
   const withKeyTerms = covered.filter((result) => result.keyTerms.length > 0);
-  const exactTermMisses = withKeyTerms.filter((result) => result.rank === null);
+  const exactTermMisses = withKeyTerms.filter(
+    (result) => result[mode].rank === null,
+  );
 
   const lines = [
-    "",
-    `Renting rules retrieval (${rentingRules.chunks.length} chunks, threshold ${minimumSimilarity}, top ${defaultSearchLimit})`,
+    `${mode === "hybrid" ? "Hybrid (vector + BM25, used by the app)" : "Vector only"}`,
     `  hit rate at ${defaultSearchLimit}:  ${hits.length} / ${covered.length} (${Math.round(hitRate * 100)}%)`,
     `  MRR:            ${mrr.toFixed(2)}`,
     `  exact-term misses: ${exactTermMisses.length} / ${withKeyTerms.length}${exactTermMisses.length > 0 ? ` (${exactTermMisses.map((result) => result.id).join(", ")})` : ""}`,
@@ -140,17 +171,38 @@ afterAll(() => {
     ...results
       .filter(
         (result) =>
-          (result.expected.length > 0 && result.rank !== 1) ||
-          (result.expected.length === 0 && result.returned.length > 0),
+          (result.expected.length > 0 && result[mode].rank !== 1) ||
+          (result.expected.length === 0 && result[mode].returned.length > 0),
       )
       .map(
         (result) =>
-          `  ${result.id}: rank ${result.rank ?? `miss (ranked ${result.fullRank})`}, got ${
-            result.returned
+          `  ${result.id}: rank ${result[mode].rank ?? `miss (ranked ${result[mode].fullRank})`}, got ${
+            result[mode].returned
               .map((match) => `${match.id} (${match.score})`)
               .join(", ") || "nothing"
           }`,
       ),
+    "",
+  ];
+
+  return {
+    hitRate,
+    mrr,
+    exactTermMisses: exactTermMisses.map((result) => result.id),
+    lines,
+  };
+}
+
+afterAll(() => {
+  const summaries = Object.fromEntries(
+    modes.map((mode) => [mode, summarize(mode)]),
+  ) as Record<Mode, ReturnType<typeof summarize>>;
+  const lines = [
+    "",
+    `Renting rules retrieval (${rentingRules.chunks.length} chunks, threshold ${minimumSimilarity}, top ${defaultSearchLimit})`,
+    "",
+    ...summaries.hybrid.lines,
+    ...summaries.vector.lines,
   ];
   // process.stdout.write, not console.log: Vitest does not reliably show
   // console output from afterAll.
@@ -170,9 +222,8 @@ afterAll(() => {
     `evals/results/retrieval-${new Date().toISOString().replaceAll(":", "-")}.json`,
     `${JSON.stringify(
       {
-        hitRate,
-        mrr,
-        exactTermMisses: exactTermMisses.map((result) => result.id),
+        hybrid: { ...summaries.hybrid, lines: undefined },
+        vector: { ...summaries.vector, lines: undefined },
         results,
       },
       null,
@@ -180,5 +231,6 @@ afterAll(() => {
     )}\n`,
   );
 
-  expect(hitRate).toBeGreaterThanOrEqual(minimumHitRate);
+  // The gate applies to the search the app actually uses.
+  expect(summaries.hybrid.hitRate).toBeGreaterThanOrEqual(minimumHitRate);
 });
