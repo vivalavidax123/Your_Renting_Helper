@@ -19,7 +19,7 @@ Status reviewed against committed `HEAD` on 2026-11-27.
 | Persistence          | PostgreSQL through Prisma                                  |
 | Authentication       | Email/password and Google OAuth through Better Auth        |
 | Quality gates        | Prettier, ESLint, TypeScript, Vitest, and production build |
-| Automated tests      | 154 tests across 23 test files                             |
+| Automated tests      | 171 tests across 25 test files                             |
 | Production readiness | Not production-ready; hardening gaps are listed below      |
 
 The core renter workflow is implemented:
@@ -87,6 +87,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Population, school, childcare, safety, and development data are not implemented. Rent data is community-reported rather than an official market dataset.
 - Walkability uses straight-line estimates, not route-aware walking times.
 - Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset is implemented with its manual inbox/password check pending. Account settings and account deletion are not implemented.
+- Renting rules search: curated Consumer Affairs Victoria guidance (17 pages, 104 chunks) is embedded into `app/lib/data/renting-rules.json` and searched in memory by `app/lib/services/rentingRules.ts`, with a retrieval eval (hit rate at 4 of 93% on the first run). The analyst does not call it yet; the tool, citations and the not-legal-advice notice are the next step. See [docs/renting-rules.md](./docs/renting-rules.md).
 - Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
 - Automated coverage does not yet include full authentication, database-cache integration, broad place/transport provider-failure paths, or browser end-to-end flows.
 
@@ -170,7 +171,9 @@ app/
   components/ExploreProvider.tsx  Search/session state retained across workspace pages
   components/ConversationProvider.tsx  In-memory location/pair transcripts
   components/AnalystChat.tsx  Shared single-location and comparison chat interface
-evals/                    Offline analyst eval: fixtures, cases, checks, judge, runner
+evals/                    Offline analyst and renting-rules retrieval evals
+knowledge/renting/        Curated Consumer Affairs Victoria renting pages (CC BY 4.0)
+scripts/                  ingest-renting-rules.ts builds app/lib/data/renting-rules.json
 prisma/
   migrations/             Committed PostgreSQL migrations
   schema.prisma           Application and Better Auth models
@@ -410,7 +413,7 @@ The answer step requires a model that accepts `xhigh` reasoning effort. `gpt-5-m
 
 ### Offline evals
 
-`npm run eval` runs 40 fixed cases (24 to answer, including 6 that need a tool, 9 off-topic, 7 prompt injections) over three hand-written fixtures through the real `getQuestionRefusal`, answer and context code. Single-location cases get the real tool definitions with fake results from the fixtures, and cases with one clear answer list the tools they expect; tool choice is reported, not failed. `evals/checks.ts` checks word count, leaked implementation phrases, and that every number with a unit in an answer exists in the computed context or a tool result; `evals/judge.ts` adds a rubric grade through `requestStructuredJson`, the structured-output helper the scope check also uses. A case fails only when an injection gets through or an answer has an unsupported number or leaked phrase. The eval calls OpenAI, so it is not part of the CI quality gate. `.github/workflows/eval.yml` runs it every Monday at 22:00 UTC, on demand from the Actions page, and on pull requests that change the analyst services or tools, `evals/`, or the eval config; it reads the `OPENAI_API_KEY` repository secret and the `OPENAI_MODEL` repository variable, uploads `evals/results/` as an artifact kept for 90 days, and a failed scheduled run emails the repository owner. Baseline results and known limits are in [docs/analyst-evals.md](./docs/analyst-evals.md).
+`npm run eval` runs 40 fixed cases (24 to answer, including 6 that need a tool, 9 off-topic, 7 prompt injections) over three hand-written fixtures through the real `getQuestionRefusal`, answer and context code. Single-location cases get the real tool definitions with fake results from the fixtures, and cases with one clear answer list the tools they expect; tool choice is reported, not failed. `evals/checks.ts` checks word count, leaked implementation phrases, and that every number with a unit in an answer exists in the computed context or a tool result; `evals/judge.ts` adds a rubric grade through `requestStructuredJson`, the structured-output helper the scope check also uses. A case fails only when an injection gets through or an answer has an unsupported number or leaked phrase. The eval calls OpenAI, so it is not part of the CI quality gate. `.github/workflows/eval.yml` runs it every Monday at 22:00 UTC, on demand from the Actions page, and on pull requests that change the analyst services or tools, `evals/`, or the eval config; it reads the `OPENAI_API_KEY` repository secret and the `OPENAI_MODEL` repository variable, uploads `evals/results/` as an artifact kept for 90 days, and a failed scheduled run emails the repository owner. Baseline results and known limits are in [docs/analyst-evals.md](./docs/analyst-evals.md). The same command also runs `evals/retrieval.eval.ts`, which grades the renting rules search on 31 labelled questions (hit rate at 4, MRR) and fails below an 85% hit rate; see [docs/renting-rules.md](./docs/renting-rules.md).
 
 ## Persistence and Cache
 
@@ -575,7 +578,7 @@ GitHub Actions runs on pushes to main and pull requests targeting main:
 5. npm run test
 6. npm run build with non-secret placeholder configuration
 
-The current 154-test suite across 23 files covers:
+The current 171-test suite across 25 files covers:
 
 - scoring behaviour and invariants;
 - formatting (including Melbourne-time evidence dates and compact review counts), coordinate parsing and range checks, distance, walk-time and time utilities, score-band boundaries, the category-pick rule, the comparison summary, plus the same-site check for sign-in return paths and the split-divider width limits and keyboard steps;
@@ -591,7 +594,8 @@ The current 154-test suite across 23 files covers:
 - analyst request payloads and rental hook API boundaries;
 - the invariant that the car-owner profile never lowers category or overall scores;
 - score-priority presets: each sums to 100, Balanced matches the original scores, and presets change only the overall score;
-- the analyst eval's deterministic checks (word count, leaked phrases, numeric-claim parsing and grounding).
+- the analyst eval's deterministic checks (word count, leaked phrases, numeric-claim parsing and grounding);
+- renting-rules chunking (front matter, section ids, balanced splits), cosine ranking and threshold, the embedding request, and that the committed `renting-rules.json` matches `knowledge/renting/`.
 
 The tests mock provider, auth, or database dependencies where appropriate. CI does not require a live database or external network calls. The live analyst eval (`npm run eval`) is separate and manual.
 
@@ -693,6 +697,10 @@ Use checks proportionate to the change during development, then run the full set
 ### Before changing the analyst prompt, model, or context
 
 Run `npm run eval` and compare the summary with the baseline in [docs/analyst-evals.md](./docs/analyst-evals.md). For tool changes, also compare the tool-choice summary in [docs/analyst-tools.md](./docs/analyst-tools.md).
+
+### Before changing the renting guidance
+
+Edit `knowledge/renting/*.md`, run `npm run ingest:renting` (it lists changed pages), then `npm test` and `npm run eval`. Steps and file format are in `knowledge/renting/README.md`.
 
 ### Before releasing a schema change
 

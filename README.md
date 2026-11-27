@@ -84,11 +84,18 @@ The application will be available at [http://localhost:3000](http://localhost:30
 | `npm run typecheck`         | Type-check the project                        |
 | `npm run test`              | Run the test suite                            |
 | `npm run eval`              | Grade the AI analyst with live OpenAI calls   |
+| `npm run ingest:renting`    | Rebuild the renting-rules search data         |
 | `npm run build`             | Create a production build                     |
 | `npm run check`             | Run formatting, lint, types, tests, and build |
 | `npm run db:migrate`        | Create and apply a development migration      |
 | `npm run db:migrate:deploy` | Apply committed migrations                    |
 | `npm run db:studio`         | Open Prisma Studio                            |
+
+## Data Sources
+
+Renting guidance in `knowledge/renting/` is adapted from Consumer Affairs Victoria:
+© State of Victoria (Consumer Affairs Victoria), used under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 ## Disclaimer
 

@@ -4,3 +4,4 @@ node_modules/
 output/
 tmp/
 tsconfig.tsbuildinfo
+app/lib/data/renting-rules.json

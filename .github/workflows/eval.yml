@@ -1,8 +1,8 @@
 name: Analyst eval
 
-# Grades the AI location analyst with live OpenAI calls (npm run eval). It
-# costs money and model output varies, so it runs on a schedule and on demand,
-# never on every push. The point is to notice when the model behind
+# Grades the AI location analyst and the renting rules search with live
+# OpenAI calls (npm run eval). It costs money and model output varies, so it
+# runs on a schedule and on demand, never on every push. The point is to notice when the model behind
 # OPENAI_MODEL starts answering worse, even though no code changed.
 on:
   schedule:
@@ -18,6 +18,9 @@ on:
       - "app/lib/services/locationAnalyst.ts"
       - "app/lib/services/analystTools.ts"
       - "app/lib/services/locationAnalysis.ts"
+      - "app/lib/services/rentingRules.ts"
+      - "app/lib/rentingRuleChunks.ts"
+      - "app/lib/data/renting-rules.json"
       - "evals/**"
       - "vitest.eval.config.ts"
       - ".github/workflows/eval.yml"

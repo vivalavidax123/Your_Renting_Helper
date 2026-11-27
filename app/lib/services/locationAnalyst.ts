@@ -6,6 +6,7 @@ import type { LocationAnalysisContext } from "./locationAnalysis";
 
 const openAIResponsesUrl = "https://api.openai.com/v1/responses";
 const openAIModerationsUrl = "https://api.openai.com/v1/moderations";
+const openAIEmbeddingsUrl = "https://api.openai.com/v1/embeddings";
 const requestTimeoutMs = 20_000;
 const maxOutputTokens = 1_200;
 const scopeOutputTokens = 200;
@@ -215,6 +216,49 @@ export async function requestStructuredJson({
   } catch {
     return null;
   }
+}
+
+// Turns text into a vector (a list of numbers where similar meanings give
+// similar numbers). The renting rules search uses it to compare a question
+// with the stored chunks. The embedding model comes from the stored data, not
+// from OPENAI_MODEL, because both sides must use the same one.
+export async function requestEmbedding({
+  text,
+  model,
+  dimensions,
+  label,
+}: {
+  text: string;
+  model: string;
+  dimensions: number;
+  label: string;
+}) {
+  const response = await postOpenAI(
+    openAIEmbeddingsUrl,
+    { model, dimensions, input: text },
+    label,
+  );
+  const value = await readOpenAIJson(response, label);
+  const embedding =
+    isJsonRecord(value) &&
+    Array.isArray(value.data) &&
+    isJsonRecord(value.data[0]) &&
+    Array.isArray(value.data[0].embedding)
+      ? value.data[0].embedding
+      : null;
+
+  if (
+    !embedding ||
+    embedding.length !== dimensions ||
+    !embedding.every((number) => typeof number === "number")
+  ) {
+    throw new LocationAnalystError(
+      `${label} returned an invalid response. Please try again.`,
+      502,
+    );
+  }
+
+  return embedding as number[];
 }
 
 const scopeCheckLabel = "The AI scope check";
