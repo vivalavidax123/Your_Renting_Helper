@@ -8,7 +8,7 @@ The README is intentionally general. Historical debugging stories, superseded de
 
 ## Current Repository Status
 
-Status reviewed against committed `HEAD` on 2026-11-26.
+Status reviewed against committed `HEAD` on 2026-11-27.
 
 | Area                 | Current state                                              |
 | -------------------- | ---------------------------------------------------------- |
