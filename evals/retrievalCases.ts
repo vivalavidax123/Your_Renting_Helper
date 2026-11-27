@@ -202,7 +202,7 @@ export const retrievalCases: RetrievalCase[] = [
     question:
       "They're selling the house and want us out. How much notice do we get?",
     expected: [
-      "notice-to-vacate#reasons-evidence-and-notice-periods-at-the-end-of-an-agreement",
+      "notice-to-vacate#selling-the-property-and-other-reasons-at-the-end-of-an-agreement",
     ],
   },
   {

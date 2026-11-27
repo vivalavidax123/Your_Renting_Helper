@@ -73,9 +73,11 @@ It also counts **exact-term misses**: 8 questions carry `keyTerms`, words that
 appear word for word in the right chunk ("dishwasher", "pet bond"). A miss on
 one of those is a failure vector search can have and keyword search would not.
 The count is shown in the console, in the GitHub Actions run summary and in
-`evals/results/retrieval-*.json`. Rule: if exact-term misses appear in every
-weekly run, add keyword search (for example BM25 merged with the vector ranking
-by Reciprocal Rank Fusion). A single miss is not enough reason.
+`evals/results/retrieval-*.json`. A plain BM25 + Reciprocal Rank Fusion
+hybrid was tried against these misses and made the overall results worse (see
+"Keyword search experiment" below), so exact-term misses are tracked but no
+longer a trigger on their own. A keyword search would need to beat vector only
+on hit rate and MRR, on a larger labelled set, before it is added.
 
 First run, 2026-11-27, threshold 0.3:
 
@@ -103,6 +105,37 @@ sale question has no key terms), uncovered questions with no results 2 / 3
 
 The questions, chunks and model are fixed, so these misses repeat on every run
 until the model, the chunking or the search changes.
+
+### Keyword search experiment (not adopted)
+
+On 2026-11-27 a hybrid search was tried in PR #32 (closed, not merged): BM25
+keyword scores over the chunk text, merged with the vector ranking by
+Reciprocal Rank Fusion (k = 60), with the 0.4 threshold still deciding the
+candidates. The eval ranked every question both ways from the same embedding:
+
+| Metric             | Vector only | Hybrid  |
+| ------------------ | ----------- | ------- |
+| Hit rate at 4      | 26 / 28     | 25 / 28 |
+| MRR                | 0.88        | 0.81    |
+| Exact-term misses  | 1 / 8       | 0 / 8   |
+| Uncovered, nothing | 2 / 3       | 2 / 3   |
+
+It fixed the dishwasher question but lost two others (maximum bond fell from
+1st to 9th, no-fault eviction from 2nd to 7th), and the sale question fell
+from 6th to 17th. Reasons:
+
+- Renters say "landlord"; CAV writes "rental provider". "landlord" is rare in
+  the guidance, so BM25 gives it a high weight and boosts whichever chunk
+  happens to use it, usually not the answer.
+- Words like "notice", "bond" and "rent" appear in many chunks, so the keyword
+  ranking is full of loosely related sections.
+- RRF weighs both rankings equally, and here the keyword ranking is much
+  weaker than the vector ranking.
+
+Tuning weights or adding synonyms was not tried: with 28 questions it would
+mostly fit these questions rather than real ones. Revisit only with a larger
+labelled set. The sale miss was handled by splitting its chunk instead (see
+below).
 
 Unrelated questions still returned results: coffee 0.355, tax deductions
 0.399, stamp duty 0.544. The 26 correct hits scored 0.462 to 0.732. Similarity
