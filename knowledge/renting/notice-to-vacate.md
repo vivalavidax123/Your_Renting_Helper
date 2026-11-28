@@ -63,7 +63,11 @@ Since 25 November 2025, no fault evictions are banned: a rental provider cannot 
 
 <!-- Curation note: the CAV page (updated 2 November 2026) still also says a notice without a reason can be given at the end of the first fixed term. That contradicts CAV's "New changes to rental laws" page (ban on no fault evictions from 25 November 2025), so that sentence is left out here. Re-check on the next refresh. -->
 
-## Reasons, evidence and notice periods at the end of an agreement
+<!-- Curation: CAV lists all of these reasons in one section. It is split in
+two here so the sale reason is not diluted by six other topics in one chunk
+(see docs/renting-rules.md). -->
+
+## Moving in, renovating, demolishing or changing use at the end of an agreement
 
 Some reasons need evidence attached to the notice. If required evidence is not supplied, the notice is invalid.
 
@@ -72,6 +76,11 @@ Some reasons need evidence attached to the notice. If required evidence is not s
 - Demolition, with permits obtained: 90 days. Evidence: a demolition building permit and a contract with a builder-demolisher. The property must not be re-let as a residence for 6 months unless VCAT approves.
 - The rental provider will use the property for something else, such as a business: 90 days. Evidence: a witnessed statutory declaration and an ABN, business registration or planning permit. No re-letting as a residence for 6 months.
 - The rental provider, an immediate family member or a dependent will move in: 90 days. Evidence: a witnessed statutory declaration naming who will move in. No re-letting to anyone else for 6 months unless VCAT approves.
+
+## Selling the property and other reasons at the end of an agreement
+
+A sale notice needs evidence attached. If required evidence is not supplied, the notice is invalid.
+
 - The property is to be sold and vacated immediately after the agreement ends: 90 days. Evidence: a signed contract of sale, an agreement with a licensed estate agent to sell, or a contract of sale prepared by a conveyancer or lawyer. The agreement cannot be shortened for this reason, and no re-letting as a residence for 6 months unless VCAT approves.
 - A government authority owns the property and needs it for public purposes: 90 days.
 - Social housing, where the renter no longer meets the criteria: 90 days.
