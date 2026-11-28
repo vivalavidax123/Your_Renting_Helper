@@ -45,7 +45,7 @@ and `tsconfig.json` allows `.ts` import paths.
 A unit test re-chunks the markdown and checks that the committed JSON matches,
 so editing a page without re-running the ingest fails `npm test`.
 
-Current size: 17 pages, 104 chunks (median about 120 words), 16,605 tokens to
+Current size: 17 pages, 105 chunks (median about 120 words), 16,650 tokens to
 embed.
 
 ## Search
@@ -55,7 +55,7 @@ embed.
 1. embeds the query with the model and size recorded in the JSON, through
    `requestEmbedding` in `locationAnalyst.ts` (same timeout and error handling
    as the other OpenAI calls)
-2. computes cosine similarity with all 104 chunk vectors in memory
+2. computes cosine similarity with all 105 chunk vectors in memory
 3. keeps chunks scoring at least 0.4 and returns the best 4
 
 Comparing against every chunk takes well under a millisecond at this size, so
