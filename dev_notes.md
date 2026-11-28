@@ -87,7 +87,7 @@ The product direction remains amenities-first. Scores are compact summaries; nea
 - Population, school, childcare, safety, and development data are not implemented. Rent data is community-reported rather than an official market dataset.
 - Walkability uses straight-line estimates, not route-aware walking times.
 - Account email verification is implemented and manually verified end to end with the Resend domain `auth.viva.monster`. Password reset is implemented with its manual inbox/password check pending. Account settings and account deletion are not implemented.
-- Renting rules search: curated Consumer Affairs Victoria guidance (17 pages, 105 chunks) is embedded into `app/lib/data/renting-rules.json` and searched in memory by `app/lib/services/rentingRules.ts`, with a retrieval eval (hit rate at 4 of 93% on the first run). The analyst does not call it yet; the tool, citations and the not-legal-advice notice are the next step. See [docs/renting-rules.md](./docs/renting-rules.md).
+- Renting rules search: curated Consumer Affairs Victoria guidance (17 pages, 105 chunks) is embedded into `app/lib/data/renting-rules.json` and searched in memory by `app/lib/services/rentingRules.ts`, with a retrieval eval (hit rate at 4 of 27 / 28, MRR 0.91, after splitting the longest chunk; a BM25 keyword hybrid was tried and not adopted). The analyst does not call it yet; the tool, citations and the not-legal-advice notice are the next step. See [docs/renting-rules.md](./docs/renting-rules.md).
 - Application-level rate limiting, structured logging, monitoring, and error tracking are not implemented.
 - Automated coverage does not yet include full authentication, database-cache integration, broad place/transport provider-failure paths, or browser end-to-end flows.
 

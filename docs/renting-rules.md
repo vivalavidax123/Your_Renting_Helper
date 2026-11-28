@@ -134,8 +134,24 @@ from 6th to 17th. Reasons:
 
 Tuning weights or adding synonyms was not tried: with 28 questions it would
 mostly fit these questions rather than real ones. Revisit only with a larger
-labelled set. The sale miss was handled by splitting its chunk instead (see
-below).
+labelled set.
+
+### Splitting the long notice chunk
+
+The sale miss was fixed by curation instead. In `notice-to-vacate.md` the
+section listing every end-of-agreement reason was split into "Moving in,
+renovating, demolishing or changing use" and "Selling the property and other
+reasons", giving 105 chunks. Eval on PR #33, 2026-11-28:
+
+| Metric             | Before (104 chunks) | After (105 chunks) |
+| ------------------ | ------------------- | ------------------ |
+| Hit rate at 4      | 26 / 28             | 27 / 28            |
+| MRR                | 0.88                | 0.91               |
+| Exact-term misses  | 1 / 8               | 1 / 8              |
+| Uncovered, nothing | 2 / 3               | 2 / 3              |
+
+The sale question now ranks 1st (it was 6th), and no other question changed.
+The only remaining miss is the dishwasher question (6th).
 
 Unrelated questions still returned results: coffee 0.355, tax deductions
 0.399, stamp duty 0.544. The 26 correct hits scored 0.462 to 0.732. Similarity
